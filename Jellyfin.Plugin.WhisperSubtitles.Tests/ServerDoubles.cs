@@ -48,6 +48,22 @@ internal sealed class UnwrittenApplicationPaths : IApplicationPaths
 
     public string VirtualDataPath => Under("virtual-data");
 
+    public string TrickplayPath => Under("trickplay");
+
+    public string BackupPath => Under("backup");
+
+    // Both members are the same on 10.11 and on 12.0, so no conditional is needed
+    // for either. Both do real work on disk in the server's own implementation,
+    // which is why they refuse here rather than doing nothing: a silent no-op
+    // would let a test believe a directory was made.
+    public void MakeSanityCheckOrThrow() => throw new NotSupportedException(Reason);
+
+    public void CreateAndCheckMarker(string path, string markerName, bool recursive = false)
+        => throw new NotSupportedException(Reason);
+
+    private static string Reason =>
+        "The identity tests construct the plugin without a server and create nothing on disk.";
+
     private string Under(string leaf) => Path.Combine(_root, leaf);
 }
 

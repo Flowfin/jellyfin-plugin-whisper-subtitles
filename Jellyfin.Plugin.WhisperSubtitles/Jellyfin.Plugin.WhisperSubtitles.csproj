@@ -1,7 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net9.0</TargetFramework>
+    <TargetFrameworks>$(SupportedServerLines)</TargetFrameworks>
+    <UsesJellyfinPackages>true</UsesJellyfinPackages>
     <RootNamespace>Jellyfin.Plugin.WhisperSubtitles</RootNamespace>
     <AssemblyName>Jellyfin.Plugin.WhisperSubtitles</AssemblyName>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
@@ -12,10 +13,10 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Jellyfin.Controller" Version="10.9.11" >
+    <PackageReference Include="Jellyfin.Controller" Version="$(JellyfinPackageVersion)">
       <ExcludeAssets>runtime</ExcludeAssets>
     </PackageReference>
-    <PackageReference Include="Jellyfin.Model" Version="10.9.11">
+    <PackageReference Include="Jellyfin.Model" Version="$(JellyfinPackageVersion)">
       <ExcludeAssets>runtime</ExcludeAssets>
     </PackageReference>
   </ItemGroup>
