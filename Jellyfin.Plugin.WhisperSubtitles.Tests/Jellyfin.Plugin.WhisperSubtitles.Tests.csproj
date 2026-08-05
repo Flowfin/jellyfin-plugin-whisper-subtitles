@@ -1,0 +1,38 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <RootNamespace>Jellyfin.Plugin.WhisperSubtitles.Tests</RootNamespace>
+    <AssemblyName>Jellyfin.Plugin.WhisperSubtitles.Tests</AssemblyName>
+    <Nullable>enable</Nullable>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
+    <PackageReference Include="xunit" Version="2.9.2" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Jellyfin.Plugin.WhisperSubtitles\Jellyfin.Plugin.WhisperSubtitles.csproj" />
+  </ItemGroup>
+
+  <!-- The plugin excludes the Jellyfin runtime assemblies because the server
+       supplies them, which is right for what ships and leaves the test host with
+       nothing to load the plugin against. These bring the same pinned versions
+       back for the test run only. The repetition of the version is what #5 is
+       asked to remove when it puts the pin in one place. -->
+  <ItemGroup>
+    <PackageReference Include="Jellyfin.Controller" Version="10.9.11" />
+    <PackageReference Include="Jellyfin.Model" Version="10.9.11" />
+  </ItemGroup>
+
+  <!-- The manifest is one half of the identity comparison, so the test needs the
+       real file rather than a copy of its contents. -->
+  <ItemGroup>
+    <None Include="..\build.yaml" Link="build.yaml" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+</Project>
