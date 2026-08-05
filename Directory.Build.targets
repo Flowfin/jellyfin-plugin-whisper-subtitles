@@ -1,0 +1,27 @@
+<Project>
+
+    <!--
+      The framework and the Jellyfin package version are the two halves of a server
+      line, and this refuses the half-change: a line renamed without its pin moving,
+      or a pin bumped past the line it is supposed to belong to.
+
+      It is deliberately the only check here. A framework this repository maps to no
+      line, and a pin naming a package that does not support the framework, are both
+      already refused during restore, by NU1015 and NU1202 respectively, before any
+      target in this file runs. A second arm for either would be a guard that cannot
+      be made to bite. What is left is the case NuGet cannot see, because both halves
+      restore perfectly well and only disagree about which server the result is for.
+
+      The check applies to projects that declare UsesJellyfinPackages, so a project
+      with no business naming a server line is not asked to name one.
+    -->
+    <Target Name="RefuseAMismatchedServerLine"
+            BeforeTargets="BeforeBuild"
+            Condition="'$(UsesJellyfinPackages)' == 'true' and '$(TargetFramework)' != ''">
+
+        <Error Condition="!$([System.String]::Copy('$(JellyfinPackageVersion)').StartsWith('$(JellyfinServerLine).'))"
+               Text="Server line $(JellyfinServerLine) is pinned to Jellyfin package version $(JellyfinPackageVersion), which belongs to a different line. Framework $(TargetFramework), its line and its package version are changed together or not at all." />
+
+    </Target>
+
+</Project>

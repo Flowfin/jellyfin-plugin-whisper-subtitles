@@ -4,4 +4,21 @@
         <AssemblyVersion>0.0.0.0</AssemblyVersion>
         <FileVersion>0.0.0.0</FileVersion>
     </PropertyGroup>
+
+    <!-- The supported server lines. This is the one place a target framework or a
+         Jellyfin package version is written; every project reads them from here, so
+         a line cannot be half-changed in one project and left alone in another. -->
+    <PropertyGroup>
+        <SupportedServerLines>net9.0;net10.0</SupportedServerLines>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'$(TargetFramework)' == 'net9.0'">
+        <JellyfinServerLine>10.11</JellyfinServerLine>
+        <JellyfinPackageVersion>10.11.11</JellyfinPackageVersion>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'$(TargetFramework)' == 'net10.0'">
+        <JellyfinServerLine>12.0</JellyfinServerLine>
+        <JellyfinPackageVersion>12.0.0-rc4</JellyfinPackageVersion>
+    </PropertyGroup>
 </Project>
