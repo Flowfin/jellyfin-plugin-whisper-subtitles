@@ -1,16 +1,23 @@
 name: '🏗️ Build Plugin'
 
+# There is no paths-ignore here and adding one breaks the merge gate.
+# `call / build` is a required status check on master. A required check whose
+# workflow never starts is not treated as skipped by the ruleset: the pull
+# request keeps waiting for a result that will never arrive, with nothing red on
+# it to explain the wait, so the reason has to be worked out from repository
+# settings rather than read off the pull request. A path filter here therefore
+# makes every change confined to the filtered paths unmergeable. The cost of
+# leaving the filter out is a build on a change that cannot affect the build.
+# Measured on #106 and #2, both of which changed only markdown and both of which
+# sat at mergeStateStatus BLOCKED with no failing check. See issue #107.
+
 on:
   push:
     branches:
       - master
-    paths-ignore:
-      - '**/*.md'
   pull_request:
     branches:
       - master
-    paths-ignore:
-      - '**/*.md'
   workflow_dispatch:
 
 jobs:

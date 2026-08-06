@@ -1,0 +1,202 @@
+using System;
+using System.Globalization;
+using System.IO;
+using System.Threading;
+using System.Threading.Tasks;
+using Jellyfin.Plugin.WhisperSubtitles.Attempts;
+using Jellyfin.Plugin.WhisperSubtitles.Backends;
+using Jellyfin.Plugin.WhisperSubtitles.Backends.Local;
+
+namespace Jellyfin.Plugin.WhisperSubtitles.Audio;
+
+/// <summary>
+/// Turns one audio stream of one item into the file a backend can read.
+/// </summary>
+/// <remarks>
+/// The media tool is the server's own. Jellyfin already knows where a working
+/// one is and exposes it as <c>IMediaEncoder.EncoderPath</c>, and that is the
+/// only place the path handed to this type may come from. This plugin ships no
+/// media tool, downloads none, and does not go looking for one on the machine:
+/// a plugin that searched a path would eventually find a different build from
+/// the one the server transcodes with, and the failures of that arrangement
+/// arrive months later on somebody else's container. Wiring the real value in is
+/// the composition root, in #71.
+///
+/// The temporary file is created in a directory this plugin owns rather than in
+/// the system temporary directory. Sharing a directory with everything else on
+/// the machine means a sweep of stale files cannot tell its own leftovers from
+/// somebody else's, and #21 needs exactly that sweep for the case where the
+/// server died between writing a file and deleting it.
+/// </remarks>
+public sealed class AudioExtractor
+{
+    private readonly IProcessRunner _runner;
+    private readonly string _encoderPath;
+    private readonly string _workingDirectory;
+    private readonly long _ceilingBytes;
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="AudioExtractor"/> class.
+    /// </summary>
+    /// <param name="runner">The seam every program this plugin starts goes through.</param>
+    /// <param name="encoderPath">The server's own media tool, from <c>IMediaEncoder.EncoderPath</c>.</param>
+    /// <param name="workingDirectory">The directory this plugin owns and writes its temporary audio into.</param>
+    /// <param name="ceilingBytes">The most one extracted file may reach.</param>
+    public AudioExtractor(
+        IProcessRunner runner,
+        string encoderPath,
+        string workingDirectory,
+        long ceilingBytes = PcmAudio.DefaultCeilingBytes)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(encoderPath);
+        ArgumentException.ThrowIfNullOrWhiteSpace(workingDirectory);
+        ArgumentOutOfRangeException.ThrowIfLessThan(ceilingBytes, 1);
+
+        _runner = runner ?? throw new ArgumentNullException(nameof(runner));
+        _encoderPath = encoderPath;
+        _workingDirectory = workingDirectory;
+        _ceilingBytes = ceilingBytes;
+    }
+
+    /// <summary>
+    /// Extracts one stream and hands back the file.
+    /// </summary>
+    /// <param name="mediaPath">The media file to read.</param>
+    /// <param name="stream">The stream to take, chosen by <see cref="AudioStreamChoice"/>.</param>
+    /// <param name="cancellationToken">Ends the tool rather than only stopping the wait for it.</param>
+    /// <returns>The extracted audio, which the caller disposes.</returns>
+    public async Task<ExtractedAudio> ExtractAsync(
+        string mediaPath,
+        AudioStreamDescription stream,
+        CancellationToken cancellationToken)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(mediaPath);
+        ArgumentNullException.ThrowIfNull(stream);
+
+        cancellationToken.ThrowIfCancellationRequested();
+
+        Directory.CreateDirectory(_workingDirectory);
+
+        // A name per attempt rather than a name per item. Two runs of the same
+        // item, or a run overlapping the leftovers of one that died, must not be
+        // able to read each other's half-written file.
+        var outputPath = Path.Combine(
+            _workingDirectory,
+            string.Create(CultureInfo.InvariantCulture, $"{Guid.NewGuid():N}.wav"));
+
+        var invocation = FfmpegArguments.Build(_encoderPath, mediaPath, stream.Index, outputPath, _ceilingBytes);
+
+        IStartedProcess process;
+
+        try
+        {
+            process = _runner.Start(invocation);
+        }
+        catch (Exception started) when (started is not OperationCanceledException)
+        {
+            // A tool that could not be started is a different state from one that
+            // ran and failed, and the two want different actions from an operator.
+            // Nothing was written, so there is nothing to remove.
+            throw new TranscriptionFailedException(
+                TranscriptionFailureReason.BackendUnreachable,
+                string.Format(
+                    CultureInfo.InvariantCulture,
+                    "The server's media tool at \"{0}\" could not be started, so no audio could be extracted.",
+                    _encoderPath),
+                started);
+        }
+
+        try
+        {
+            using (process)
+            using (cancellationToken.Register(process.Kill))
+            {
+                var exitCode = await process.WaitForExitAsync().ConfigureAwait(false);
+
+                // After the wait rather than before it. A token cancelled while the
+                // tool was running has already killed it, and the exit code that
+                // produced says nothing about the audio.
+                cancellationToken.ThrowIfCancellationRequested();
+
+                if (exitCode != 0)
+                {
+                    throw new TranscriptionFailedException(
+                        TranscriptionFailureReason.AudioUnreadable,
+                        string.Format(
+                            CultureInfo.InvariantCulture,
+                            "The server's media tool ended with exit code {0} and extracted no usable audio: {1}",
+                            exitCode,
+                            process.StandardError));
+                }
+            }
+
+            return Measure(outputPath);
+        }
+        catch
+        {
+            // Every exit path that is not a returned file removes the file, here,
+            // rather than in a handler the caller has to remember to write. That
+            // includes cancellation, where the tool was killed mid-write and what
+            // it left is a truncated WAV with a plausible name.
+            Delete(outputPath);
+            throw;
+        }
+    }
+
+    private ExtractedAudio Measure(string outputPath)
+    {
+        var file = new FileInfo(outputPath);
+
+        if (!file.Exists)
+        {
+            throw new TranscriptionFailedException(
+                TranscriptionFailureReason.AudioUnreadable,
+                "The server's media tool reported success and wrote no file, so there is nothing to transcribe.");
+        }
+
+        if (file.Length <= PcmAudio.HeaderBytes)
+        {
+            throw new TranscriptionFailedException(
+                TranscriptionFailureReason.AudioUnreadable,
+                string.Format(
+                    CultureInfo.InvariantCulture,
+                    "The server's media tool reported success and wrote {0} byte(s), which is a header and no audio.",
+                    file.Length));
+        }
+
+        if (file.Length >= _ceilingBytes)
+        {
+            // The tool was told to stop at the ceiling, so a file that reached it
+            // is the item running out of room rather than finishing. Transcribing
+            // it would produce a subtitle that stops partway through with nothing
+            // saying why, which is worse than a failure that names the ceiling.
+            throw new TranscriptionFailedException(
+                TranscriptionFailureReason.AudioUnreadable,
+                string.Format(
+                    CultureInfo.InvariantCulture,
+                    "Extracting this item reached the {0} byte ceiling, so the audio is incomplete and nothing was transcribed. About {1} byte(s) of this format is one hour.",
+                    _ceilingBytes,
+                    PcmAudio.BytesPerSecond * 3600));
+        }
+
+        return new ExtractedAudio(outputPath, file.Length);
+    }
+
+    private static void Delete(string path)
+    {
+        try
+        {
+            File.Delete(path);
+        }
+        catch (IOException)
+        {
+            // Already unwinding through a failure that has a better reason than
+            // this one. The directory is swept at the start of the next run, in
+            // #21, which is the case a handler cannot cover anyway.
+        }
+        catch (UnauthorizedAccessException)
+        {
+            // Same, and the same sweep collects it.
+        }
+    }
+}
