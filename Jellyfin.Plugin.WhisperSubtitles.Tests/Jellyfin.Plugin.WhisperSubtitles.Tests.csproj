@@ -65,6 +65,13 @@
     <None Include="..\build.yaml" Link="build.yaml" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
+  <!-- The troubleshooting page is compared against the failure reasons in the
+       code, so the test reads the file a clone checked out rather than a second
+       copy of its contents. Same reasoning as the manifest above. -->
+  <ItemGroup>
+    <None Include="..\docs\troubleshooting.md" Link="docs\troubleshooting.md" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
   <!-- The other half is what the build actually produced. These carry it into the
        test assembly from the properties the build itself used, so the comparison
        is against the real values and not against a second copy of them written
