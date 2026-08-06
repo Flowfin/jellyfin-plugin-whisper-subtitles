@@ -1,0 +1,19 @@
+# Without a file here, what git does to a text file on the way into the
+# repository and on the way back out is a fact of each clone's core.autocrlf
+# rather than of this tree, so two clones of the same commit can hold different
+# bytes. That is untidy for source and wrong for evidence.
+#
+# Source and configuration are text. They are stored with a line feed and checked
+# out the way the platform prefers, which is what a Windows editor and a Linux
+# build each expect.
+* text=auto
+
+# Subtitle fixtures are bytes rather than text, and this is the line the rest of
+# the file exists for. SubRip ends every line with a carriage return and a line
+# feed, and a fixture exists to prove the exact bytes the writer produced. Under
+# the rule above, a clone on Linux would check that fixture out with the carriage
+# returns removed and a clone on Windows would put them back, so the file a test
+# compares against would differ between two clones of one commit - and the test
+# would go on passing on both, because it would be comparing the writer's output
+# against a fixture that had moved with it.
+*.srt -text
