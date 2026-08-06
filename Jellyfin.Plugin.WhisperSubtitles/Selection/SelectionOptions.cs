@@ -22,18 +22,21 @@ public sealed class SelectionOptions
     /// <param name="targetLanguage">The language to transcribe into.</param>
     /// <param name="maximumItemDuration">The longest item a run may take, or null for no bound.</param>
     /// <param name="addedSince">Only items added at or after this moment, or null for no bound.</param>
+    /// <param name="quarantinedItems">The items the attempt ledger is skipping.</param>
     public SelectionOptions(
         IReadOnlyList<Guid> enabledLibraries,
         IReadOnlyList<string> kindsInScope,
         string? targetLanguage,
         TimeSpan? maximumItemDuration,
-        DateTimeOffset? addedSince)
+        DateTimeOffset? addedSince,
+        IReadOnlySet<Guid>? quarantinedItems = null)
     {
         EnabledLibraries = enabledLibraries;
         KindsInScope = kindsInScope;
         TargetLanguage = targetLanguage;
         MaximumItemDuration = maximumItemDuration;
         AddedSince = addedSince;
+        QuarantinedItems = quarantinedItems ?? new HashSet<Guid>();
     }
 
     /// <summary>
@@ -60,4 +63,14 @@ public sealed class SelectionOptions
     /// Gets the moment before which items are left alone, or null for no bound.
     /// </summary>
     public DateTimeOffset? AddedSince { get; }
+
+    /// <summary>
+    /// Gets the items the attempt ledger is skipping.
+    /// </summary>
+    /// <remarks>
+    /// Passed in rather than read from the ledger here, so selection stays a
+    /// function of its arguments and a dry run can be shown for a ledger other
+    /// than the live one.
+    /// </remarks>
+    public IReadOnlySet<Guid> QuarantinedItems { get; }
 }

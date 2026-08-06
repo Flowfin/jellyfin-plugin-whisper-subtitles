@@ -43,6 +43,7 @@ public static class ItemSelection
             .Where(item => options.EnabledLibraries.Contains(item.LibraryId))
             .Where(item => options.KindsInScope.Any(k => string.Equals(k, item.Kind, StringComparison.OrdinalIgnoreCase)))
             .Where(item => item.HasAudioStream)
+            .Where(item => !options.QuarantinedItems.Contains(item.Id))
             .Where(item => !HasSubtitleIn(item, target))
             .Where(item => options.MaximumItemDuration is null || item.Duration <= options.MaximumItemDuration.Value)
             .Where(item => options.AddedSince is null || item.DateAdded >= options.AddedSince.Value)
