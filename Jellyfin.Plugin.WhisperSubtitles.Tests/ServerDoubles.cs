@@ -6,6 +6,17 @@ using MediaBrowser.Model.Serialization;
 
 namespace Jellyfin.Plugin.WhisperSubtitles.Tests;
 
+// The doubles a plugin is constructed against. They are two halves of one
+// arrangement rather than two subjects, and a test reading one wants to see what
+// the other refuses, so they stay in one file named for what it holds.
+#pragma warning disable SA1402 // File may only contain a single type
+#pragma warning disable SA1649 // File name should match first type name
+
+// Reason is the sentence each refusal above carries. It sits under the members it
+// explains because a reader arrives at it from one of them, never the other way
+// round.
+#pragma warning disable SA1201 // Elements should appear in the correct order
+
 /// <summary>
 /// The paths a server hands a plugin at construction.
 /// </summary>

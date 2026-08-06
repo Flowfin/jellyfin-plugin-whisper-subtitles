@@ -17,6 +17,8 @@ public class AttemptLedgerTests
 {
     private static readonly DateTimeOffset _when = new(2026, 3, 1, 22, 0, 0, TimeSpan.Zero);
 
+    private static readonly Guid _library = new("33333333-3333-3333-3333-333333333333");
+
     private static readonly TranscriptionFailureReason[] _retryable =
     {
         TranscriptionFailureReason.Cancelled,
@@ -247,8 +249,6 @@ public class AttemptLedgerTests
             null,
             null,
             quarantined);
-
-    private static readonly Guid _library = new("33333333-3333-3333-3333-333333333333");
 
     private static ItemDescription Item(Guid id, string name) =>
         new(id, name, _library, "Episode", TimeSpan.FromMinutes(30), true, Array.Empty<string>(), _when);

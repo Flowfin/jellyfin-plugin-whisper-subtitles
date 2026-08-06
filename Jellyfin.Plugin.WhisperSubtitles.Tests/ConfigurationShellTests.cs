@@ -31,7 +31,15 @@ public class ConfigurationShellTests
         serializer.Serialize(written, new PluginConfiguration());
 
         using var read = new StringReader(written.ToString());
+
+        // CA5369 asks for the XmlReader overload with DTD processing off. The
+        // subject of this test is the call the server makes, in IXmlSerializer's
+        // own implementation, and swapping in a safer overload here would leave the
+        // test green while saying nothing about the path the configuration
+        // actually travels. The input is a string this test wrote a line earlier.
+#pragma warning disable CA5369
         var restored = serializer.Deserialize(read);
+#pragma warning restore CA5369
 
         Assert.IsType<PluginConfiguration>(restored);
     }

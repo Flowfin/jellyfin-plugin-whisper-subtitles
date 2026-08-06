@@ -103,7 +103,13 @@ public class SubRipWriterTests
     [Fact]
     public void The_writer_names_the_extension_the_format_uses()
     {
+        // CA1859 asks for the concrete type here for the call it would save. The
+        // interface is the subject of this test: what is being asserted is that a
+        // caller holding an ISubtitleFormatWriter is told the extension, which is
+        // not the same statement as SubRipWriter having a property.
+#pragma warning disable CA1859
         ISubtitleFormatWriter writer = new SubRipWriter();
+#pragma warning restore CA1859
 
         Assert.Equal("srt", writer.FileExtension);
     }
@@ -116,7 +122,12 @@ public class SubRipWriterTests
     /// separated by a blank line, and the text is what follows the index and the
     /// timing line.
     /// </summary>
+    // CA1859 wants the concrete list type on a private helper. The callers index
+    // it and count it and nothing more, and the read-only type is what says the
+    // decoded cues are not something a test is meant to edit.
+#pragma warning disable CA1859
     private static IReadOnlyList<string> CueTexts(byte[] bytes)
+#pragma warning restore CA1859
     {
         var blocks = Decode(bytes)
             .Split("\r\n\r\n", StringSplitOptions.RemoveEmptyEntries);

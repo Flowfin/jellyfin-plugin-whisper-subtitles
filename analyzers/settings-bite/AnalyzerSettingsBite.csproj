@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    The fixture the analysis settings are proved against. It is deliberately not in
+    the solution: it is meant to fail to build, and a project that fails to build is
+    not something an ordinary run should trip over.
+
+    It declares no analysis setting of its own. That is the whole point. Everything
+    that refuses the source beside this file arrives from Directory.Build.props at
+    the root, so a run that gets a clean build here is a run where a project added
+    later would have inherited nothing either.
+  -->
+
+  <PropertyGroup>
+    <TargetFrameworks>$(SupportedServerLines)</TargetFrameworks>
+    <RootNamespace>AnalyzerSettingsBite</RootNamespace>
+    <AssemblyName>AnalyzerSettingsBite</AssemblyName>
+    <IsPackable>false</IsPackable>
+    <EnableDefaultCompileItems>true</EnableDefaultCompileItems>
+  </PropertyGroup>
+
+</Project>
