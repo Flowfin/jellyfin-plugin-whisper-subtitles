@@ -1,15 +1,23 @@
 ---
-name: "Template"
-guid: "eb5d7894-8eef-4b36-aa6f-5d124e828ce1"
+# One manifest describes one server line, and this tree builds two. The pair
+# below is the 10.11 line, which is the one with a released server behind it.
+# A second manifest for the 12.0 line is part of packaging, in #51.
+name: "Whisper Subtitles"
+guid: "30ed66e0-32fd-46a6-8a56-5cd95d8df10f"
 version: "1.0.0.0"
-targetAbi: "10.9.0.0"
-framework: "net8.0"
-overview: "Short description about your plugin"
+targetAbi: "10.11.0.0"
+framework: "net9.0"
+overview: "Transcribes library items that have no subtitle, using Whisper."
 description: >
-  This is a longer description that can span more than one
-  line and include details about your plugin.
+  Generates subtitles for library items that have none, by transcribing their
+  audio with Whisper. The transcription itself runs outside the server process,
+  through a command line tool on the same machine or through a remote
+  transcription endpoint, and this plugin carries no model and no inference
+  runtime of its own. What it produces is machine transcription: it is marked as
+  machine made so it can be told apart from a subtitle a person wrote, and this
+  plugin promises nothing about its accuracy, which it does not measure.
 category: "General"
-owner: "jellyfin"
+owner: "iderex"
 artifacts:
 - "Jellyfin.Plugin.WhisperSubtitles.dll"
 changelog: >

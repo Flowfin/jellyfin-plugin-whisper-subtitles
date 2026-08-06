@@ -35,4 +35,25 @@
     <None Include="..\build.yaml" Link="build.yaml" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
+  <!-- The other half is what the build actually produced. These carry it into the
+       test assembly from the properties the build itself used, so the comparison
+       is against the real values and not against a second copy of them written
+       out by hand. SupportedServerLines is every framework this tree builds;
+       JellyfinServerLine is the server line of the framework this particular run
+       was compiled for. -->
+  <ItemGroup>
+    <AssemblyAttribute Include="System.Reflection.AssemblyMetadataAttribute">
+      <_Parameter1>SupportedServerLines</_Parameter1>
+      <_Parameter2>$(SupportedServerLines)</_Parameter2>
+    </AssemblyAttribute>
+    <AssemblyAttribute Include="System.Reflection.AssemblyMetadataAttribute">
+      <_Parameter1>JellyfinServerLine</_Parameter1>
+      <_Parameter2>$(JellyfinServerLine)</_Parameter2>
+    </AssemblyAttribute>
+    <AssemblyAttribute Include="System.Reflection.AssemblyMetadataAttribute">
+      <_Parameter1>TargetFramework</_Parameter1>
+      <_Parameter2>$(TargetFramework)</_Parameter2>
+    </AssemblyAttribute>
+  </ItemGroup>
+
 </Project>
