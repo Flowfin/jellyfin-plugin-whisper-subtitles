@@ -192,6 +192,115 @@ compare is that machine against yours. Fewer cores, a slower disk, or other work
 running at the same time all take longer, and a run that is slow is still a run
 that will finish.
 
+## The reason AudioIsSilent
+
+The audio is there and holds nothing to transcribe: silence, or a level so low
+that there is no speech in it. This is a fact about the file and the backend
+behaved.
+
+It is separate from NoSegments on purpose. That one says the backend examined
+nothing; this one says it examined silence.
+
+### What to do
+
+Nothing, for a file that is genuinely silent. A recording whose microphone was
+off, a title sequence extracted on its own, and a badly remuxed item where the
+audio track carries no samples all land here correctly.
+
+If the item plays with sound in a client, the audio the extraction step produced
+is not the audio you can hear, and the thing to compare is which stream was
+chosen against which one the client plays. An item with several audio streams is
+where those differ.
+
+## The reason AudioHasNoSpeech
+
+The audio carries music or noise and no speech. Nothing is wrong and there is
+nothing to write.
+
+### What to do
+
+Nothing, for a concert recording, a nature film with no narration, or anything
+else whose soundtrack is not somebody talking. No subtitle is written, which is
+the correct outcome: an empty subtitle track looks exactly like the work was
+done, so the item would be skipped by anybody later looking for what is left to
+transcribe.
+
+If the item does carry speech, what to look at is the audio stream that was
+chosen rather than any setting here.
+
+## The reason AudioHasSeveralLanguages
+
+The audio carries more than one language. One subtitle file names one language,
+so a transcription of a bilingual recording would be a file that is wrong about
+most of itself, and it is refused rather than written under whichever language
+won.
+
+### What to do
+
+Transcribe such an item by hand, or leave it. There is no setting that makes this
+correct, because the shape of the output is what cannot hold the answer.
+
+A film with subtitled foreign passages inside a single spoken language is not
+this case and does not land here.
+
+## The reason DetectionBelowTheFloor
+
+Detection returned a language and returned it less certainly than the floor an
+operator set. The run reports this rather than writing a subtitle named in a
+language the backend was guessing at.
+
+### What to do
+
+Two settings decide it and they pull in opposite directions. Lowering the floor
+accepts less certain answers, which is right for a library of clean recordings in
+one language and wrong for a mixed one. Naming the language for that library
+instead removes the question, and it is the better answer wherever the library
+actually is one language.
+
+A larger model detects more confidently on the same audio, so a floor that
+refuses everything on the smallest model may hold on a larger one.
+
+The floor itself is #31 and the per-library target is #30.
+
+## The reason NoSegments
+
+The backend ran, reported no failure, and produced no segments. It is not
+silence and it is not music: it is the backend having examined nothing.
+
+A model path that names a file the tool could not load, a tool that exited nought
+having written nothing, and an endpoint that answered with an empty body all land
+here.
+
+### What to do
+
+Look at the log lines around the failure, which carry what the backend printed.
+Then check the configured model path against the file that is actually there, and
+the readiness report for the backend, which is #15.
+
+If every item in a run ends this way, the backend is not working rather than the
+items being unusual, and one item run on its own with the log open is the
+shortest way to see it.
+
+## The reason TimingsDoNotFitTheItem
+
+The segments end after the item does, by more than a two second tolerance, so
+they are not a transcription of this file. This is the check that catches a
+backend pointed at the wrong audio: what it produced is well formed, and the only
+thing about it that does not fit is that it runs past the end.
+
+No file is written, which is the point. A subtitle that drifts further out of
+step the longer an item plays is a defect nobody reports as a plugin problem.
+
+### What to do
+
+Look at the log lines around the failure for the audio file that was handed to
+the backend, and at whether more than one item was in flight at the time. Then
+run the item on its own.
+
+The tolerance is not a setting. It exists because a library's duration for an
+item and the length a decoder produces from it differ by a frame or two
+routinely, and it is far below the drift this reason exists to catch.
+
 ## What to attach when reporting a defect
 
 Five things, and they are enough for almost every report.

@@ -31,7 +31,13 @@ public class AttemptLedgerTests
     {
         TranscriptionFailureReason.NoAudioStream,
         TranscriptionFailureReason.AudioUnreadable,
-        TranscriptionFailureReason.OutputUnparseable
+        TranscriptionFailureReason.OutputUnparseable,
+        TranscriptionFailureReason.AudioIsSilent,
+        TranscriptionFailureReason.AudioHasNoSpeech,
+        TranscriptionFailureReason.AudioHasSeveralLanguages,
+        TranscriptionFailureReason.DetectionBelowTheFloor,
+        TranscriptionFailureReason.NoSegments,
+        TranscriptionFailureReason.TimingsDoNotFitTheItem
     };
 
     [Fact]
