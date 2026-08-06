@@ -22,3 +22,9 @@
 # writer. Measured on this fixture: 170 bytes stored under the rule below, 158
 # stored under the rule above.
 *.srt -text
+
+# Shell scripts are read by a program that treats a carriage return as part of
+# the command. Under the rule above a Windows clone would check one out with
+# them, and running it there fails on the first line with an error naming a
+# command nobody wrote. These are line feed everywhere, on every platform.
+*.sh text eol=lf

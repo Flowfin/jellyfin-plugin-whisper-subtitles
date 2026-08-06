@@ -1,0 +1,149 @@
+# What the built plugin contains, read off the build rather than off the source.
+#
+# The plugin has to work with a local backend, a remote endpoint, or none at all,
+# and it must never make the server depend on a model being present. Every
+# operator carries whatever the package holds, including the ones who use a
+# remote endpoint and the ones who use nothing, so a native inference library, a
+# model or an unnoticed transitive dependency in there is weight they did not
+# choose.
+#
+# The check reads the built files because that is the only place the case it is
+# about shows up. A package reference that pulls a native runtime in
+# transitively appears in the publish output and appears nowhere a grep of the
+# tree would find it.
+name: Package contents
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ "**" ]
+
+permissions: {}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  contents:
+    name: The build carries nothing an operator did not choose
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        framework: [ net9.0, net10.0 ]
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install the SDKs both server lines are built against
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          dotnet-version: |
+            9.0.x
+            10.0.x
+
+      - name: Build what would ship
+        run: |
+          set -eu
+          dotnet publish Jellyfin.Plugin.WhisperSubtitles/Jellyfin.Plugin.WhisperSubtitles.csproj \
+            --configuration Release \
+            --framework ${{ matrix.framework }} \
+            --output package-out \
+            --nologo
+
+      - name: Nothing in it is a native library, a model, or over the ceiling
+        run: .github/scripts/refuse-shipped-weight.sh package-out Jellyfin.Plugin.WhisperSubtitles.dll
+
+      # The zip an operator installs is not the directory above. jprm copies the
+      # files build.yaml names under artifacts, adds meta.json, and zips that, so
+      # the shipped set is those names. Checking that each one is a file the build
+      # above produced, and that the list names nothing but the assembly, is what
+      # carries the result of the previous step across to the package itself
+      # without a second build.
+      - name: The manifest ships only files this build produced
+        run: |
+          set -eu
+          artifacts=$(sed -n '/^artifacts:/,/^[a-zA-Z]/ s/^- *"\(.*\)"$/\1/p' build.yaml)
+
+          if [ -z "$artifacts" ]; then
+            echo "No artifacts were read out of build.yaml, so this step compared nothing." >&2
+            exit 1
+          fi
+
+          count=0
+          for artifact in $artifacts; do
+            echo "manifest names $artifact"
+
+            if [ ! -f "package-out/$artifact" ]; then
+              echo "build.yaml ships $artifact and this build did not produce it." >&2
+              exit 1
+            fi
+
+            case "$artifact" in
+              Jellyfin.Plugin.WhisperSubtitles.dll) ;;
+              *)
+                echo "build.yaml ships $artifact, which is not the assembly this plugin builds." >&2
+                exit 1
+                ;;
+            esac
+
+            count=$((count + 1))
+          done
+
+          echo "checked $count manifest entry/entries against the build"
+
+  refuses:
+    name: And it refuses a build that carries all three
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # Against a fixture rather than by making the real build wrong for a
+      # moment. The oversized file is written here instead of being kept in the
+      # tree, because a file large enough to trip a four mebibyte ceiling is not
+      # a thing to carry in a repository.
+      - name: A build carrying what must never ship
+        run: |
+          set -eu
+          cp -r .github/fixtures/shipped-weight wrong-package
+          dd if=/dev/zero of=wrong-package/oversized.dat bs=1M count=5 status=none
+          ls -l wrong-package
+
+      - name: The check refuses it, and names each rule it broke
+        run: |
+          set -eu
+          if output=$(.github/scripts/refuse-shipped-weight.sh wrong-package Jellyfin.Plugin.WhisperSubtitles.dll 2>&1); then
+            echo "$output"
+            echo "The check passed a build carrying a second assembly, a native library, a model and an oversized file." >&2
+            exit 1
+          fi
+
+          echo "$output"
+          echo "$output" | grep -q 'Second.Assembly.dll'
+          echo "$output" | grep -q 'libwhisper.so'
+          echo "$output" | grep -q 'ggml-tiny.bin'
+          echo "$output" | grep -q 'oversized.dat'
+          echo "refused, naming all four"
+
+      # Without this leg the one above passes for a check that refuses
+      # everything, which would be red on the real build too and would be turned
+      # off within a week.
+      - name: And the same fixture without them passes
+        run: |
+          set -eu
+          mkdir right-package
+          cp .github/fixtures/shipped-weight/Jellyfin.Plugin.WhisperSubtitles.dll right-package/
+          .github/scripts/refuse-shipped-weight.sh right-package Jellyfin.Plugin.WhisperSubtitles.dll
