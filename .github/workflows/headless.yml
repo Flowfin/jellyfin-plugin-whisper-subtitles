@@ -1,0 +1,65 @@
+# The suite runs without a display, without elevation and without touching a
+# machine trust store. That is a property of the suite rather than of anybody's
+# machine, so it is checked here rather than trusted: a test that has quietly
+# acquired one of the three passes on the machine of whoever wrote it and fails
+# on the next one, and by then the suite has acquired a machine as a dependency.
+#
+# The job asserts the conditions before it runs anything, so a runner image that
+# started setting DISPLAY, or a container that ran as root, turns this red rather
+# than making the run mean less than it says.
+name: Headless suite
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ "**" ]
+
+permissions: {}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  headless:
+    name: Suite with no display and no elevation
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        framework: [ net9.0, net10.0 ]
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install the SDKs both server lines are built against
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          dotnet-version: |
+            9.0.x
+            10.0.x
+
+      - name: State the conditions this run is made under
+        run: |
+          set -eu
+          if [ "$(id -u)" -eq 0 ]; then
+            echo "This job is running as root, so it cannot say anything about a suite that needs no elevation." >&2
+            exit 1
+          fi
+          if [ -n "${DISPLAY:-}" ]; then
+            echo "DISPLAY is set to '${DISPLAY}', so a test needing a display would pass here and fail elsewhere." >&2
+            exit 1
+          fi
+          echo "user $(id -un) (uid $(id -u)), DISPLAY unset"
+
+      # env -u DISPLAY rather than trusting the check above to stay true: the
+      # assertion and the removal are cheap, and only one of them survives a
+      # runner image that starts exporting it from a profile.
+      - name: Run the suite
+        run: env -u DISPLAY dotnet test -c Release -f ${{ matrix.framework }} --nologo
