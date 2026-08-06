@@ -10,10 +10,15 @@
 
 # Subtitle fixtures are bytes rather than text, and this is the line the rest of
 # the file exists for. SubRip ends every line with a carriage return and a line
-# feed, and a fixture exists to prove the exact bytes the writer produced. Under
-# the rule above, a clone on Linux would check that fixture out with the carriage
-# returns removed and a clone on Windows would put them back, so the file a test
-# compares against would differ between two clones of one commit - and the test
-# would go on passing on both, because it would be comparing the writer's output
-# against a fixture that had moved with it.
+# feed, and a fixture exists to prove the exact bytes the writer produced.
+#
+# The conversion that would destroy that happens on the way in, not on the way
+# out. Under the rule above git stores a text file with the carriage returns
+# removed, and it is the checkout that puts them back, on the platforms that ask
+# for them and nowhere else. So the same commit gives a Windows clone a file with
+# carriage returns and a Linux clone one without, the fixture no longer names one
+# set of bytes, and the test comparing the writer against it passes on one
+# platform and fails on the other for a reason that has nothing to do with the
+# writer. Measured on this fixture: 170 bytes stored under the rule below, 158
+# stored under the rule above.
 *.srt -text
