@@ -1,0 +1,10 @@
+## Tests that are refused, and what replaces each one
+
+One entry, and it says what is refused without ever saying what stands in. The
+shape a line takes when somebody adds a refusal and means to come back to it.
+
+- A test that requires a GPU, which nobody on this project has.
+
+## A later section
+
+Here so the reader has something to stop at.

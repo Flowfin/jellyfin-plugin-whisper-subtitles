@@ -1,0 +1,11 @@
+## Tests that are refused, and what replaces each one
+
+One entry, and it names coverage this suite does not have. The shape a line
+takes after the class it named was renamed or was never written.
+
+- A test that starts a desktop or GUI dependent server. Replaced by
+  `PageLoadUnderARealServerTests`.
+
+## A later section
+
+Here so the reader has something to stop at.
