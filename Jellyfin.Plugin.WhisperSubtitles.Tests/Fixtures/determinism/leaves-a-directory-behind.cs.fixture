@@ -1,0 +1,22 @@
+// The shape somebody writes when the class needed a directory and the removal was
+// going to be added afterwards. Nothing fails, and the machine is a little fuller
+// after every run.
+using System;
+using System.IO;
+using Xunit;
+
+namespace Jellyfin.Plugin.WhisperSubtitles.Tests;
+
+public class AWriteIntoARealDirectory
+{
+    [Fact]
+    public void The_file_arrives()
+    {
+        var directory = Path.Combine(Path.GetTempPath(), "whisper-subtitles-tests-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(directory);
+
+        File.WriteAllText(Path.Combine(directory, "a.srt"), "1");
+
+        Assert.True(File.Exists(Path.Combine(directory, "a.srt")));
+    }
+}

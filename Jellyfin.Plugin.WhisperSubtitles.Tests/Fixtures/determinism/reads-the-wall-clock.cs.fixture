@@ -1,0 +1,17 @@
+// The shape somebody writes to check that a record carries the moment it was made.
+// It compares against a moment that will not come again, and it fails at midnight.
+using System;
+using Xunit;
+
+namespace Jellyfin.Plugin.WhisperSubtitles.Tests;
+
+public class ARecordCarriesWhenItWasMade
+{
+    [Fact]
+    public void The_record_is_stamped_with_today()
+    {
+        var stamped = DateTimeOffset.UtcNow;
+
+        Assert.Equal(DateTimeOffset.UtcNow.Date, stamped.Date);
+    }
+}
