@@ -27,8 +27,18 @@ public class TroubleshootingPageTests
     // shape is machine-read and it is not the plain "## Name" a writer would
     // reach for by accident. A section about something that is not a reason can
     // then be added freely without this test having an opinion about it.
+    //
+    // The carriage return is optional and that is the whole of it. The page is
+    // tracked text under `* text=auto`, so git stores a line feed and the
+    // checkout decides what the file on disk ends its lines with. In .NET `$`
+    // does not match before a carriage return, so without this the page parses to
+    // nothing at all on a clone that checked it out the way Windows prefers,
+    // while every route the repository runs is green. What that looks like is
+    // worse than a plain failure: a page whose entries have all vanished reports
+    // as a page missing every entry, which reads as documentation that fell
+    // behind rather than as a check that cannot read it.
     private static readonly Regex _reasonHeading = new(
-        @"^## The reason (?<name>[A-Za-z]+)$",
+        @"^## The reason (?<name>[A-Za-z]+)\r?$",
         RegexOptions.Multiline | RegexOptions.CultureInvariant);
 
     [Fact]
@@ -82,10 +92,7 @@ public class TroubleshootingPageTests
 
     private static List<string> DocumentedReasons()
     {
-        var found = _reasonHeading.Matches(Page())
-            .Cast<Match>()
-            .Select(m => m.Groups["name"].Value)
-            .ToList();
+        var found = Names(Page());
 
         // A duplicated entry passes both directions of the comparison above while
         // leaving a reader with two answers to one question, so it is refused
@@ -94,6 +101,30 @@ public class TroubleshootingPageTests
 
         return found;
     }
+
+    [Fact]
+    public void The_page_reads_the_same_whatever_the_checkout_did_to_its_line_endings()
+    {
+        // Both forms, from the same bytes, rather than a claim about the
+        // expression. A clone on one platform holds the first and a clone on the
+        // other holds the second, and neither of them is wrong: `.gitattributes`
+        // stores a line feed and lets the checkout decide. What has to be true is
+        // that the answer does not move.
+        var asLineFeeds = Page().Replace("\r\n", "\n", StringComparison.Ordinal);
+        var asCarriageReturns = asLineFeeds.Replace("\n", "\r\n", StringComparison.Ordinal);
+
+        var fromLineFeeds = Names(asLineFeeds);
+        var fromCarriageReturns = Names(asCarriageReturns);
+
+        Assert.NotEmpty(fromLineFeeds);
+        Assert.Equal(fromLineFeeds, fromCarriageReturns);
+    }
+
+    private static List<string> Names(string page) =>
+        _reasonHeading.Matches(page)
+            .Cast<Match>()
+            .Select(m => m.Groups["name"].Value)
+            .ToList();
 
     private static string Page()
     {
