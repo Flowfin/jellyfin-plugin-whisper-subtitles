@@ -1,0 +1,208 @@
+# When an item did not get a subtitle
+
+Every attempt that ends without a subtitle ends with one of the reasons below,
+and the run reports that reason by name. This page takes each name in turn and
+says what it means, what to check, and what changing it would do.
+
+The names here are the values of `TranscriptionFailureReason`. A test asserts
+that this page and that type carry the same set of names, in both directions, so
+a reason cannot be added to the code without an entry here and an entry here
+cannot outlive the reason it describes.
+
+Several of the reasons are not failures of this plugin at all. An item with no
+audio, audio a model cannot make words out of, or an endpoint that is reachable
+and refusing the request all end a run the same way, and the action in each case
+is somewhere other than this plugin's settings. Where that is so, the entry says
+it.
+
+Some of what this page tells an operator to look at is not built yet. The reason
+type and the backends are in the tree; the scheduled task that reports a run is
+#17, the configuration page that shows a readiness report is #15, and the run
+summary that lists outcomes is #39. What holds today is the vocabulary and the
+correspondence, which the test asserts. The rest is what the reasons will be
+read against, and it is written here so that each reason arrives with its action
+rather than acquiring one afterwards.
+
+## The reason Cancelled
+
+The run was stopped while this item was being worked on, either by the operator
+or by the server shutting down. Nothing was learned about the item. It is not a
+statement that the item cannot be transcribed, and it is not a defect.
+
+An item that ends this way is left exactly as it was found. No subtitle is
+written and no temporary file is kept.
+
+### What to do
+
+Run the task again. The item is picked up on the next run like any other item
+without a subtitle.
+
+If every item in a run ends this way and nobody stopped it, the server was
+shutting down under the run. That is a scheduling question rather than a
+transcription one: a trigger that fires close to a restart gives the run less
+time than it needs, and moving the trigger is what changes it.
+
+## The reason BackendNotReady
+
+The backend named in the configuration exists and could not be used when the
+item came up. For a local tool that is a missing or unreadable executable or
+model file; for a remote endpoint it is a configuration that does not describe a
+usable endpoint. The check happens before the item is sent anywhere, so nothing
+was transcribed and nothing left the machine.
+
+### What to do
+
+Read what the backend says about itself. Each backend answers a readiness
+question with a sentence naming what stands in the way, and that sentence is
+what the configuration page is to show once #15 lands. It says which setting is
+wrong, which is what makes it worth reading before the log.
+
+For a local tool, check that the path points at a file that exists, that the
+account the server runs as may execute it, and that the model file is where the
+setting says it is. A path that is right on your own account and wrong for the
+server account is the common case, and it is the one that looks like a working
+configuration from a terminal.
+
+Fixing the setting is enough. Nothing has to be cleaned up first, because an
+item that failed this way was never started.
+
+## The reason BackendUnreachable
+
+The backend was configured well enough to try, and the attempt to reach it did
+not get as far as a transcription. A remote endpoint did not answer, and a local
+tool could not be started as a process.
+
+This is separated from a backend that ran and failed because the two want
+different actions. Nothing here says anything about the audio or about the model.
+
+### What to do
+
+For a remote endpoint, check that the host in the configured URL resolves and
+answers from the server itself rather than from your own machine. A server
+behind different firewall rules than your desktop reaches a different set of
+hosts, and the plugin reports what the server saw.
+
+For a local tool, check that the file at the configured path is executable on
+this platform. A tool built for another architecture, or a file that is a script
+whose interpreter is missing, fails at the same point as a file that is not
+there at all.
+
+Trying again unchanged is worth doing once, because a host that was briefly down
+is the ordinary cause. Trying again repeatedly without changing anything is not.
+
+## The reason BackendFailed
+
+The backend ran, and it ended without producing a transcription, in a way it did
+not describe as permanent. A remote endpoint that answered with a refusal lands
+here, and so does a local tool that started and exited non-zero.
+
+An endpoint that is reachable and rejecting the request is this reason and not
+`BackendUnreachable`. The distinction is worth knowing when reading a log,
+because a refusal usually names a cause the endpoint is willing to state, and
+that cause is in the log line beside the reason.
+
+### What to do
+
+Read the message the backend gave, which the run carries next to the reason. A
+rejected request from a remote endpoint is most often a model name the endpoint
+does not have, a credential it did not accept, or a request larger than it
+allows.
+
+For a local tool, run the same tool by hand on a short file with the same model
+and see what it prints. The plugin passes an argument list a test covers, so a
+tool that fails by hand fails for a reason outside this plugin.
+
+A model too small for the language it was pointed at can also end here, when the
+tool refuses rather than producing poor text. The action is a larger model, and
+the cost of it is in the operator guide.
+
+## The reason NoAudioStream
+
+The item has no audio stream, so there is nothing to transcribe. This is a fact
+about the file and not a failure of anything.
+
+### What to do
+
+Nothing, for a file that genuinely has no audio. Silent film, a video with its
+audio in a separate file the server has not been told about, and a placeholder
+file all land here correctly.
+
+If the item plays with sound in a client, the server's own probe of the file
+disagrees with what the client does, and that is a server question rather than a
+plugin one. The item's media information page is where the server says which
+streams it found.
+
+## The reason AudioUnreadable
+
+The item has an audio stream and it could not be read or decoded into something
+a transcription can be made from. The file is damaged, truncated, or in a
+container or codec the server's own media tool did not handle here.
+
+### What to do
+
+Play the item in a client and listen. A file that will not play is a library
+problem this plugin has surfaced rather than caused, and replacing the file is
+the repair.
+
+A file that plays and still fails here is worth reporting, with the container
+and codec the server lists for it. Nothing about this reason is affected by the
+model or by the backend, so changing either will not move it.
+
+## The reason OutputUnparseable
+
+The backend ran, said it succeeded, and what it produced could not be read as
+timed segments. The output was not in the shape this plugin expects, so nothing
+was written rather than something being guessed at.
+
+Nothing partial reaches the library from this reason. The parse happens before
+anything is written, so an unparseable transcription leaves no file behind.
+Nothing partial reaches the library from a write that is interrupted either, and
+that is a different guarantee held by #27.
+
+### What to do
+
+Check that the tool at the configured path is the tool the configuration thinks
+it is, and that the version is one this plugin was built against. A tool that
+changed its output format between versions produces exactly this.
+
+For a remote endpoint, check that the URL points at a transcription endpoint and
+not at a proxy or a login page in front of one. An endpoint that answers with
+something other than a transcription answers successfully, and the failure only
+becomes visible at the point where the answer is read.
+
+If both are right, this is worth reporting, and the report is much more useful
+with the tool version in it.
+
+## Audio with no speech in it, and a machine slower than the estimate
+
+Neither of these produces a reason, because neither is a failure.
+
+Audio that is music, applause or noise gives a model nothing to make words out
+of. What comes back is an empty transcription or a short one that has little to
+do with the item, and the plugin writes it, because it has no way to tell a
+sparse transcription of a quiet film from a wrong transcription of a loud one.
+The way to find these is to look at what was produced for items you know are not
+speech, and the way to avoid them is a selection that does not include those
+items.
+
+A run that takes far longer than the estimate said is an estimate that was
+measured on a different machine, not a fault. An estimate is required to say
+what it was measured on and when, which is #37's ground, so the first thing to
+compare is that machine against yours. Fewer cores, a slower disk, or other work
+running at the same time all take longer, and a run that is slow is still a run
+that will finish.
+
+## What to attach when reporting a defect
+
+Five things, and they are enough for almost every report.
+
+The server line, which is 10.11 or 12.0. The backend that was selected. The
+model that was configured. The reason name from the list above, spelled as the
+run spelled it. And the log lines around the failure, which carry the message
+the backend gave.
+
+Never attach a configured key. No backend in the tree takes one yet; the remote
+backend that will is #13, and the rule it carries is that the key reaches no log
+line, no error message and no page. #73 checks that rule once for the whole
+plugin rather than at each logger. So a key in what you are about to send came
+from somewhere other than this plugin, and it is still a key.
