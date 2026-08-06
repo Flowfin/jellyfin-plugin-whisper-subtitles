@@ -4,6 +4,16 @@ using System.Threading;
 using System.Threading.Tasks;
 using Jellyfin.Plugin.WhisperSubtitles.Backends;
 
+// This file is the fixture set for the isolation check: a type inside the backend
+// namespace, the mistake outside it, and the one-change neighbour. What the check
+// reads is where each type sits, so the three have to be in different namespaces
+// and they have to be read together to be understood. Splitting them across three
+// files by name would separate the fixture from the neighbour it is only
+// meaningful beside.
+#pragma warning disable SA1402 // File may only contain a single type
+#pragma warning disable SA1403 // File may only contain a single namespace
+#pragma warning disable SA1649 // File name should match first type name
+
 namespace Jellyfin.Plugin.WhisperSubtitles.Tests.Fixtures.Backends
 {
     /// <summary>

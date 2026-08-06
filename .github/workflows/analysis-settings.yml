@@ -1,0 +1,131 @@
+# The analysis settings are a guard rather than a preference, and a guard nobody
+# has watched bite is a setting. This job watches it bite, on a fixture project
+# that exists to be refused, so nothing in the tree has to be broken to find out.
+#
+# It also checks the settings are inherited rather than repeated. A project that
+# writes them out itself passes every build here and takes the next project with
+# it, because the next one is written by copying this one.
+name: Analysis settings
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ "**" ]
+
+permissions: {}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  settings:
+    name: The settings are inherited and they refuse
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        framework: [ net9.0, net10.0 ]
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install the SDKs both server lines are built against
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          dotnet-version: |
+            9.0.x
+            10.0.x
+
+      # The grep half. It refuses the copy, which is the change somebody makes
+      # without noticing: a new project file written from an old one, carrying its
+      # own TreatWarningsAsErrors that then drifts from the shared value.
+      - name: No project file carries its own analysis settings
+        run: |
+          set -eu
+          found=$(git grep -n 'TreatWarningsAsErrors\|AnalysisMode\|CodeAnalysisRuleSet' -- '*.csproj' || true)
+          if [ -n "$found" ]; then
+            echo "These settings belong in Directory.Build.props, where every project reads them:" >&2
+            echo "$found" >&2
+            exit 1
+          fi
+          echo "checked $(git ls-files '*.csproj' | wc -l) project file(s), none declares its own"
+
+      # The resolved half. The grep above passes just as well when the settings
+      # reach nobody, so this asks each project what it actually ends up with.
+      - name: Every project resolves the shared settings
+        run: |
+          set -eu
+          expected_ruleset="$PWD/jellyfin.ruleset"
+          checked=0
+          for project in $(git ls-files '*.csproj'); do
+            resolved=$(dotnet build "$project" -f ${{ matrix.framework }} --nologo \
+              -getProperty:TreatWarningsAsErrors \
+              -getProperty:AnalysisMode \
+              -getProperty:CodeAnalysisRuleSet)
+            echo "$project"
+            echo "$resolved"
+            echo "$resolved" | grep -q '"TreatWarningsAsErrors": "true"'
+            echo "$resolved" | grep -q '"AnalysisMode": "AllEnabledByDefault"'
+            echo "$resolved" | grep -qF "\"CodeAnalysisRuleSet\": \"$expected_ruleset\""
+            checked=$((checked + 1))
+          done
+          echo "checked $checked project(s) against the shared values"
+
+      # Leg one. The fixture declares no setting of its own, so a build that
+      # refuses it is a build where the shared ones arrived. CA1852 is off outside
+      # AllEnabledByDefault and SA1005 comes from the StyleCop package, so the two
+      # ids together say which halves arrived.
+      - name: A warning fails the build
+        working-directory: analyzers/settings-bite
+        run: |
+          set -eu
+          if output=$(dotnet build -c Release -f ${{ matrix.framework }} --nologo --no-incremental 2>&1); then
+            echo "$output"
+            echo "The fixture built. Either the settings no longer reach a project that declares none, or the fixture stopped being wrong." >&2
+            exit 1
+          fi
+          echo "$output"
+          echo "$output" | grep -q 'error CA1852'
+          echo "$output" | grep -q 'error SA1005'
+          echo "the build refused the fixture, naming CA1852 and SA1005"
+
+      # Leg two. Without it, leg one passes for a fixture that fails to compile for
+      # some reason of its own and says nothing about the setting.
+      - name: And it is TreatWarningsAsErrors that fails it
+        working-directory: analyzers/settings-bite
+        run: |
+          set -eu
+          output=$(dotnet build -c Release -f ${{ matrix.framework }} --nologo --no-incremental -p:TreatWarningsAsErrors=false 2>&1)
+          echo "$output"
+          echo "$output" | grep -q 'warning CA1852'
+          echo "$output" | grep -q 'warning SA1005'
+          echo "the same fixture builds with the setting off, and both diagnostics are still reported"
+
+      # Leg three, for the ruleset, which the two legs above cannot see. What the
+      # ruleset does here is switch rules off, so its effect is an absence, and the
+      # way to measure an absence is to take the ruleset away and watch SA1101
+      # arrive. jellyfin.ruleset disables SA1101; nothing else does.
+      - name: And the ruleset is what silences the rules it names
+        working-directory: analyzers/settings-bite
+        run: |
+          set -eu
+          with_ruleset=$(dotnet build -c Release -f ${{ matrix.framework }} --nologo --no-incremental -p:TreatWarningsAsErrors=false 2>&1)
+          if echo "$with_ruleset" | grep -q 'SA1101'; then
+            echo "$with_ruleset"
+            echo "SA1101 is reported while the ruleset that disables it is in force." >&2
+            exit 1
+          fi
+          without_ruleset=$(dotnet build -c Release -f ${{ matrix.framework }} --nologo --no-incremental -p:TreatWarningsAsErrors=false -p:CodeAnalysisRuleSet= 2>&1)
+          echo "$without_ruleset"
+          if ! echo "$without_ruleset" | grep -q 'warning SA1101'; then
+            echo "SA1101 is absent with the ruleset cleared as well, so this leg proves nothing about the ruleset." >&2
+            exit 1
+          fi
+          echo "SA1101 is absent with the ruleset and present without it"

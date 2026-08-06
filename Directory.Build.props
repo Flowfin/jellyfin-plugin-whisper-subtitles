@@ -21,4 +21,36 @@
         <JellyfinServerLine>12.0</JellyfinServerLine>
         <JellyfinPackageVersion>12.0.0-rc4</JellyfinPackageVersion>
     </PropertyGroup>
+
+    <!-- The analysis settings, for every project in this tree and every project it
+         later gains. They were written out in one project file, which makes each
+         new project a fresh decision about whether to repeat them, and the answer
+         nobody notices is the one where a project quietly has none of them.
+
+         MSBuildThisFileDirectory rather than a relative path: the ruleset is
+         resolved against the project that reads the property, so '../' is right
+         only for a project one directory down and silently names nothing anywhere
+         else, and a CodeAnalysisRuleSet pointing at no file is not an error. -->
+    <PropertyGroup>
+        <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+        <Nullable>enable</Nullable>
+        <AnalysisMode>AllEnabledByDefault</AnalysisMode>
+        <CodeAnalysisRuleSet>$(MSBuildThisFileDirectory)jellyfin.ruleset</CodeAnalysisRuleSet>
+    </PropertyGroup>
+
+    <!-- The analyzers themselves, on the same terms. Each version is an exact
+         range rather than a bare number: a bare number is a floor, so a restore
+         that resolves higher changes which diagnostics the build refuses without
+         anything in the tree changing, and a build that fails on a rule nobody
+         added is how a strict setting gets turned off.
+
+         The analyzers the SDK carries are not pinned here and cannot be: their set
+         follows the SDK the runner installed, and AnalysisLevel would fix it only
+         at the cost of a build that refuses the older of the two SDKs this tree is
+         built with. -->
+    <ItemGroup>
+        <PackageReference Include="SerilogAnalyzer" Version="[0.15.0]" PrivateAssets="All" />
+        <PackageReference Include="StyleCop.Analyzers" Version="[1.2.0-beta.556]" PrivateAssets="All" />
+        <PackageReference Include="SmartAnalyzers.MultithreadingAnalyzer" Version="[1.1.31]" PrivateAssets="All" />
+    </ItemGroup>
 </Project>
