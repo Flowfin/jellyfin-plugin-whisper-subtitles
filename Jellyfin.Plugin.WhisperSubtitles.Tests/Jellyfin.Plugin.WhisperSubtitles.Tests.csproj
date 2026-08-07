@@ -39,6 +39,14 @@
     <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2" />
   </ItemGroup>
 
+  <!-- The coverage collector, which produces a report only when the run asks for
+       it on the command line. An ordinary `dotnet test` is unchanged and pays
+       nothing for it, and the run that enforces the floor is the same run that
+       executes the tests rather than a second pass over a second build. -->
+  <ItemGroup>
+    <PackageReference Include="coverlet.collector" Version="[6.0.2]" PrivateAssets="All" />
+  </ItemGroup>
+
   <ItemGroup>
     <ProjectReference Include="..\Jellyfin.Plugin.WhisperSubtitles\Jellyfin.Plugin.WhisperSubtitles.csproj" />
   </ItemGroup>
