@@ -1,3 +1,8 @@
+> [!NOTE]
+>
+> **Part of [Flowfin](https://github.com/Flowfin).** It works with any Jellyfin
+> server, and with the Flowfin clients.
+
 # Whisper Subtitles
 
 A Jellyfin plugin that generates subtitles for library items that have none, by
@@ -16,7 +21,7 @@ about how good it is, which it does not measure.
 
 There is no release, and nothing here is installable on a server yet.
 
-    $ gh release list --repo iderex/jellyfin-plugin-whisper-subtitles
+    $ gh release list --repo Flowfin/jellyfin-plugin-whisper-subtitles
     $ git tag
 
 Both print nothing.
@@ -136,7 +141,7 @@ to something an operator can do about it.
 
 The .NET SDK is the only prerequisite.
 
-    git clone https://github.com/iderex/jellyfin-plugin-whisper-subtitles
+    git clone https://github.com/Flowfin/jellyfin-plugin-whisper-subtitles
     cd jellyfin-plugin-whisper-subtitles
     dotnet build -c Release
     dotnet test -c Release -f net10.0
