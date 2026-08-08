@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
@@ -97,22 +98,45 @@ public sealed class TemporaryAudioSweepTests : IDisposable
         Assert.True(Directory.Exists(below), "the sweep removed a directory rather than a file");
     }
 
-    [Fact]
-    public void A_file_that_will_not_go_is_counted_rather_than_thrown()
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void A_file_that_will_not_go_is_counted_rather_than_thrown(bool locked)
     {
-        // Something still holds it open. The next sweep finds it released, and a
-        // run that refused to start over one locked leftover is a worse outcome
-        // than the leftover.
-        var held = Leftover("held-open.wav");
-        var goes = Leftover("free.wav");
+        // Something still holds it, or the operator has no rights to it. The next
+        // sweep finds it released, and a run that refused to start over one
+        // leftover it could not remove is a worse outcome than the leftover.
+        //
+        // Through the seam rather than by locking a real file, because the two
+        // platforms this suite runs on disagree about that: an open handle stops
+        // a delete on Windows and does not stop one on Linux. A test arranged
+        // that way would assert opposite things on the two runners, and the
+        // behaviour being asserted is the sweep's rather than the file system's.
+        Leftover("will-not-go.wav");
+        Leftover("goes.wav");
 
-        using var handle = new FileStream(held, FileMode.Open, FileAccess.Read, FileShare.None);
+        var refusing = RefusingRemoval.For(
+            "will-not-go.wav",
+            locked ? new IOException("held open") : new UnauthorizedAccessException("not yours"));
 
-        var outcome = TemporaryAudioSweep.Run(_workingDirectory);
+        var outcome = TemporaryAudioSweep.Run(_workingDirectory, refusing);
 
         Assert.Equal(1, outcome.Collected);
         Assert.Equal(1, outcome.Left);
-        Assert.False(File.Exists(goes));
+        Assert.Equal(new[] { "goes.wav" }, refusing.Removed);
+    }
+
+    [Fact]
+    public void The_removal_the_sweep_reaches_the_disk_through_is_a_real_one()
+    {
+        // The seam above is only worth having while the default still deletes.
+        // A default that quietly did nothing would leave every test in this file
+        // green through the double and the disk full on a server.
+        var stale = Leftover("real.wav");
+
+        TemporaryAudioSweep.SystemRemoval.Delete(stale);
+
+        Assert.False(File.Exists(stale));
     }
 
     [Fact]
@@ -163,5 +187,37 @@ public sealed class TemporaryAudioSweepTests : IDisposable
         File.WriteAllText(path, "what a run that died left behind");
 
         return path;
+    }
+
+    /// <summary>
+    /// A removal that refuses one named file and removes the rest, so the sweep
+    /// meets both answers in one pass.
+    /// </summary>
+    private sealed class RefusingRemoval : IFileRemoval
+    {
+        private readonly List<string> _removed = new();
+        private readonly string _refuses;
+        private readonly Exception _with;
+
+        private RefusingRemoval(string refuses, Exception with)
+        {
+            _refuses = refuses;
+            _with = with;
+        }
+
+        public IReadOnlyList<string> Removed => _removed;
+
+        public static RefusingRemoval For(string fileName, Exception with) => new(fileName, with);
+
+        public void Delete(string path)
+        {
+            if (string.Equals(Path.GetFileName(path), _refuses, StringComparison.Ordinal))
+            {
+                throw _with;
+            }
+
+            _removed.Add(Path.GetFileName(path));
+            File.Delete(path);
+        }
     }
 }

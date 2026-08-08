@@ -40,6 +40,11 @@ public static class TemporaryAudioSweep
     public const string ExtractedAudioPattern = "*.wav";
 
     /// <summary>
+    /// Gets the removal that reaches the disk.
+    /// </summary>
+    public static IFileRemoval SystemRemoval { get; } = new FileSystemRemoval();
+
+    /// <summary>
     /// Removes what a previous run left in the directory this plugin owns.
     /// </summary>
     /// <param name="workingDirectory">The directory this plugin writes its temporary audio into.</param>
@@ -54,9 +59,19 @@ public static class TemporaryAudioSweep
     /// released, and a run that refused to start because one leftover was locked
     /// would be a worse outcome than the leftover.
     /// </remarks>
-    public static SweepOutcome Run(string workingDirectory)
+    public static SweepOutcome Run(string workingDirectory) =>
+        Run(workingDirectory, SystemRemoval);
+
+    /// <summary>
+    /// The same sweep, through a removal a test can hand in.
+    /// </summary>
+    /// <param name="workingDirectory">The directory this plugin writes its temporary audio into.</param>
+    /// <param name="removal">How a file is removed.</param>
+    /// <returns>How much was collected and how much would not go.</returns>
+    public static SweepOutcome Run(string workingDirectory, IFileRemoval removal)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(workingDirectory);
+        ArgumentNullException.ThrowIfNull(removal);
 
         if (!Directory.Exists(workingDirectory))
         {
@@ -73,7 +88,7 @@ public static class TemporaryAudioSweep
         {
             try
             {
-                File.Delete(path);
+                removal.Delete(path);
                 collected++;
             }
             catch (IOException)
@@ -87,5 +102,10 @@ public static class TemporaryAudioSweep
         }
 
         return new SweepOutcome(collected, left);
+    }
+
+    private sealed class FileSystemRemoval : IFileRemoval
+    {
+        public void Delete(string path) => File.Delete(path);
     }
 }
