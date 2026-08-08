@@ -1,0 +1,13 @@
+## Tests that are refused, and what replaces each one
+
+The section is here and it says a great deal, and none of it is a line the
+reader recognises. This is what a guide looks like after somebody reflows the
+list into prose, and it is the shape that passes every other leg for free
+because there is nothing left to judge.
+
+A test that starts a desktop or GUI dependent server is refused, and so is one
+that requires a GPU, and so is one that downloads a model.
+
+## A later section
+
+Here so the reader has something to stop at.

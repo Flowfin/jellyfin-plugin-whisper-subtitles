@@ -100,31 +100,43 @@ Here so that none of them is reinvented later by somebody who does not know it
 was already decided. Each line is a test a reader would expect, and the thing
 that stands in for it.
 
-- A test that starts a desktop or GUI dependent server to check the
-  configuration page. Replaced by a test of the page markup and script against
-  the configuration object, in `ConfigurationShellTests`, and by the page load
-  being exercised by the headless server boot in #63.
-- A test that installs a certificate into the machine trust store to exercise a
-  remote backend against TLS. Replaced by tests through an injected HTTP message
-  handler, and where a real TLS path is needed, a certificate trusted by that one
-  handler instance and never by the machine.
-- A test that needs elevation to lower a process priority or apply a cgroup
-  limit. Replaced by asserting the values the limiter computes and the calls it
-  makes through an injected seam, plus a test that a failure to apply a limit is
-  logged and does not fail the item.
-- A test that requires a GPU. Replaced by capability probe tests over a stubbed
-  device query, and by the backend contract tests, which are hardware
-  independent by construction.
-- A test that downloads a model or calls a public transcription service.
-  Replaced by the stub backend and by recorded response fixtures.
-- A test that depends on the wall clock or on the machine's locale. Replaced by
-  an injected clock, and by an explicit culture in every test that formats or
-  parses.
+Every line ends the same way, and the ending is read rather than trusted. `Replaced
+by` names the test class that stands in, in backticks. `Owed by` names the issue
+that has to land before anything stands in. `RefusedTestsTests` reads those two
+endings out of this file, so a line naming a class the suite does not have turns
+the suite red, and a line naming neither is refused instead of being read past.
 
-This list is NOT yet checked against the suite, and several of the replacements
-name work that has not landed. #46 holds both halves: making each replacement a
-real test, and making the list something a run compares rather than something a
-reader trusts.
+- A test that starts a desktop or GUI dependent server to check the
+  configuration page. The page markup and its script are compared against the
+  configuration object instead, which is what catches a field living on one side
+  and not the other. Replaced by `ConfigurationShellTests`. Owed by #63, for the
+  page load under a server that actually booted.
+- A test that installs a certificate into the machine trust store to exercise a
+  remote backend against TLS. Tests reach the endpoint through an injected HTTP
+  message handler instead, and where a real TLS path is needed the certificate is
+  trusted by that one handler instance and never by the machine. Owed by #13.
+- A test that needs elevation to lower a process priority or apply a cgroup
+  limit. What is asserted instead is the values the limiter computes and the
+  calls it makes through an injected seam, together with a failure to apply a
+  limit being logged and not failing the item. Owed by #22.
+- A test that requires a GPU. Capability probe tests over a stubbed device query
+  stand in, together with the backend contract suite, which is hardware
+  independent by construction. Owed by #15, #74.
+- A test that downloads a model or calls a public transcription service. The stub
+  backend and recorded response fixtures stand in. Owed by #45, #13.
+- A test that depends on the wall clock or on the machine's locale. An injected
+  clock stands in, and every test that formats or parses names its culture. Owed
+  by #48.
+
+Most of these are still owed, so for most of its length this list is a plan
+rather than a record, and the endings say which lines are which. What is checked
+is the shape: that every line names a class this suite runs or an issue that owes
+one. TWO THINGS ARE NOT CHECKED. Whether a replacement covers what the refused
+test would have covered is a judgement, and no reading of this file makes it.
+Whether an owed issue has since landed is an answer that lives on the tracker,
+and the suite is offline by the rule two sections above, so an ending that has
+gone stale stays green until a person moves it. #46 stays open until each
+replacement is a real test.
 
 ## Adding a backend
 
