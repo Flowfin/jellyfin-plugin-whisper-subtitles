@@ -25,8 +25,12 @@ namespace Jellyfin.Plugin.WhisperSubtitles.Audio;
 /// The temporary file is created in a directory this plugin owns rather than in
 /// the system temporary directory. Sharing a directory with everything else on
 /// the machine means a sweep of stale files cannot tell its own leftovers from
-/// somebody else's, and #21 needs exactly that sweep for the case where the
-/// server died between writing a file and deleting it.
+/// somebody else's, and that sweep is what covers the case where the server died
+/// between writing a file and deleting it.
+///
+/// <see cref="TemporaryAudioSweep"/> is that sweep. Nothing in this tree calls it
+/// at the start of a run yet, because a run has no items to be before, which is
+/// the half of #21 that is still open.
 /// </remarks>
 public sealed class AudioExtractor
 {
@@ -191,8 +195,8 @@ public sealed class AudioExtractor
         catch (IOException)
         {
             // Already unwinding through a failure that has a better reason than
-            // this one. The directory is swept at the start of the next run, in
-            // #21, which is the case a handler cannot cover anyway.
+            // this one. What is left behind is what TemporaryAudioSweep collects,
+            // which is the case a handler cannot cover anyway.
         }
         catch (UnauthorizedAccessException)
         {
