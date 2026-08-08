@@ -56,6 +56,32 @@ public sealed class DurationWeightedProgressTests
         Assert.Equal(100, seen.Values[^1]);
     }
 
+    /// <summary>
+    /// The leg above runs three items behind a cap of three, which is a window
+    /// narrow enough that twenty-five consecutive runs of it missed the defect
+    /// #146 was about while a required check was going red on it in CI. This one
+    /// widens the window instead of running the narrow one more often: enough
+    /// items that the arithmetic between two workers takes long enough to
+    /// interleave, and enough attempts that a miss is not what the green means.
+    /// </summary>
+    [Fact]
+    public void The_sink_is_never_handed_a_number_below_the_one_before_it()
+    {
+        var lengths = Enumerable.Range(1, 64).Select(minutes => TimeSpan.FromMinutes(minutes)).ToArray();
+
+        for (var attempt = 0; attempt < 50; attempt++)
+        {
+            var seen = new Recorder();
+            var progress = new DurationWeightedProgress(lengths, seen);
+
+            Parallel.For(0, lengths.Length, item => progress.ItemFinished(item));
+            progress.RunFinished();
+
+            AssertNeverGoesBackwards(seen.Values);
+            Assert.Equal(100, seen.Values[^1]);
+        }
+    }
+
     [Fact]
     public async Task An_item_that_failed_advances_the_number_by_its_whole_length()
     {
