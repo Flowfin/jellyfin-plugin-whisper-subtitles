@@ -1,0 +1,19 @@
+// The shape somebody writes to let a background worker get started. It passes on an
+// idle machine and fails on a loaded one, for a reason that is not in the diff.
+using System.Threading;
+using Xunit;
+
+namespace Jellyfin.Plugin.WhisperSubtitles.Tests;
+
+public class AWorkerHasStartedByNow
+{
+    [Fact]
+    public void The_worker_reported_something()
+    {
+        var reports = 0;
+
+        Thread.Sleep(50);
+
+        Assert.True(reports >= 0);
+    }
+}

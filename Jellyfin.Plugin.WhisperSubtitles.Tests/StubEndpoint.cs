@@ -89,12 +89,20 @@ internal sealed class StubEndpoint : HttpMessageHandler
     /// An endpoint that never answers, so the plugin's own deadline is what ends
     /// the request.
     /// </summary>
+    /// <remarks>
+    /// Waits on the token and on nothing else. An infinite delay would read the same
+    /// way to a caller and would put a timer in the suite, which is both a thing the
+    /// determinism scan refuses by name and a duration nobody chose.
+    /// </remarks>
     public static StubEndpoint NeverAnswering() =>
         new(async (_, token) =>
         {
-            await Task.Delay(Timeout.Infinite, token).ConfigureAwait(false);
+            var never = new TaskCompletionSource<HttpResponseMessage>(
+                TaskCreationOptions.RunContinuationsAsynchronously);
 
-            throw new InvalidOperationException("unreachable");
+            using var cancels = token.Register(() => never.TrySetCanceled(token));
+
+            return await never.Task.ConfigureAwait(false);
         });
 
     /// <summary>

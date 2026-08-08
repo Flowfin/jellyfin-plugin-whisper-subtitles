@@ -1,0 +1,17 @@
+// A test that breaks none of the rules. It has to stay accepted, and it is what
+// separates a scan that refuses the right things from one that refuses everything.
+using System;
+using Xunit;
+
+namespace Jellyfin.Plugin.WhisperSubtitles.Tests;
+
+public class SomethingOrdinary
+{
+    [Fact]
+    public void An_injected_moment_is_compared_against_a_fixed_one()
+    {
+        var when = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero);
+
+        Assert.Equal(2026, when.Year);
+    }
+}

@@ -1,0 +1,17 @@
+// The shape somebody writes to exercise the remote backend against something real.
+// It passes on the machine it was written on, which is the whole problem.
+using System.Net.Sockets;
+using Xunit;
+
+namespace Jellyfin.Plugin.WhisperSubtitles.Tests;
+
+public class TheRemoteBackendAgainstSomethingReal
+{
+    [Fact]
+    public void The_endpoint_answers()
+    {
+        using var connection = new TcpClient("localhost", 9000);
+
+        Assert.True(connection.Connected);
+    }
+}
