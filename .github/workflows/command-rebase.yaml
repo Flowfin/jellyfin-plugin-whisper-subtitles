@@ -5,8 +5,41 @@ on:
     types:
       - rebase-command
 
+# Deny by default at workflow level; the job below opts into what it needs.
+permissions: {}
+
 jobs:
+  # The called workflow declares no permissions of its own, so this job is the
+  # only place the bound can be written. Read at the pinned sha, its two steps
+  # split cleanly:
+  #
+  #   peter-evans/rebase takes no token here, so it runs on its default of
+  #   ${{ github.token }}. It finds the pull requests through a GraphQL pulls
+  #   query, then does its own checkout - it vendors actions/checkout's source
+  #   provider with persist-credentials true - and force-pushes the rebased head
+  #   branch. The push is what needs contents:write; the query is covered by the
+  #   pull-requests scope below.
+  #
+  #   peter-evans/create-or-update-comment adds a reaction to the comment the
+  #   command came from. The dispatcher only accepts commands on pull requests, so
+  #   the comment is a pull request comment and pull-requests:write is the half of
+  #   the pair its README names that applies here.
+  #
+  # Not measured, and it cannot be from this repository yet: this workflow has
+  # never run, because the only thing that emits its repository_dispatch is the
+  # slash-command dispatcher, which is handed `.` for a token.
+  #
+  #   gh api repos/Flowfin/jellyfin-plugin-whisper-subtitles/actions/workflows/327974215/runs --jq '.total_count'
+  #   0
+  #
+  # One limit the scope does not lift. A rebase pushed with GITHUB_TOKEN cannot
+  # carry a change under .github/workflows, and it starts no further workflow
+  # run; the action's README names a scoped personal token for both. That is a
+  # property of the token rather than of the set written here.
   call:
+    permissions:
+      contents: write # clone, and force-push the rebased head branch
+      pull-requests: write # find the pull request, and react on its comment
     uses: jellyfin/jellyfin-meta-plugins/.github/workflows/command-rebase.yaml@eb99033a7ff644881b014bc0b4169916c854a68b # master, 2026-07-29
     with:
       rebase-head: ${{ github.event.client_payload.pull_request.head.label }}
