@@ -13,7 +13,7 @@ on:
 
 jobs:
   call:
-    uses: jellyfin/jellyfin-meta-plugins/.github/workflows/changelog.yaml@master
+    uses: jellyfin/jellyfin-meta-plugins/.github/workflows/changelog.yaml@eb99033a7ff644881b014bc0b4169916c854a68b # master, 2026-07-29
     with:
       repository-name: jellyfin/jellyfin-plugin-template
     secrets:
