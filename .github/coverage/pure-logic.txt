@@ -1,0 +1,57 @@
+# The pure logic, and the floor it is held to.
+#
+# Every file below decides something from its arguments and returns an answer.
+# None of them opens a file, starts a process, or speaks to a server or a
+# network, which is what makes a missing test here inexcusable rather than
+# expensive:
+#
+#     sed -e '/^#/d' -e '/^$/d' .github/coverage/pure-logic.txt \
+#       | sed 's|^|Jellyfin.Plugin.WhisperSubtitles/|' \
+#       | xargs git grep -n 'using System.IO;\|using System.Net\|using System.Diagnostics\|using MediaBrowser\|using Jellyfin.Data' --
+#
+# prints nothing, and exits 123 because git grep found no match. Nothing reads
+# that list back, so it is a claim about the files as they stand rather than a
+# property anything refuses. Code that does talk to a process or to the server is measured
+# by the same run and is not held to this number, because the cost of covering
+# its last branch is a mock of the world.
+#
+# line-floor: 95
+# branch-floor: 90
+#
+# Where the numbers come from. The suite over this set stands at 97.71% of lines
+# and 93.60% of branches, measured on net10.0 by
+#
+#     dotnet test -c Release -f net10.0 --nologo --collect:"XPlat Code Coverage"
+#     .github/scripts/refuse-uncovered-logic.sh <report> .github/coverage/pure-logic.txt Jellyfin.Plugin.WhisperSubtitles
+#
+# The floor sits below that rather than at it, and the gap is the disclosure:
+# 11 of the 480 lines and 11 of the 172 branches in this set can be lost without
+# this check saying anything. It is set there because two files carry branches
+# no test reaches yet, and a floor pinned to today's figure would make finishing
+# those a precondition for every unrelated change. The number moves up when they
+# are covered; it does not move down.
+#
+# The figures above were measured on net10.0 only, because the machine they were
+# taken on has no .NET 9 SDK. The net9.0 figure is not measured here, and the
+# workflow runs both.
+#
+# #47 names selection, the retry policy, the formatter, the language mapping,
+# the name builder, the cost estimate and the configuration validation. Three of
+# those are not written yet: the language mapping is #33, the name builder is
+# #26, the configuration validation is #40. They belong here when they land, and
+# nothing in this file knows that, which is why it is a list somebody edits
+# rather than a pattern that would quietly include or quietly miss them.
+
+Attempts/AttemptLedger.cs
+Attempts/RetryPolicy.cs
+Audio/AudioStreamChoice.cs
+Audio/FfmpegArguments.cs
+Backends/BackendSelector.cs
+Backends/CostEstimate.cs
+Backends/Local/WhisperOutputReader.cs
+Output/SegmentFormatter.cs
+Output/SubRipWriter.cs
+Scheduling/BoundedRun.cs
+Scheduling/ConcurrencyCap.cs
+Scheduling/DurationWeightedProgress.cs
+Selection/ItemSelection.cs

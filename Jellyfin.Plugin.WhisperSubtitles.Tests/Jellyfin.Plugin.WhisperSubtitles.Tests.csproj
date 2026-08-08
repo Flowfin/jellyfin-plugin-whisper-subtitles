@@ -39,6 +39,14 @@
     <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2" />
   </ItemGroup>
 
+  <!-- The coverage collector, which produces a report only when the run asks for
+       it on the command line. An ordinary `dotnet test` is unchanged and pays
+       nothing for it, and the run that enforces the floor is the same run that
+       executes the tests rather than a second pass over a second build. -->
+  <ItemGroup>
+    <PackageReference Include="coverlet.collector" Version="[6.0.2]" PrivateAssets="All" />
+  </ItemGroup>
+
   <ItemGroup>
     <ProjectReference Include="..\Jellyfin.Plugin.WhisperSubtitles\Jellyfin.Plugin.WhisperSubtitles.csproj" />
   </ItemGroup>
@@ -70,6 +78,17 @@
        copy of its contents. Same reasoning as the manifest above. -->
   <ItemGroup>
     <None Include="..\docs\troubleshooting.md" Link="docs\troubleshooting.md" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <!-- The stub backend's own source, carried into the assembly it is compiled
+       into. The test that says the stub opens no file and no socket judges the
+       bytes that were compiled rather than whatever sits beside the assembly at
+       run time, which is the opposite choice from the fixtures above and for the
+       opposite reason: those assert on what a clone checked out, this asserts on
+       what the build read. The file stays compiled as well; an embedded resource
+       item does not take it out of the compilation. -->
+  <ItemGroup>
+    <EmbeddedResource Include="StubBackend.cs" />
   </ItemGroup>
 
   <!-- The other half is what the build actually produced. These carry it into the

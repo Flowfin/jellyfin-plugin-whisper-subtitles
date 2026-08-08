@@ -1,0 +1,116 @@
+# Most of what can go wrong in this plugin is in code that decides something
+# from its arguments and returns an answer. None of it needs a server or a
+# process, so a missing test there is not expensive, and a floor that fails the
+# build is what makes that true tomorrow as well as today.
+#
+# The coverage is collected by the run that executes the tests rather than by a
+# second pass, so the numbers belong to the suite this job actually ran and not
+# to a build somebody else made. The set the floor applies to, the number, and
+# the reason for the number are in .github/coverage/pure-logic.txt, next to the
+# check that reads them.
+#
+# Three legs, because the check refuses in three directions and a green run is
+# worth what its legs prove. The first is the floor. The second drops a test
+# class and requires the floor to refuse the result, so a floor set below
+# anything reachable would be caught here rather than at the release. The third
+# and fourth are the two ways the list itself can rot: a path nobody can find,
+# and a file the report never mentions because it stopped being compiled.
+name: Coverage floor
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ "**" ]
+
+permissions: {}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  coverage:
+    name: The pure logic stays above its floor
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        framework: [ net9.0, net10.0 ]
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install the SDKs both server lines are built against
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          dotnet-version: |
+            9.0.x
+            10.0.x
+
+      - name: Run the suite and collect coverage from the same run
+        run: |
+          set -eu
+          env -u DISPLAY dotnet test -c Release -f ${{ matrix.framework }} --nologo \
+            --collect:"XPlat Code Coverage" --results-directory coverage-full
+          report=$(find coverage-full -name coverage.cobertura.xml | head -1)
+          echo "REPORT=$report" >> "$GITHUB_ENV"
+          echo "read $report"
+
+      - name: The pure logic is above its floor
+        run: |
+          set -eu
+          .github/scripts/refuse-uncovered-logic.sh \
+            "$REPORT" .github/coverage/pure-logic.txt Jellyfin.Plugin.WhisperSubtitles
+
+      # The near-miss is a deleted test file, which is the shape this actually
+      # takes: a test that got in the way of a change and went away with it. The
+      # class is excluded rather than removed so the tree the job checked out is
+      # the tree it reports on.
+      - name: And the floor refuses the same suite with a test class dropped
+        run: |
+          set -eu
+          env -u DISPLAY dotnet test -c Release -f ${{ matrix.framework }} --nologo --no-build \
+            --filter "FullyQualifiedName!~WhisperOutputReaderTests" \
+            --collect:"XPlat Code Coverage" --results-directory coverage-dropped
+          dropped=$(find coverage-dropped -name coverage.cobertura.xml | head -1)
+          if output=$(.github/scripts/refuse-uncovered-logic.sh \
+                        "$dropped" .github/coverage/pure-logic.txt Jellyfin.Plugin.WhisperSubtitles 2>&1); then
+            echo "$output"
+            echo "The floor accepted a run with a test class dropped, so it is below what the suite can lose without noticing." >&2
+            exit 1
+          fi
+          echo "$output"
+          echo "$output" | grep -q 'below the floor of'
+          echo "$output" | grep -q 'WhisperOutputReader.cs'
+
+      - name: And a listed file that is not in the tree is refused
+        run: |
+          set -eu
+          cp .github/coverage/pure-logic.txt dangling.txt
+          echo "Selection/ThisFileDoesNotExist.cs" >> dangling.txt
+          if output=$(.github/scripts/refuse-uncovered-logic.sh \
+                        "$REPORT" dangling.txt Jellyfin.Plugin.WhisperSubtitles 2>&1); then
+            echo "$output"
+            echo "The check accepted a list naming a file that is not in the tree." >&2
+            exit 1
+          fi
+          echo "$output" | grep -q 'ThisFileDoesNotExist.cs'
+
+      - name: And a listed file the report never mentions is refused
+        run: |
+          set -eu
+          cp .github/coverage/pure-logic.txt absent.txt
+          echo "Backends/ITranscriptionBackend.cs" >> absent.txt
+          if output=$(.github/scripts/refuse-uncovered-logic.sh \
+                        "$REPORT" absent.txt Jellyfin.Plugin.WhisperSubtitles 2>&1); then
+            echo "$output"
+            echo "The check accepted a list naming a file the coverage report says nothing about." >&2
+            exit 1
+          fi
+          echo "$output" | grep -q 'ITranscriptionBackend.cs'
