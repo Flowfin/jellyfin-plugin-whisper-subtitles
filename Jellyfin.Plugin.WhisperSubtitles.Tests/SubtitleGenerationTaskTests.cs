@@ -87,7 +87,7 @@ public class SubtitleGenerationTaskTests
         // The report is not the guarantee. A backend that was asked to transcribe and
         // refused would produce the same sentence, so what this asserts is that no
         // backend was asked at all.
-        var watching = new CountingBackend();
+        var watching = new StubBackend("Watching");
         var task = new SubtitleGenerationTask(new[] { new BackendCandidate("Watching", watching, Array.Empty<string>()) });
 
         await task.ExecuteAsync(new RecordingProgress(), CancellationToken.None);
@@ -120,35 +120,4 @@ public class SubtitleGenerationTaskTests
 
     private static SubtitleGenerationTask Task() =>
         new(Array.Empty<BackendCandidate>());
-
-    /// <summary>
-    /// A backend that counts what it was asked to do and does none of it.
-    /// </summary>
-    private sealed class CountingBackend : ITranscriptionBackend
-    {
-        public int TranscriptionsAsked { get; private set; }
-
-        public BackendDescription Description { get; } = new(
-            "Watching",
-            Array.Empty<string>(),
-            Array.Empty<string>(),
-            canDetectLanguage: false,
-            cancellationBudget: TimeSpan.Zero);
-
-        public Task<BackendReadiness> CheckReadinessAsync(CancellationToken cancellationToken) =>
-            System.Threading.Tasks.Task.FromResult(new BackendReadiness(true, null));
-
-        public CostEstimate EstimateCost(TimeSpan mediaDuration) => new(mediaDuration, mediaDuration);
-
-        public Task<TranscriptionResult> TranscribeAsync(
-            TranscriptionRequest request,
-            IProgress<double> progress,
-            CancellationToken cancellationToken)
-        {
-            TranscriptionsAsked++;
-
-            return System.Threading.Tasks.Task.FromResult(
-                new TranscriptionResult(Array.Empty<TimedSegment>(), "en"));
-        }
-    }
 }

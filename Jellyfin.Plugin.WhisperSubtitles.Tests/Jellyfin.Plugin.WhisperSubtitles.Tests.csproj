@@ -80,6 +80,17 @@
     <None Include="..\docs\troubleshooting.md" Link="docs\troubleshooting.md" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
+  <!-- The stub backend's own source, carried into the assembly it is compiled
+       into. The test that says the stub opens no file and no socket judges the
+       bytes that were compiled rather than whatever sits beside the assembly at
+       run time, which is the opposite choice from the fixtures above and for the
+       opposite reason: those assert on what a clone checked out, this asserts on
+       what the build read. The file stays compiled as well; an embedded resource
+       item does not take it out of the compilation. -->
+  <ItemGroup>
+    <EmbeddedResource Include="StubBackend.cs" />
+  </ItemGroup>
+
   <!-- The other half is what the build actually produced. These carry it into the
        test assembly from the properties the build itself used, so the comparison
        is against the real values and not against a second copy of them written
