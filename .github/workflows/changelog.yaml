@@ -11,8 +11,42 @@ on:
     types:
       - update-prep-command
 
+# Deny by default at workflow level; the job below opts into what it needs.
+permissions: {}
+
 jobs:
+  # The called workflow declares no permissions of its own, so this job is the
+  # only place the bound can be written. Read at the pinned sha, its one job does
+  # three things that reach the API, and each names a scope:
+  #
+  #   release-drafter writes the draft release and builds its notes from merged
+  #   pull requests, which its own README pairs as contents:write with
+  #   pull-requests:read;
+  #
+  #   the version bump checks out with the persisted token and pushes a
+  #   prepare-<version> branch, which is contents:write again;
+  #
+  #   k3rnels-actions/pr-update calls pulls.list, pulls.create, pulls.update and
+  #   issues.addLabels against that pull request, which is pull-requests:write and
+  #   covers the read above.
+  #
+  # None of this is measured here and it cannot be. The called workflow guards its
+  # job with `if: github.repository == inputs.repository-name`, the value passed
+  # below still names the template rather than this repository, and every run on
+  # this repository therefore concludes skipped:
+  #
+  #   gh api repos/Flowfin/jellyfin-plugin-whisper-subtitles/actions/workflows/327974210/runs?per_page=3 \
+  #     --jq '.workflow_runs[] | "\(.id) \(.conclusion)"'
+  #   31266421270 skipped
+  #   31266047493 skipped
+  #   31255808900 skipped
+  #
+  # That guard is #3 and not this change. Until it is repaired, the set below is
+  # read off the called workflow rather than off a run.
   call:
+    permissions:
+      contents: write # the draft release, and the prepare-<version> branch push
+      pull-requests: write # create, update and label the release-prep pull request
     uses: jellyfin/jellyfin-meta-plugins/.github/workflows/changelog.yaml@eb99033a7ff644881b014bc0b4169916c854a68b # master, 2026-07-29
     with:
       repository-name: jellyfin/jellyfin-plugin-template
