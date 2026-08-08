@@ -51,7 +51,7 @@ public class BackendSelectorTests
     {
         var choice = await Select(
             "local",
-            new BackendCandidate("local", new StubBackend(isReady: true, reason: null), new[] { "ModelPath" }));
+            new BackendCandidate("local", new StubBackend("local"), new[] { "ModelPath" }));
 
         Assert.Equal(BackendSelectionOutcome.MissingSetting, choice.Outcome);
         Assert.IsType<NotConfiguredBackend>(choice.Backend);
@@ -64,12 +64,12 @@ public class BackendSelectorTests
         // The cheap answer comes first, and it is also the better sentence: "you
         // have not filled in the model path" and "the model path names a file that
         // is not there" have different repairs.
-        var backend = new StubBackend(isReady: false, reason: "no model file at that path.");
+        var backend = NotReady("local", "no model file at that path.");
 
         var choice = await Select("local", new BackendCandidate("local", backend, new[] { "ModelPath" }));
 
         Assert.Equal(BackendSelectionOutcome.MissingSetting, choice.Outcome);
-        Assert.False(backend.WasAsked);
+        Assert.Equal(0, backend.ReadinessChecks);
     }
 
     [Fact]
@@ -77,7 +77,7 @@ public class BackendSelectorTests
     {
         var choice = await Select(
             "local",
-            new BackendCandidate("local", new StubBackend(isReady: false, reason: "the model file is not readable."), _nothingMissing));
+            new BackendCandidate("local", NotReady("local", "the model file is not readable."), _nothingMissing));
 
         Assert.Equal(BackendSelectionOutcome.NotReady, choice.Outcome);
         Assert.IsType<NotConfiguredBackend>(choice.Backend);
@@ -92,7 +92,10 @@ public class BackendSelectorTests
         // better answer than this one.
         var choice = await Select(
             "local",
-            new BackendCandidate("local", new ThrowingBackend(), _nothingMissing));
+            new BackendCandidate(
+                "local",
+                new StubBackend("local") { ReadinessThrows = new InvalidOperationException("readiness exploded") },
+                _nothingMissing));
 
         Assert.Equal(BackendSelectionOutcome.NotReady, choice.Outcome);
         Assert.IsType<NotConfiguredBackend>(choice.Backend);
@@ -133,7 +136,7 @@ public class BackendSelectorTests
         {
             await Select("local", Broken("local"), working),
             await Select("nonesuch", working),
-            await Select("local", new BackendCandidate("local", new StubBackend(true, null), new[] { "ModelPath" }), working)
+            await Select("local", new BackendCandidate("local", new StubBackend("local"), new[] { "ModelPath" }), working)
         };
 
         Assert.All(choices, c => Assert.IsType<NotConfiguredBackend>(c.Backend));
@@ -150,7 +153,7 @@ public class BackendSelectorTests
         {
             await Select(null, Ready("local")),
             await Select("nonesuch", Ready("local")),
-            await Select("local", new BackendCandidate("local", new StubBackend(true, null), new[] { "ModelPath" })),
+            await Select("local", new BackendCandidate("local", new StubBackend("local"), new[] { "ModelPath" })),
             await Select("local", Broken("local"))
         };
 
@@ -169,7 +172,7 @@ public class BackendSelectorTests
         await Assert.ThrowsAnyAsync<OperationCanceledException>(
             () => BackendSelector.SelectAsync(
                 "local",
-                new[] { new BackendCandidate("local", new StubBackend(true, null), _nothingMissing) },
+                new[] { new BackendCandidate("local", new StubBackend("local"), _nothingMissing) },
                 cancelled.Token));
     }
 
@@ -177,67 +180,11 @@ public class BackendSelectorTests
         BackendSelector.SelectAsync(configuredName, candidates, CancellationToken.None);
 
     private static BackendCandidate Ready(string name) =>
-        new(name, new StubBackend(isReady: true, reason: null), _nothingMissing);
+        new(name, new StubBackend(name), _nothingMissing);
 
     private static BackendCandidate Broken(string name) =>
-        new(name, new StubBackend(isReady: false, reason: "it is not ready."), _nothingMissing);
+        new(name, NotReady(name, "it is not ready."), _nothingMissing);
 
-    private sealed class StubBackend : ITranscriptionBackend
-    {
-        private readonly bool _isReady;
-        private readonly string? _reason;
-
-        public StubBackend(bool isReady, string? reason)
-        {
-            _isReady = isReady;
-            _reason = reason;
-        }
-
-        public bool WasAsked { get; private set; }
-
-        public BackendDescription Description => new(
-            "stub",
-            Array.Empty<string>(),
-            Array.Empty<string>(),
-            canDetectLanguage: false,
-            cancellationBudget: TimeSpan.Zero);
-
-        public Task<BackendReadiness> CheckReadinessAsync(CancellationToken cancellationToken)
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-
-            WasAsked = true;
-
-            return Task.FromResult(new BackendReadiness(_isReady, _reason));
-        }
-
-        public CostEstimate EstimateCost(TimeSpan mediaDuration) => new(TimeSpan.Zero, TimeSpan.Zero);
-
-        public Task<TranscriptionResult> TranscribeAsync(
-            TranscriptionRequest request,
-            IProgress<double> progress,
-            CancellationToken cancellationToken) =>
-            throw new NotSupportedException("The stub exists to be selected, not to be run.");
-    }
-
-    private sealed class ThrowingBackend : ITranscriptionBackend
-    {
-        public BackendDescription Description => new(
-            "throwing",
-            Array.Empty<string>(),
-            Array.Empty<string>(),
-            canDetectLanguage: false,
-            cancellationBudget: TimeSpan.Zero);
-
-        public Task<BackendReadiness> CheckReadinessAsync(CancellationToken cancellationToken) =>
-            throw new InvalidOperationException("readiness exploded");
-
-        public CostEstimate EstimateCost(TimeSpan mediaDuration) => new(TimeSpan.Zero, TimeSpan.Zero);
-
-        public Task<TranscriptionResult> TranscribeAsync(
-            TranscriptionRequest request,
-            IProgress<double> progress,
-            CancellationToken cancellationToken) =>
-            throw new NotSupportedException("The throwing backend exists to fail its readiness check.");
-    }
+    private static StubBackend NotReady(string name, string reason) =>
+        new(name) { IsReady = false, NotReadyReason = reason };
 }
