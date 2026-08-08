@@ -13,6 +13,9 @@ on:
     - cron: '24 2 * * 4'
   workflow_dispatch:
 
+# Deny by default at workflow level; the job below opts into what it needs.
+permissions: {}
+
 jobs:
   # repository-name is not a label. The reusable workflow guards its only job
   # with `if: github.repository == inputs.repository-name`, so a value naming
@@ -21,7 +24,24 @@ jobs:
   # the analysis did not happen. The value this file carried was the template's
   # own name, which is how seventy-four runs concluded skipped and no CodeQL
   # analysis was ever uploaded.
+  #
+  # The called workflow declares no permissions of its own, so this job is the
+  # only place the bound can be written, and running without one is what has been
+  # failing the analysis rather than anything in the C#:
+  #
+  #   ##[warning]This run of the CodeQL Action does not have permission to access
+  #   the CodeQL Action API endpoints. ... please ensure the workflow has at least
+  #   the 'security-events: read' permission. Details: Resource not accessible by
+  #   integration
+  #
+  # read on run 31255808924, the analysis of the mainline at 1784669. The upload
+  # at the end of the analysis writes, so the scope is write rather than the read
+  # the warning asks for as a minimum.
   call:
+    permissions:
+      security-events: write # upload the analysis into the code-scanning tab
+      contents: read # checkout the code being analysed
+      actions: read # read the workflow run the analysis belongs to
     uses: jellyfin/jellyfin-meta-plugins/.github/workflows/scan-codeql.yaml@eb99033a7ff644881b014bc0b4169916c854a68b # master, 2026-07-29
     with:
       repository-name: Flowfin/jellyfin-plugin-whisper-subtitles

@@ -27,6 +27,7 @@ namespace Jellyfin.Plugin.WhisperSubtitles.Tests.Fixtures.Backends
             new List<string> { "none" },
             new List<string> { "en" },
             canDetectLanguage: false,
+            canReportLanguageConfidence: false,
             cancellationBudget: TimeSpan.FromSeconds(1));
 
         public Task<BackendReadiness> CheckReadinessAsync(CancellationToken cancellationToken) =>
