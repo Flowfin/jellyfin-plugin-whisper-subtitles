@@ -62,15 +62,22 @@ public sealed class LocalWhisperBackend : ITranscriptionBackend
     /// not enumerate", which is written here rather than guessed at by a caller.
     ///
     /// Detection is off for the same reason it is honest: the tool reports a
-    /// detected language on its diagnostic stream, and reading that is #31. Until
-    /// then a request that names no language is refused rather than answered with
-    /// a language nobody measured.
+    /// detected language on its diagnostic stream, and this backend does not read
+    /// it. A request that names no language is refused rather than answered with a
+    /// language nobody measured.
+    ///
+    /// The confidence flag follows from that and is not a second decision. A
+    /// backend that detects nothing reports no confidence in nothing, and #31's
+    /// floor never reaches this backend while both are false. Whoever turns
+    /// detection on here decides both at once, because the diagnostic line that
+    /// carries the language also carries the probability beside it.
     /// </remarks>
     public BackendDescription Description { get; } = new(
         BackendName,
         _publishedModels,
         Array.Empty<string>(),
         canDetectLanguage: false,
+        canReportLanguageConfidence: false,
         cancellationBudget: TimeSpan.FromSeconds(10));
 
     /// <inheritdoc />

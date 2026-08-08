@@ -49,6 +49,7 @@ public sealed class NotConfiguredBackend : ITranscriptionBackend
         Array.Empty<string>(),
         Array.Empty<string>(),
         canDetectLanguage: false,
+        canReportLanguageConfidence: false,
         cancellationBudget: TimeSpan.Zero);
 
     /// <inheritdoc />

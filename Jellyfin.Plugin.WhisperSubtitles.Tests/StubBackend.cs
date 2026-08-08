@@ -121,6 +121,25 @@ internal sealed class StubBackend : ITranscriptionBackend
     public bool CanDetectLanguage { get; set; }
 
     /// <summary>
+    /// Gets or sets a value indicating whether the description claims a confidence
+    /// with a detected language.
+    /// </summary>
+    /// <remarks>
+    /// Separate from <see cref="CanDetectLanguage"/> and from
+    /// <see cref="DetectedConfidence"/>, so a test can set up a backend whose
+    /// description and result disagree. That combination is a defect in a backend
+    /// rather than a configuration, and it is the one a caller is most likely to
+    /// read as certainty.
+    /// </remarks>
+    public bool CanReportLanguageConfidence { get; set; }
+
+    /// <summary>
+    /// Gets or sets the confidence a transcription reports for the language it
+    /// found, or null to report none.
+    /// </summary>
+    public double? DetectedConfidence { get; set; }
+
+    /// <summary>
     /// Gets how many times the readiness check was asked.
     /// </summary>
     public int ReadinessChecks { get; private set; }
@@ -146,6 +165,7 @@ internal sealed class StubBackend : ITranscriptionBackend
         new[] { "stub-model" },
         new[] { "en" },
         CanDetectLanguage,
+        CanReportLanguageConfidence,
         CancellationBudget);
 
     /// <inheritdoc />
@@ -199,6 +219,6 @@ internal sealed class StubBackend : ITranscriptionBackend
             throw new TranscriptionFailedException(reason, $"The stub was told to fail with {reason}.");
         }
 
-        return new TranscriptionResult(Segments, DetectedLanguage);
+        return new TranscriptionResult(Segments, DetectedLanguage, DetectedConfidence);
     }
 }
