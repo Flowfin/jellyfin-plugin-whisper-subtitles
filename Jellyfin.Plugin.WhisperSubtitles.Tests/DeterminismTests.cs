@@ -153,11 +153,15 @@ public class DeterminismTests
     [MemberData(nameof(EverySourceFile))]
     public void A_test_that_creates_a_temporary_directory_removes_it(string fileName)
     {
-        // The rule is per file rather than per test, because the removal lives in a
-        // Dispose the whole class shares. A file that creates a directory under the
-        // system temporary one and never deletes it leaves the machine a little
-        // fuller every run, and the next contributor's suite is slower for reasons
-        // nobody connects to a test.
+        // The rule is per file rather than per test. A file that creates a directory
+        // under the system temporary one and never deletes it leaves the machine a
+        // little fuller every run, and the next contributor's suite is slower for
+        // reasons nobody connects to a test.
+        //
+        // Two shapes put the removal on a path the test cannot leave without taking:
+        // a Dispose the whole class shares, and a finally around the one test that
+        // needed a directory. The second is what a single such test is written as,
+        // and demanding the first refused a file that removes what it made.
         var source = Read(fileName);
 
         if (!source.Contains("Path" + Dot + "GetTempPath", StringComparison.Ordinal)
@@ -167,7 +171,10 @@ public class DeterminismTests
         }
 
         Assert.Contains("Directory" + Dot + "Delete", source, StringComparison.Ordinal);
-        Assert.Contains("IDisposable", source, StringComparison.Ordinal);
+        Assert.True(
+            source.Contains("IDisposable", StringComparison.Ordinal)
+            || source.Contains("finally", StringComparison.Ordinal),
+            $"{fileName} deletes the directory somewhere a thrown test would walk past");
     }
 
     [Theory]
@@ -201,6 +208,7 @@ public class DeterminismTests
         Assert.Contains("Directory" + Dot + "CreateDirectory", fixture, StringComparison.Ordinal);
         Assert.DoesNotContain("Directory" + Dot + "Delete", fixture, StringComparison.Ordinal);
         Assert.DoesNotContain("IDisposable", fixture, StringComparison.Ordinal);
+        Assert.DoesNotContain("finally", fixture, StringComparison.Ordinal);
     }
 
     [Fact]
