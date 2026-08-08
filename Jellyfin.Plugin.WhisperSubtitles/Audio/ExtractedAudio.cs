@@ -58,8 +58,8 @@ public sealed class ExtractedAudio : IDisposable
         }
         catch (IOException)
         {
-            // The file is in a directory this plugin owns and sweeps at the start
-            // of the next run, which is #21. Throwing out of a dispose that is
+            // The file is in a directory this plugin owns, and what stays there is
+            // what TemporaryAudioSweep collects. Throwing out of a dispose that is
             // usually running inside somebody else's failure would replace the
             // reason that failure had with a file system one.
         }
