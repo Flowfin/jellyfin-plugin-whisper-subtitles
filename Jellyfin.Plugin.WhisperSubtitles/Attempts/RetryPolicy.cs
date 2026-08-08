@@ -29,6 +29,20 @@ public static class RetryPolicy
     /// </summary>
     /// <param name="reason">How the attempt ended.</param>
     /// <returns>Whether another attempt is worth the machine.</returns>
+    /// <remarks>
+    /// Every value of the vocabulary is named and there is no fallback arm, which
+    /// is deliberate and is the only place this decision is refused rather than
+    /// defaulted. A fallback of false would give every new failure mode the answer
+    /// "never retry" silently, and an item quarantined by a mode nobody made a
+    /// decision about needs an operator to clear it by hand.
+    /// </remarks>
+    // CS8524 is the compiler pointing out that a value cast in from outside the
+    // vocabulary is not handled, and it is not handled on purpose: such a value
+    // throws here rather than taking the answer of whichever arm a fallback would
+    // have been. CS8509, which fires for a NAMED value with no arm, stays on, and
+    // that is the refusal this shape exists for - a mode added to the vocabulary
+    // without a decision here fails the build.
+#pragma warning disable CS8524
     public static bool IsRetryable(TranscriptionFailureReason reason) => reason switch
     {
         TranscriptionFailureReason.Cancelled => true,
@@ -43,8 +57,26 @@ public static class RetryPolicy
         TranscriptionFailureReason.AudioUnreadable => false,
         TranscriptionFailureReason.OutputUnparseable => false,
 
-        _ => false
+        // Facts about the file rather than about the run. Nothing about tomorrow
+        // makes a silent item speak or a concert recording hold narration, and
+        // retrying either spends the machine on a certainty.
+        TranscriptionFailureReason.AudioIsSilent => false,
+        TranscriptionFailureReason.AudioHasNoSpeech => false,
+        TranscriptionFailureReason.AudioHasSeveralLanguages => false,
+
+        // Both of these move when a setting moves, and neither moves on its own.
+        // Retrying unchanged is what this asks about, so both are false: a floor
+        // an operator lowers and a backend an operator repoints are changes, and a
+        // changed configuration is what clears a quarantine.
+        TranscriptionFailureReason.DetectionBelowTheFloor => false,
+        TranscriptionFailureReason.NoSegments => false,
+
+        // The one that looks retryable and is not. A backend transcribing the
+        // wrong file does it again, and the same wrong file every night is the
+        // most expensive way to learn nothing.
+        TranscriptionFailureReason.TimingsDoNotFitTheItem => false
     };
+#pragma warning restore CS8524
 
     /// <summary>
     /// Whether this failure counts towards quarantine at all.

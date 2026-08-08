@@ -145,6 +145,12 @@ public class StubBackendTests
     [InlineData(TranscriptionFailureReason.NoAudioStream)]
     [InlineData(TranscriptionFailureReason.AudioUnreadable)]
     [InlineData(TranscriptionFailureReason.OutputUnparseable)]
+    [InlineData(TranscriptionFailureReason.AudioIsSilent)]
+    [InlineData(TranscriptionFailureReason.AudioHasNoSpeech)]
+    [InlineData(TranscriptionFailureReason.AudioHasSeveralLanguages)]
+    [InlineData(TranscriptionFailureReason.DetectionBelowTheFloor)]
+    [InlineData(TranscriptionFailureReason.NoSegments)]
+    [InlineData(TranscriptionFailureReason.TimingsDoNotFitTheItem)]
     public async Task Every_typed_reason_can_be_asked_for(TranscriptionFailureReason reason)
     {
         // Named one by one rather than driven off Enum.GetValues, so a reason added
@@ -171,7 +177,7 @@ public class StubBackendTests
             asked.Add(thrown.Reason);
         }
 
-        Assert.Equal(7, asked.Count);
+        Assert.Equal(13, asked.Count);
     }
 
     [Fact]
