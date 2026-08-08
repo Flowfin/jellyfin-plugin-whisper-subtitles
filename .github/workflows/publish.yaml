@@ -6,8 +6,44 @@ on:
       - released
   workflow_dispatch:
 
+# Deny by default at workflow level; the job below opts into what it needs.
+permissions: {}
+
 jobs:
+  # The called workflow declares no permissions of its own, so this job is the
+  # only place the bound can be written, and a caller's set covers every job in
+  # the workflow it calls. Read at the pinned sha, it has three jobs:
+  #
+  #   build checks out, sets up the SDK, runs the plugin repository manager and
+  #   uploads an artifact. The upload goes through the runner's own artifact
+  #   token, so the checkout is the whole of what needs a scope there.
+  #
+  #   upload downloads that artifact, writes the checksums beside it and hands
+  #   the files to shogo82148/actions-upload-release-asset. That action is passed
+  #   no github_token here, so it runs on its declared default of
+  #   ${{ github.token }} and attaches the assets to the release, which is the
+  #   contents: write below and the widest thing this workflow does.
+  #
+  #   publish updates the plugin manifest over ssh, and its two remaining steps
+  #   in upload do the same. All three are guarded by
+  #   `contains(github.repository, 'jellyfin/')`, which is false for this
+  #   repository, and they reach the deploy host with the ssh secrets rather than
+  #   with GITHUB_TOKEN, so they ask for no scope even where they do run.
+  #
+  # contents: write covers the checkout's read, so it is the whole set rather
+  # than a pair.
+  #
+  # Not measured, and it cannot be from this repository: this workflow has never
+  # run, because it triggers on a published release and no release exists here.
+  #
+  #   gh api repos/Flowfin/jellyfin-plugin-whisper-subtitles/releases --jq 'length'
+  #   0
+  #
+  # The set is therefore read off the called workflow and off the action it
+  # hands the assets to, rather than off a run.
   call:
+    permissions:
+      contents: write # attach the archive and its checksums to the release
     uses: jellyfin/jellyfin-meta-plugins/.github/workflows/publish.yaml@eb99033a7ff644881b014bc0b4169916c854a68b # master, 2026-07-29
     with:
       version: ${{ github.event.release.tag_name }}
