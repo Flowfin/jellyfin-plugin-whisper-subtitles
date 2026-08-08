@@ -14,7 +14,14 @@ on:
   workflow_dispatch:
 
 jobs:
+  # repository-name is not a label. The reusable workflow guards its only job
+  # with `if: github.repository == inputs.repository-name`, so a value naming
+  # another repository does not mislabel the run, it removes it: every job is
+  # skipped, the check reports skipping, and nothing on the pull request says
+  # the analysis did not happen. The value this file carried was the template's
+  # own name, which is how seventy-four runs concluded skipped and no CodeQL
+  # analysis was ever uploaded.
   call:
-    uses: jellyfin/jellyfin-meta-plugins/.github/workflows/scan-codeql.yaml@master
+    uses: jellyfin/jellyfin-meta-plugins/.github/workflows/scan-codeql.yaml@eb99033a7ff644881b014bc0b4169916c854a68b # master, 2026-07-29
     with:
-      repository-name: jellyfin/jellyfin-plugin-template
+      repository-name: Flowfin/jellyfin-plugin-whisper-subtitles

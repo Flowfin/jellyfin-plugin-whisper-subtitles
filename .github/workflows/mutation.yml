@@ -1,0 +1,158 @@
+# The coverage floor says which lines of the pure logic ran. It does not say
+# whether any test would have noticed the line being wrong, and a line that runs
+# under a test asserting nothing about it is indistinguishable from a covered one
+# in every report the floor reads. This run replaces each of those lines with a
+# wrong one and asks whether the suite goes red.
+#
+# Scheduled and manual only, and not part of the merge gate. A mutation run
+# rebuilds and re-runs the suite once per surviving mutant, which is minutes
+# rather than seconds, and a score is a measurement to read rather than a
+# condition to satisfy. The score is printed and never enforced: a threshold on a
+# score becomes a number people tune, and what a reader acts on is the list of
+# survivors underneath it.
+#
+# The scope is .github/coverage/pure-logic.txt, read here rather than repeated,
+# because a second copy of that list drifts against the first. Mutating code that
+# drives a process or an HTTP client would measure the injected seams instead of
+# the plugin.
+#
+# One server line rather than the matrix the other jobs run. The mutated set
+# carries no conditional compilation, so both lines compile the same statements:
+#
+#     git grep -n '#if\|NET9_0\|NET10_0' -- Jellyfin.Plugin.WhisperSubtitles
+#
+# prints nothing and exits 1. A second line would double the longest job in this
+# repository to re-mutate identical source.
+name: Mutation testing
+
+on:
+  schedule:
+    - cron: '17 3 * * 1'
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  mutate:
+    name: The pure logic is mutated and the survivors are named
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install the SDK the mutated line is built against
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          dotnet-version: 10.0.x
+
+      # The version is in .config/dotnet-tools.json rather than on this line, so
+      # the run is repeatable rather than whatever was newest that morning.
+      - name: Restore the mutation tool at the version this repository pinned
+        run: dotnet tool restore
+
+      # The mutant runners start a test host each and the connection timeout is
+      # what a loaded machine hits first. Measured here: the default of 90
+      # seconds aborted discovery on every runner and the run reported a suite
+      # with no tests in it, which is the shape this job's own check refuses.
+      - name: Mutate the pure logic
+        env:
+          VSTEST_CONNECTION_TIMEOUT: '300'
+        run: |
+          set -eu
+          scope=$(grep -v '^[[:space:]]*#' .github/coverage/pure-logic.txt \
+                  | grep -v '^[[:space:]]*$' | sed 's|^|--mutate |' | tr '\n' ' ')
+          echo "scope: $scope"
+          cd Jellyfin.Plugin.WhisperSubtitles.Tests
+          env -u DISPLAY dotnet stryker --skip-version-check \
+            --target-framework net10.0 --configuration Release \
+            --reporter Json --reporter ClearText \
+            --output ../StrykerOutput $scope
+
+      - name: Read what the report says, and refuse a report that says nothing
+        run: |
+          set -eu
+          .github/scripts/read-mutation-report.sh \
+            StrykerOutput/reports/mutation-report.json \
+            .github/coverage/pure-logic.txt Jellyfin.Plugin.WhisperSubtitles
+
+      # The legs below are the ones that make the step above worth reading. Each
+      # one takes the report this run produced, damages it in one way a real run
+      # can be damaged, and requires the refusal. A check that has never been
+      # shown to refuse anything is a check nobody can tell from an empty one.
+      - name: And a run that produced no report is refused
+        run: |
+          set -eu
+          if output=$(.github/scripts/read-mutation-report.sh \
+                        StrykerOutput/reports/no-such-report.json \
+                        .github/coverage/pure-logic.txt Jellyfin.Plugin.WhisperSubtitles 2>&1); then
+            echo "$output"
+            echo "The check accepted a report that is not there." >&2
+            exit 1
+          fi
+          echo "$output" | grep -q 'says nothing about the suite'
+
+      - name: And a report that is not one is refused
+        run: |
+          set -eu
+          echo '{"schemaVersion":"1"}' > not-a-report.json
+          if output=$(.github/scripts/read-mutation-report.sh \
+                        not-a-report.json \
+                        .github/coverage/pure-logic.txt Jellyfin.Plugin.WhisperSubtitles 2>&1); then
+            echo "$output"
+            echo "The check accepted a file carrying no mutation results." >&2
+            exit 1
+          fi
+          echo "$output" | grep -q 'not a mutation report'
+
+      - name: And a report in which nothing was scored is refused
+        run: |
+          set -eu
+          sed -e 's/"status":"Killed"/"status":"Ignored"/g' \
+              -e 's/"status":"Timeout"/"status":"Ignored"/g' \
+              -e 's/"status":"Survived"/"status":"Ignored"/g' \
+              -e 's/"status":"NoCoverage"/"status":"Ignored"/g' \
+              StrykerOutput/reports/mutation-report.json > nothing-scored.json
+          if output=$(.github/scripts/read-mutation-report.sh \
+                        nothing-scored.json \
+                        .github/coverage/pure-logic.txt Jellyfin.Plugin.WhisperSubtitles 2>&1); then
+            echo "$output"
+            echo "The check accepted a run that scored no mutant." >&2
+            exit 1
+          fi
+          echo "$output" | grep -q 'scores no mutant'
+
+      - name: And a mutant scored outside the list is refused
+        run: |
+          set -eu
+          grep -v '^Output/SegmentFormatter.cs$' .github/coverage/pure-logic.txt > narrowed.txt
+          if output=$(.github/scripts/read-mutation-report.sh \
+                        StrykerOutput/reports/mutation-report.json \
+                        narrowed.txt Jellyfin.Plugin.WhisperSubtitles 2>&1); then
+            echo "$output"
+            echo "The check accepted a run that mutated a file the list does not name." >&2
+            exit 1
+          fi
+          echo "$output" | grep -q 'SegmentFormatter.cs'
+
+      - name: And a listed file the report never mentions is refused
+        run: |
+          set -eu
+          cp .github/coverage/pure-logic.txt absent.txt
+          echo "Backends/ITranscriptionBackend.cs" >> absent.txt
+          if output=$(.github/scripts/read-mutation-report.sh \
+                        StrykerOutput/reports/mutation-report.json \
+                        absent.txt Jellyfin.Plugin.WhisperSubtitles 2>&1); then
+            echo "$output"
+            echo "The check accepted a list naming a file the report says nothing about." >&2
+            exit 1
+          fi
+          echo "$output" | grep -q 'ITranscriptionBackend.cs'
