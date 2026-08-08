@@ -20,6 +20,14 @@ on:
       - master
   workflow_dispatch:
 
+# The called workflow declares no permissions of its own, so this job is the only
+# place the bound can be written. Read at the pinned sha, it checks out, sets up
+# the SDK, restores, builds and tests, and reaches no API at all, so a checkout is
+# the whole of what needs a scope here.
+permissions: {}
+
 jobs:
   call:
+    permissions:
+      contents: read
     uses: jellyfin/jellyfin-meta-plugins/.github/workflows/test.yaml@eb99033a7ff644881b014bc0b4169916c854a68b # master, 2026-07-29

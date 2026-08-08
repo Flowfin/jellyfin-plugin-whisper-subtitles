@@ -16,18 +16,21 @@ public sealed class BackendDescription
     /// <param name="models">The models this backend offers.</param>
     /// <param name="languages">The languages this backend offers, as the codes it accepts.</param>
     /// <param name="canDetectLanguage">Whether the backend can be asked to detect the language.</param>
+    /// <param name="canReportLanguageConfidence">Whether it says how sure it is of a language it detected.</param>
     /// <param name="cancellationBudget">How long the backend may take to stop after cancellation.</param>
     public BackendDescription(
         string name,
         IReadOnlyList<string> models,
         IReadOnlyList<string> languages,
         bool canDetectLanguage,
+        bool canReportLanguageConfidence,
         TimeSpan cancellationBudget)
     {
         Name = name;
         Models = models;
         Languages = languages;
         CanDetectLanguage = canDetectLanguage;
+        CanReportLanguageConfidence = canReportLanguageConfidence;
         CancellationBudget = cancellationBudget;
     }
 
@@ -50,6 +53,23 @@ public sealed class BackendDescription
     /// Gets a value indicating whether the backend can be asked to detect the language.
     /// </summary>
     public bool CanDetectLanguage { get; }
+
+    /// <summary>
+    /// Gets a value indicating whether the backend says how sure it is of a
+    /// language it detected.
+    /// </summary>
+    /// <remarks>
+    /// Separate from <see cref="CanDetectLanguage"/> because the two come apart,
+    /// and the pair that comes apart is the one this exists for: a backend that
+    /// detects and reports no score. Detection with nothing to weigh it against is
+    /// a guess the plugin would be presenting as an answer, and
+    /// <see cref="Detection.LanguageAcceptance"/> refuses it before a run rather
+    /// than after one.
+    ///
+    /// A backend declaring this true owes a score on every detection. Returning a
+    /// result without one is refused rather than read as certainty.
+    /// </remarks>
+    public bool CanReportLanguageConfidence { get; }
 
     /// <summary>
     /// Gets how long the backend may take to stop after cancellation.

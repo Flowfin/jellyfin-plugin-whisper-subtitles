@@ -6,8 +6,29 @@ on:
     types:
       - created
 
+# Deny by default at workflow level; the job below opts into what it needs.
+permissions: {}
+
 jobs:
+  # The called workflow declares no permissions of its own, so this job is the
+  # only place the bound can be written, and here the bound is nothing. Read at
+  # the pinned sha, the job is a single peter-evans/slash-command-dispatch step,
+  # and every call it makes - the permission level of the commenter, the reaction
+  # on the comment, the repository_dispatch it emits - goes through the `token`
+  # and `reaction-token` inputs it is handed rather than through GITHUB_TOKEN. So
+  # an empty set is what the steps use, not a set chosen to be small.
+  #
+  # Two things this does not claim. The token handed in below is `.`, which is not
+  # a credential, so no dispatch this workflow emits can authenticate; the action
+  # documents that GITHUB_TOKEN cannot stand in, because a dispatch created with
+  # it starts no further workflow. And the runs that pass today pass without
+  # reaching the API at all, which is what the empty set is measured against
+  # rather than a demonstration that a real command would work:
+  #
+  #   gh run view 31262283359 --repo Flowfin/jellyfin-plugin-whisper-subtitles --log
+  #   The first line of the comment is not a valid slash command...
   call:
+    permissions: {}
     uses: jellyfin/jellyfin-meta-plugins/.github/workflows/command-dispatch.yaml@eb99033a7ff644881b014bc0b4169916c854a68b # master, 2026-07-29
     secrets:
       token: .

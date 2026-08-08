@@ -83,16 +83,22 @@ public sealed class RemoteWhisperBackend : ITranscriptionBackend
     ///
     /// Detection is offered, because the request may omit the language and the
     /// verbose response states the language it produced. What the response does not
-    /// carry is a confidence, so accepting a detected language on this backend is a
-    /// decision with nothing to weigh it against. #31 is where that is settled, and
-    /// this backend reports the capability honestly rather than hiding it to
-    /// pre-empt the decision.
+    /// carry is a confidence, and that pair is now said in two flags rather than
+    /// one: it detects, and it cannot say how sure it is.
+    ///
+    /// What follows from the pair is decided in <see cref="Detection.LanguageAcceptance"/>
+    /// and not here. This backend is used with a language named for the library,
+    /// and a run that asks it to detect is refused before any audio is extracted.
+    /// The capability is still reported as it is rather than hidden to make the
+    /// refusal go away, because an endpoint that grows a confidence field turns
+    /// this into a one-line change instead of a rediscovery.
     /// </remarks>
     public BackendDescription Description { get; } = new(
         BackendName,
         Array.Empty<string>(),
         Array.Empty<string>(),
         canDetectLanguage: true,
+        canReportLanguageConfidence: false,
         cancellationBudget: TimeSpan.FromSeconds(5));
 
     /// <inheritdoc />
