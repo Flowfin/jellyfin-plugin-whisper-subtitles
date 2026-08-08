@@ -9,9 +9,27 @@
         <div data-role="content">
             <div class="content-primary">
                 <form id="WhisperSubtitlesConfigForm">
-                    <p class="fieldDescription">
-                        This plugin has no settings yet. Each one arrives with the feature that reads it.
-                    </p>
+                    <div class="selectContainer">
+                        <label class="selectLabel" for="TargetLanguage">Language to produce</label>
+                        <select is="emby-select" id="TargetLanguage" class="emby-select">
+                            <option value="">Not chosen yet, and nothing runs</option>
+                            <option value="detect">Let the backend decide, per item</option>
+                        </select>
+                        <div class="fieldDescription">
+                            Applies to every enabled library that does not choose below.
+                            While this is unchosen no item is selected, so a fresh
+                            install transcribes nothing into a language nobody asked
+                            for.
+                        </div>
+                    </div>
+                    <div id="WhisperSubtitlesLibraryTargets">
+                        <h3 class="checkboxListLabel">Libraries that want something else</h3>
+                        <div id="WhisperSubtitlesLibraryTargetRows"></div>
+                        <div class="fieldDescription">
+                            A library set to follow the default is not stored, so
+                            changing the default above moves it.
+                        </div>
+                    </div>
                     <div>
                         <button is="emby-button" type="submit" class="raised button-submit block emby-button">
                             <span>Save</span>
@@ -22,21 +40,112 @@
         </div>
         <script type="text/javascript">
             var WhisperSubtitlesConfig = {
-                pluginUniqueId: '30ed66e0-32fd-46a6-8a56-5cd95d8df10f'
+                pluginUniqueId: '30ed66e0-32fd-46a6-8a56-5cd95d8df10f',
+                followsTheDefault: '',
+                detect: 'detect',
+                languages: ['deu', 'eng', 'fra', 'ita', 'jpn', 'nld', 'por', 'rus', 'spa'],
+                libraries: []
+            };
+
+            WhisperSubtitlesConfig.fillLanguages = function (select, includeFollow) {
+                var options = includeFollow
+                    ? ['<option value="">Follow the default</option>']
+                    : ['<option value="">Not chosen yet, and nothing runs</option>'];
+
+                options.push('<option value="' + WhisperSubtitlesConfig.detect + '">Let the backend decide, per item</option>');
+
+                WhisperSubtitlesConfig.languages.forEach(function (code) {
+                    options.push('<option value="' + code + '">' + code + '</option>');
+                });
+
+                select.innerHTML = options.join('');
+            };
+
+            WhisperSubtitlesConfig.targetFor = function (config, libraryId) {
+                var rows = config.LibraryTargets || [];
+                var found = WhisperSubtitlesConfig.followsTheDefault;
+
+                rows.forEach(function (row) {
+                    if (row.LibraryId === libraryId) {
+                        found = row.Target || WhisperSubtitlesConfig.followsTheDefault;
+                    }
+                });
+
+                return found;
+            };
+
+            WhisperSubtitlesConfig.renderLibraries = function (config) {
+                var rows = document.querySelector('#WhisperSubtitlesLibraryTargetRows');
+                rows.innerHTML = '';
+
+                WhisperSubtitlesConfig.libraries.forEach(function (library) {
+                    var container = document.createElement('div');
+                    container.className = 'selectContainer';
+
+                    var label = document.createElement('label');
+                    label.className = 'selectLabel';
+                    label.setAttribute('for', 'LibraryTarget-' + library.ItemId);
+                    label.textContent = library.Name;
+
+                    var select = document.createElement('select');
+                    select.setAttribute('is', 'emby-select');
+                    select.className = 'emby-select whisperSubtitlesLibraryTarget';
+                    select.id = 'LibraryTarget-' + library.ItemId;
+                    select.setAttribute('data-library-id', library.ItemId);
+
+                    WhisperSubtitlesConfig.fillLanguages(select, true);
+                    select.value = WhisperSubtitlesConfig.targetFor(config, library.ItemId);
+
+                    container.appendChild(label);
+                    container.appendChild(select);
+                    rows.appendChild(container);
+                });
+            };
+
+            WhisperSubtitlesConfig.collectLibraries = function () {
+                var collected = [];
+
+                document.querySelectorAll('.whisperSubtitlesLibraryTarget').forEach(function (select) {
+                    if (select.value !== WhisperSubtitlesConfig.followsTheDefault) {
+                        collected.push({
+                            LibraryId: select.getAttribute('data-library-id'),
+                            Target: select.value
+                        });
+                    }
+                });
+
+                return collected;
+            };
+
+            WhisperSubtitlesConfig.load = function () {
+                Dashboard.showLoadingMsg();
+
+                return ApiClient.getVirtualFolders().then(function (libraries) {
+                    WhisperSubtitlesConfig.libraries = libraries || [];
+
+                    return ApiClient.getPluginConfiguration(WhisperSubtitlesConfig.pluginUniqueId).then(function (config) {
+                        var target = document.querySelector('#TargetLanguage');
+                        WhisperSubtitlesConfig.fillLanguages(target, false);
+                        target.value = config.TargetLanguage || WhisperSubtitlesConfig.followsTheDefault;
+
+                        WhisperSubtitlesConfig.renderLibraries(config);
+                        Dashboard.hideLoadingMsg();
+                    });
+                });
             };
 
             document.querySelector('#WhisperSubtitlesConfigPage')
                 .addEventListener('pageshow', function() {
-                    Dashboard.showLoadingMsg();
-                    ApiClient.getPluginConfiguration(WhisperSubtitlesConfig.pluginUniqueId).then(function () {
-                        Dashboard.hideLoadingMsg();
-                    });
+                    WhisperSubtitlesConfig.load();
                 });
 
             document.querySelector('#WhisperSubtitlesConfigForm')
                 .addEventListener('submit', function(e) {
                 Dashboard.showLoadingMsg();
                 ApiClient.getPluginConfiguration(WhisperSubtitlesConfig.pluginUniqueId).then(function (config) {
+                    config.TargetLanguage = document.querySelector('#TargetLanguage').value;
+                    config.LibraryTargets = WhisperSubtitlesConfig.collectLibraries();
+
                     ApiClient.updatePluginConfiguration(WhisperSubtitlesConfig.pluginUniqueId, config).then(function (result) {
                         Dashboard.processPluginConfigurationUpdateResult(result);
                     });
