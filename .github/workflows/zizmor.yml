@@ -1,6 +1,8 @@
 # Static analysis of the GitHub Actions workflows themselves (zizmor). The
-# workflow YAML is release-critical attack surface - publish-beta.yml runs on
-# every push to main with contents:write - so it is audited like any other code.
+# workflow YAML is release-critical attack surface: publish.yaml hands the plugin
+# archive to a job that attaches it to a release with contents:write, and every
+# workflow here that calls into jellyfin-meta-plugins runs code this repository
+# does not hold. So it is audited like any other code.
 #
 # The gate runs zizmor's regular persona at --min-severity=low: it fails the
 # build on any actionable (low/medium/high/critical) security finding -
@@ -12,12 +14,18 @@
 # pin-comment mismatches, unnamed jobs) that are stylistic, not security-blocking,
 # and some are context-blind (it would demand run-cancelling concurrency on the
 # release workflows, which must never be cancelled mid-publish). That backlog is
-# tracked as a code-quality task (#263), not gated here.
+# not gated here and no issue in this repository holds it.
 #
 # Rule for future workflow changes: every new or edited workflow must pass this
 # gate before merge. Keep actions SHA-pinned, keep checkout on
 # persist-credentials:false, grant write permissions per job (never
 # workflow-level), and never restore a cache in a job that publishes a release.
+#
+# A job that hands work to a reusable workflow is where that last rule is easiest
+# to miss, because the job runs no steps of its own. The caller is the only place
+# the bound can be written, since none of the called workflows declares
+# permissions at the sha it is pinned to, and eight such jobs ran on the
+# repository default until #140.
 name: Workflow Security Analysis
 
 on:

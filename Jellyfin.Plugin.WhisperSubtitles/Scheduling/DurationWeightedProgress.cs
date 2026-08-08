@@ -21,6 +21,16 @@ namespace Jellyfin.Plugin.WhisperSubtitles.Scheduling;
 /// highest value reached so far, so a report that would lower it is absorbed
 /// rather than shown.
 ///
+/// Emitting sits inside the lock, which is what makes that true of what the sink
+/// receives rather than only of what this class computes. Deciding the new
+/// highest under the lock and then handing it over outside leaves two workers
+/// free to arrive at the sink in the opposite order to the one they were
+/// numbered in, and the operator sees the lower value last. Measured at 77 of
+/// 200 runs over sixty-four items before this was closed, in #146. The cost is
+/// that a sink is called with the lock held, so a sink that is slow serializes
+/// the workers for as long as it takes and one that calls back in relies on the
+/// lock being reentrant.
+///
 /// A failed item advances it by its whole length. The run is that much further
 /// through the work whatever the item produced, and stalling the number on a
 /// failure would say the opposite.
@@ -117,15 +127,12 @@ public sealed class DurationWeightedProgress
             }
 
             _highest = 100;
+            _report.Report(100);
         }
-
-        _report.Report(100);
     }
 
     private void Fold(int item, double fraction)
     {
-        double toReport;
-
         lock (_gate)
         {
             if (fraction <= _fractions[item])
@@ -142,10 +149,8 @@ public sealed class DurationWeightedProgress
             }
 
             _highest = reached;
-            toReport = reached;
+            _report.Report(reached);
         }
-
-        _report.Report(toReport);
     }
 
     private double Done()

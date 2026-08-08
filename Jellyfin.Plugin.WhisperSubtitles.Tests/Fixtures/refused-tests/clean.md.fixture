@@ -1,0 +1,15 @@
+## Tests that are refused, and what replaces each one
+
+The neighbour. Nothing here breaks a rule, and a reader that refused every
+section would pass every leg above without it.
+
+- A test that reads a document and believes it. Replaced by
+  `RefusedTestsTests`.
+- A test that has not been decided yet. Owed by #46.
+
+The paragraph after the list, which is not an entry and has to stay out of the
+count.
+
+## A later section
+
+Here so the reader has something to stop at.
