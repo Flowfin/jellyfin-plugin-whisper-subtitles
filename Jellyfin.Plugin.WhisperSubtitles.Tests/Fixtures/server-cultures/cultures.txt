@@ -1,0 +1,99 @@
+afr||af|Afrikaans|afrikaans
+amh||am|Amharic|amharique
+ara||ar|Arabic|arabe
+asm||as|Assamese|assamais
+aze||az|Azerbaijani|azéri
+bak||ba|Bashkir|bachkir
+bel||be|Belarusian|biélorusse
+ben||bn|Bengali|bengali
+bod|tib|bo|Tibetan|tibétain
+bos||bs|Bosnian|bosniaque
+bre||br|Breton|breton
+bul||bg|Bulgarian|bulgare
+cat||ca|Catalan; Valencian|catalan; valencien
+ces|cze|cs|Czech|tchèque
+cym|wel|cy|Welsh|gallois
+dan||da|Danish|danois
+deu|ger|de|German|allemand
+ell|gre|el|Greek, Modern (1453-)|grec moderne (après 1453)
+eng||en|English|anglais
+est||et|Estonian|estonien
+eus|baq|eu|Basque|basque
+fao||fo|Faroese|féroïen
+fas|per|fa|Persian|persan
+fin||fi|Finnish|finnois
+fra|fre|fr|French|français
+glg||gl|Galician|galicien
+guj||gu|Gujarati|goudjrati
+hat||ht|Haitian; Haitian Creole|haïtien; créole haïtien
+hau||ha|Hausa|haoussa
+haw|||Hawaiian|hawaïen
+heb||he|Hebrew|hébreu
+hin||hi|Hindi|hindi
+hrv||hr|Croatian|croate
+hun||hu|Hungarian|hongrois
+hye|arm|hy|Armenian|arménien
+isl|ice|is|Icelandic|islandais
+ind||id|Indonesian|indonésien
+ita||it|Italian|italien
+jav||jv|Javanese|javanais
+jpn||ja|Japanese|japonais
+kan||kn|Kannada|kannada
+kat|geo|ka|Georgian|géorgien
+kaz||kk|Kazakh|kazakh
+khm||km|Central Khmer|khmer central
+kor||ko|Korean|coréen
+lao||lo|Lao|lao
+lat||la|Latin|latin
+lav||lv|Latvian|letton
+lin||ln|Lingala|lingala
+lit||lt|Lithuanian|lituanien
+ltz||lb|Luxembourgish; Letzeburgesch|luxembourgeois
+mal||ml|Malayalam|malayalam
+mar||mr|Marathi|marathe
+mkd|mac|mk|Macedonian|macédonien
+mlg||mg|Malagasy|malgache
+mlt||mt|Maltese|maltais
+mon||mn|Mongolian|mongol
+mri|mao|mi|Maori|maori
+msa|may|ms|Malay|malais
+mya|bur|my|Burmese|birman
+nep||ne|Nepali|népalais
+nld|dut|nl|Dutch; Flemish|néerlandais; flamand
+nno||nn|Norwegian (Nynorsk)|norvégien (nynorsk)
+nor||no|Norwegian|norvégien
+oci||oc|Occitan (post 1500); Provençal|occitan (après 1500); provençal
+pan||pa|Panjabi; Punjabi|pendjabi
+pol||pl|Polish|polonais
+por||pt|Portuguese|portugais
+pus||ps|Pushto; Pashto|pachto
+ron|rum|ro|Romanian; Moldavian; Moldovan|roumain; moldave
+rus||ru|Russian|russe
+san||sa|Sanskrit|sanskrit
+srp||sr|Serbian|serbe
+sin||si|Sinhala; Sinhalese|singhalais
+slk|slo|sk|Slovak|slovaque
+slv||sl|Slovenian|slovène
+sna||sn|Shona|shona
+snd||sd|Sindhi|sindhi
+som||so|Somali|somali
+spa||es|Spanish; Castilian|espagnol; castillan
+sqi|alb|sq|Albanian|albanais
+sun||su|Sundanese|soundanais
+swa||sw|Swahili|swahili
+swe||sv|Swedish|suédois
+tam||ta|Tamil|tamoul
+tat||tt|Tatar|tatar
+tel||te|Telugu|télougou
+tgk||tg|Tajik|tadjik
+tgl||tl|Tagalog|tagalog
+tha||th|Thai|thaï
+tuk||tk|Turkmen|turkmène
+tur||tr|Turkish|turc
+ukr||uk|Ukrainian|ukrainien
+urd||ur|Urdu|ourdou
+uzb||uz|Uzbek|ouszbek
+vie||vi|Vietnamese|vietnamien
+yid||yi|Yiddish|yiddish
+yor||yo|Yoruba|yoruba
+zho|chi|zh|Chinese|chinois

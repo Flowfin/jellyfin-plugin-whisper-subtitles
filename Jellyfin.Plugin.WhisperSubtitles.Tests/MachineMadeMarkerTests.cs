@@ -32,8 +32,11 @@ public class MachineMadeMarkerTests
     [Theory]
     [InlineData("/media/Films/Arrival (2016)/Arrival (2016).mkv", "en", "eng")]
     [InlineData("/media/Films/Arrival (2016)/Arrival (2016).mkv", "eng", "eng")]
-    [InlineData("/media/Films/Das Boot (1981)/Das Boot (1981).mp4", "de", "ger")]
-    [InlineData("/media/Films/Das Boot (1981)/Das Boot (1981).mp4", "DE", "ger")]
+    // German has two three letter codes and the server keeps the first one its
+    // culture file lists, which is deu. This row said ger until the double behind
+    // it stopped being written by hand.
+    [InlineData("/media/Films/Das Boot (1981)/Das Boot (1981).mp4", "de", "deu")]
+    [InlineData("/media/Films/Das Boot (1981)/Das Boot (1981).mp4", "DE", "deu")]
     [InlineData("/media/Shows/Show/Season 1/Show - S01E02 - Title.mkv", "ja", "jpn")]
     [InlineData("/media/Films/Two.Dots.In.The.Name (2007)/Two.Dots.In.The.Name (2007).avi", "en", "eng")]
     public void The_name_parses_back_to_the_language_and_the_marker(
