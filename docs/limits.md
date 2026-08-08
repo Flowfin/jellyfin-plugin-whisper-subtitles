@@ -102,8 +102,12 @@ task ships with no default trigger, so a server whose operator installed the
 plugin and configured nothing behaves exactly as it did before, and there is a
 task in the dashboard to look at.
 
-Decided, not yet built. Recorded in #17, whose done-condition is that
-`GetDefaultTriggers` returns no trigger that would start work unattended.
+Held today. `GetDefaultTriggers` on the task returns an empty set, and
+`Nothing_this_task_ships_would_start_work_unattended` in
+`SubtitleGenerationTaskTests` is red for a task that ships one trigger, so the
+promise is refused rather than intended. Recorded in #17, which stays open for a
+separate reason: whether the task appears in a server's dashboard is evidence only
+a booted server produces, and that is #63.
 
 ## What it writes, and where
 
