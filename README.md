@@ -187,3 +187,5 @@ is neither repeated nor softened here.
 ## License
 
 The GNU General Public License, version 3. The full text is in `LICENSE`.
+
+See [NOTICE.md](NOTICE.md) for the intended-use notice.
