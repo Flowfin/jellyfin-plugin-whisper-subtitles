@@ -4,6 +4,7 @@
 # A second manifest for the 12.0 line is part of packaging, in #51.
 name: "Whisper Subtitles"
 guid: "30ed66e0-32fd-46a6-8a56-5cd95d8df10f"
+imageUrl: "https://raw.githubusercontent.com/Flowfin/jellyfin-plugin-whisper-subtitles/master/img/logo.png"
 version: "1.0.0.0"
 targetAbi: "10.11.0.0"
 framework: "net9.0"
