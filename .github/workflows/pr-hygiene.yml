@@ -1,0 +1,122 @@
+# The checks that read the pull request rather than the code in it (#80).
+#
+# Two tiers, and the split is what makes either of them survivable. The tier that
+# decides holds only rules with no judgement in them, so a red verdict is never
+# something to argue about; the tier that annotates holds every rule with a
+# legitimate exception, and it cannot turn a run red however much it objects. A
+# check that fails on a judgement call is a check people learn to route around,
+# and then the rules with no judgement in them go the same way.
+#
+# The rules themselves are not in this file. They are functions in
+# checks/pr-hygiene, each with its own test in the suite, so proving that one
+# bites costs a unit test rather than a deliberately bad pull request somebody
+# has to open, watch fail and remember to close.
+#
+# The tier that decides is skipped for a pull request from a fork. A first
+# contribution should not be met with a red gate about a convention nobody told
+# the contributor about, and the conventions live in CONTRIBUTING.md, which is
+# what a maintainer points at instead.
+name: Pull request hygiene
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, edited]
+
+# Deny by default; each job opts into what it needs.
+permissions: {}
+
+# A superseded run on the same pull request is worth nothing, and re-reading a
+# body and a commit range is cheap and has no side effect.
+concurrency:
+  group: pr-hygiene-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  hygiene:
+    name: Pull request hygiene
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # Full history so the base..head range is walkable; no push, so drop the
+          # persisted token.
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Install the SDK the rules are built with
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          dotnet-version: |
+            9.0.x
+            10.0.x
+
+      # What the mainline actually refuses a merge without, read from the ruleset
+      # at run time rather than written into this file. A list here would drift
+      # against the thing it describes, and the drift would be invisible: the
+      # workflow would go on printing a set the ruleset no longer holds.
+      #
+      # It is printed rather than acted on. If the token cannot read the ruleset
+      # the step says so and the run carries on, because this is a note for a
+      # reader and no rule is decided by it.
+      - name: Print the required set from the ruleset
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPOSITORY: ${{ github.repository }}
+        run: |
+          set -uo pipefail
+          if ! rulesets=$(gh api "repos/${REPOSITORY}/rulesets" 2>&1); then
+            echo "The ruleset could not be read with this token, so the required set is not printed here:"
+            echo "${rulesets}"
+            exit 0
+          fi
+          id=$(printf '%s' "${rulesets}" | jq -r '.[] | select(.name == "gate") | .id')
+          if [ -z "${id}" ] || [ "${id}" = "null" ]; then
+            echo "No ruleset named 'gate' on ${REPOSITORY}, so there is no required set to print."
+            exit 0
+          fi
+          echo "Required by the ruleset on the default branch:"
+          gh api "repos/${REPOSITORY}/rulesets/${id}" \
+            --jq '[.rules[] | select(.type == "required_status_checks") | .parameters.required_status_checks[].context] | .[]' \
+            | sed 's/^/  /'
+
+      # The pull request's own fields, written to files and to the environment.
+      # Nothing here is interpolated into a command, so a body carrying whatever
+      # somebody typed cannot become an instruction.
+      - name: Read the pull request
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          if ! git log --no-merges --format='%s' "$BASE_SHA".."$HEAD_SHA" > subjects.txt; then
+            echo "::error::Could not walk the commit range ${BASE_SHA}..${HEAD_SHA}."
+            exit 1
+          fi
+          git diff --name-only "$BASE_SHA".."$HEAD_SHA" > paths.txt
+          changed=$(git diff --numstat "$BASE_SHA".."$HEAD_SHA" \
+                    | awk '$1 ~ /^[0-9]+$/ && $2 ~ /^[0-9]+$/ { total += $1 + $2 } END { print total + 0 }')
+          echo "PR_CHANGED_LINES=${changed}" >> "$GITHUB_ENV"
+          echo "Commits in range: $(wc -l < subjects.txt), files: $(wc -l < paths.txt), changed lines: ${changed}"
+
+      - name: Judge it
+        env:
+          PR_BODY: ${{ github.event.pull_request.body }}
+          PR_COMMIT_SUBJECTS_FILE: subjects.txt
+          PR_CHANGED_PATHS_FILE: paths.txt
+          # The tier that decides is skipped for a fork, and the run still reports
+          # what every rule found, so a maintainer reading a first contribution
+          # sees the same output without a red check attached to it.
+          SKIP_DECIDING_TIER: ${{ github.event.pull_request.head.repo.full_name != github.repository }}
+        run: |
+          set -uo pipefail
+          dotnet run --project checks/pr-hygiene -c Release -f net10.0
+          verdict=$?
+          if [ "${SKIP_DECIDING_TIER}" = "true" ] && [ "${verdict}" -ne 0 ]; then
+            echo "::notice::This pull request comes from a fork, so the rules that decide are reported and not enforced. See CONTRIBUTING.md."
+            exit 0
+          fi
+          exit "${verdict}"
