@@ -140,6 +140,37 @@ internal sealed class StubBackend : ITranscriptionBackend
     public double? DetectedConfidence { get; set; }
 
     /// <summary>
+    /// Gets or sets a value indicating whether the description carries no name.
+    /// </summary>
+    /// <remarks>
+    /// One of four ways of being wrong that exist only so a check can be shown to
+    /// refuse them. They are knobs here rather than four small classes beside the
+    /// tests that need them, because a fake hand-rolled inside a test file is
+    /// invisible until two of them disagree, which is what
+    /// <c>StubBackendTests.The_suite_has_one_backend_it_transcribes_against</c>
+    /// refuses.
+    /// </remarks>
+    public bool DescribesWithNoName { get; set; }
+
+    /// <summary>
+    /// Gets or sets a value indicating whether the cost hint shrinks as the media
+    /// gets longer.
+    /// </summary>
+    public bool CostShrinksWithLength { get; set; }
+
+    /// <summary>
+    /// Gets or sets a value indicating whether the readiness check transcribes on
+    /// the way to deciding whether it could.
+    /// </summary>
+    public bool TranscribesWhileCheckingReadiness { get; set; }
+
+    /// <summary>
+    /// Gets or sets a value indicating whether a transcription throws something
+    /// the interface never declared.
+    /// </summary>
+    public bool ThrowsSomethingUndeclared { get; set; }
+
+    /// <summary>
     /// Gets how many times the readiness check was asked.
     /// </summary>
     public int ReadinessChecks { get; private set; }
@@ -161,7 +192,7 @@ internal sealed class StubBackend : ITranscriptionBackend
 
     /// <inheritdoc />
     public BackendDescription Description => new(
-        Name,
+        DescribesWithNoName ? "  " : Name,
         new[] { "stub-model" },
         new[] { "en" },
         CanDetectLanguage,
@@ -175,6 +206,11 @@ internal sealed class StubBackend : ITranscriptionBackend
 
         ReadinessChecks++;
 
+        if (TranscribesWhileCheckingReadiness)
+        {
+            TranscriptionsAsked++;
+        }
+
         if (ReadinessThrows is not null)
         {
             throw ReadinessThrows;
@@ -184,7 +220,10 @@ internal sealed class StubBackend : ITranscriptionBackend
     }
 
     /// <inheritdoc />
-    public CostEstimate EstimateCost(TimeSpan mediaDuration) => Estimate;
+    public CostEstimate EstimateCost(TimeSpan mediaDuration) =>
+        CostShrinksWithLength
+            ? new CostEstimate(TimeSpan.Zero, TimeSpan.FromHours(4) - mediaDuration)
+            : Estimate;
 
     /// <inheritdoc />
     public async Task<TranscriptionResult> TranscribeAsync(
@@ -194,6 +233,11 @@ internal sealed class StubBackend : ITranscriptionBackend
     {
         ArgumentNullException.ThrowIfNull(request);
         ArgumentNullException.ThrowIfNull(progress);
+
+        if (ThrowsSomethingUndeclared)
+        {
+            throw new InvalidTimeZoneException("something the interface never named");
+        }
 
         TranscriptionsAsked++;
         _languagesAsked.Add(request.Language);
