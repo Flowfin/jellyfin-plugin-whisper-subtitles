@@ -86,6 +86,44 @@ public sealed class BoundedRunTests
     [Fact]
     public async Task A_run_stopped_partway_stays_under_the_cap_and_says_what_it_never_started()
     {
+        // The stop arrives while every worker is still holding its first item, so
+        // what is left is left because the cap held it back rather than because a
+        // thread was slow. Two workers, eight items, both held: six items no worker
+        // could have reached, and that is a number rather than an inequality.
+        using var stop = new CancellationTokenSource();
+        var bothInFlight = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var entered = 0;
+        var watcher = new ConcurrencyWatcher(
+            onEntry: _ =>
+            {
+                if (Interlocked.Increment(ref entered) == 2)
+                {
+                    bothInFlight.TrySetResult();
+                }
+            },
+            holdsUntilStopped: true);
+
+        var run = BoundedRun.RunAsync(_eightItems, 2, watcher.RunAsync, stop.Token);
+        await bothInFlight.Task.ConfigureAwait(true);
+        await stop.CancelAsync().ConfigureAwait(true);
+        var outcome = await run.ConfigureAwait(true);
+
+        Assert.True(
+            watcher.MaximumInFlight <= 2,
+            $"{watcher.MaximumInFlight} items were being transcribed at once under a cap of 2");
+        Assert.True(outcome.WasCancelled);
+        Assert.Equal(6, outcome.NeverStarted);
+        Assert.Equal(8, outcome.Completed + outcome.Failures.Count + outcome.NeverStarted + AbandonedIn(outcome, watcher));
+    }
+
+    [Fact]
+    public async Task A_stop_raised_inside_the_work_still_ends_the_run_and_still_adds_up()
+    {
+        // The other shape a stop arrives in, and the one that says nothing about
+        // how far the run got. Cancelling from inside an item races the other
+        // worker, which is free to take and finish everything that is left before
+        // the cancellation is visible to it, so the only claims here are the ones
+        // that hold whichever way that race falls.
         using var stop = new CancellationTokenSource();
         var watcher = new ConcurrencyWatcher(onEntry: item =>
         {
@@ -101,7 +139,6 @@ public sealed class BoundedRunTests
             watcher.MaximumInFlight <= 2,
             $"{watcher.MaximumInFlight} items were being transcribed at once under a cap of 2");
         Assert.True(outcome.WasCancelled);
-        Assert.True(outcome.NeverStarted > 0, "a run that was stopped reported that it had started everything");
         Assert.Equal(8, outcome.Completed + outcome.Failures.Count + outcome.NeverStarted + AbandonedIn(outcome, watcher));
     }
 
