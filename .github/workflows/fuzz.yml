@@ -18,6 +18,11 @@ name: Fuzz the parsers
 
 on:
   workflow_dispatch:
+    inputs:
+      seconds:
+        description: 'Seconds to fuzz each target for. Empty runs the stated duration below.'
+        required: false
+        type: string
   # Weekly. What this catches is a shape nobody has thought of rather than a
   # change in this repository, and a change here already meets the corpus replay
   # in the job below, which runs in seconds. So the interval is set by how long
@@ -40,7 +45,12 @@ env:
   # kept as an artefact rather than fed back into the next one, so a longer
   # single run buys less here than the regular one does. Raising it is a change
   # to this line and to the sentence above it.
-  FUZZ_SECONDS: '600'
+  #
+  # A dispatch may ask for less, and only a dispatch can: the schedule passes no
+  # input and lands on the number below. That is for triaging a finding, where
+  # the run exists to reproduce something already known rather than to search,
+  # and where waiting the stated duration to collect an input buys nothing.
+  FUZZ_SECONDS: ${{ inputs.seconds || '600' }}
 
 jobs:
   # First, and cheap. The corpus and the harness are checked without a fuzzer at
@@ -196,15 +206,27 @@ jobs:
             exit 1
           fi
 
-      - name: Keep what a reader needs to understand this run
+      # Into one archive first, and not because it is tidier. The fuzzer names
+      # every input it keeps after the moment it found it, and those names carry
+      # a colon, which the artifact store refuses. Uploading the directories as
+      # they are cost this repository the seven inputs its first run found: the
+      # numbers said what had happened and the inputs that would have let
+      # somebody repair it were gone.
+      - name: Pack what a reader needs to understand this run
+        if: always()
+        run: |
+          set -eu
+          kept=$(find findings-* -path '*/crashes/*' -type f ! -name 'README*' | wc -l)
+          echo "packing $kept kept input(s) and the fuzzer's own reports"
+          tar --checkpoint=1000 --checkpoint-action=dot -czf fuzz-findings.tar.gz findings-*
+          ls -l fuzz-findings.tar.gz
+
+      - name: Keep it
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: fuzz-findings
-          path: |
-            findings-whisper-output
-            findings-transcription-response
-            findings-property-bite
+          path: fuzz-findings.tar.gz
           retention-days: 30
           if-no-files-found: error
 
