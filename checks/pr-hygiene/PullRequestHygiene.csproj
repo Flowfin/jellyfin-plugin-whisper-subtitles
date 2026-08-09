@@ -1,0 +1,36 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    The rules that read a pull request rather than the code in it.
+
+    It is a project of its own rather than a script inside the workflow, because
+    every rule here has to be a function a test can call with a body and a list of
+    commit subjects. A rule written in shell is proven by opening a bad pull
+    request and watching it fail, which is a proof nobody repeats and a bad pull
+    request somebody has to remember to close.
+
+    It carries no reference to the plugin and the plugin carries no reference to
+    it, so nothing here can reach the shipped package. It is in the solution, so
+    the analysis settings this tree refuses on reach it like everything else, and
+    a build of the solution says whether it still compiles on both lines.
+  -->
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFrameworks>$(SupportedServerLines)</TargetFrameworks>
+    <RootNamespace>Jellyfin.Plugin.WhisperSubtitles.Hygiene</RootNamespace>
+    <AssemblyName>PullRequestHygiene</AssemblyName>
+    <IsPackable>false</IsPackable>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <!--
+    The rules are internal, because nothing outside this tool consumes them, and
+    the suite is the exception rather than a second consumer: it is where each one
+    is proved.
+  -->
+  <ItemGroup>
+    <InternalsVisibleTo Include="Jellyfin.Plugin.WhisperSubtitles.Tests" />
+  </ItemGroup>
+
+</Project>

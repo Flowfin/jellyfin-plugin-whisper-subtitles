@@ -4,6 +4,12 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Jellyfin.Plugin.WhisperSubt
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Jellyfin.Plugin.WhisperSubtitles.Tests", "Jellyfin.Plugin.WhisperSubtitles.Tests\Jellyfin.Plugin.WhisperSubtitles.Tests.csproj", "{7A7784B4-104B-4D14-BB65-1E1B15B8BA1E}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "checks", "checks", "{36CBE016-26E7-D9D2-6ED5-AE44737356E1}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "pr-hygiene", "pr-hygiene", "{C6C0459F-614A-7942-AC14-48F3F4E6B7B0}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PullRequestHygiene", "checks\pr-hygiene\PullRequestHygiene.csproj", "{6BA4D61C-CE67-4835-9176-74526019D3F2}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -38,8 +44,24 @@ Global
 		{7A7784B4-104B-4D14-BB65-1E1B15B8BA1E}.Release|x64.Build.0 = Release|Any CPU
 		{7A7784B4-104B-4D14-BB65-1E1B15B8BA1E}.Release|x86.ActiveCfg = Release|Any CPU
 		{7A7784B4-104B-4D14-BB65-1E1B15B8BA1E}.Release|x86.Build.0 = Release|Any CPU
+		{6BA4D61C-CE67-4835-9176-74526019D3F2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6BA4D61C-CE67-4835-9176-74526019D3F2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6BA4D61C-CE67-4835-9176-74526019D3F2}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{6BA4D61C-CE67-4835-9176-74526019D3F2}.Debug|x64.Build.0 = Debug|Any CPU
+		{6BA4D61C-CE67-4835-9176-74526019D3F2}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{6BA4D61C-CE67-4835-9176-74526019D3F2}.Debug|x86.Build.0 = Debug|Any CPU
+		{6BA4D61C-CE67-4835-9176-74526019D3F2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6BA4D61C-CE67-4835-9176-74526019D3F2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6BA4D61C-CE67-4835-9176-74526019D3F2}.Release|x64.ActiveCfg = Release|Any CPU
+		{6BA4D61C-CE67-4835-9176-74526019D3F2}.Release|x64.Build.0 = Release|Any CPU
+		{6BA4D61C-CE67-4835-9176-74526019D3F2}.Release|x86.ActiveCfg = Release|Any CPU
+		{6BA4D61C-CE67-4835-9176-74526019D3F2}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{C6C0459F-614A-7942-AC14-48F3F4E6B7B0} = {36CBE016-26E7-D9D2-6ED5-AE44737356E1}
+		{6BA4D61C-CE67-4835-9176-74526019D3F2} = {C6C0459F-614A-7942-AC14-48F3F4E6B7B0}
 	EndGlobalSection
 EndGlobal

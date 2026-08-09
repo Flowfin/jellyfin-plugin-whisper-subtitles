@@ -177,6 +177,34 @@ the committed file, and separately asserts the file still has its carriage
 returns, so a clone that rewrote the fixture and a change to the writer fail
 differently and say which one moved.
 
+## What a pull request has to carry
+
+Two things, and both are read by a check rather than by a person, so neither is a
+matter of taste.
+
+The body names an issue. Every change here starts as one, and the number is what
+connects a diff to the argument for it.
+
+Every commit subject names an issue too. That is newer than the rest of this file
+and it is worth saying plainly: the commits already on the mainline do not do it,
+so this is a convention starting now rather than one being enforced backwards. The
+check walks only the commits a pull request adds.
+
+`Pull request hygiene` decides those two, and `.github/workflows/pr-hygiene.yml`
+is where it runs. What it decides is not all it reports: a second tier annotates a
+large diff and a change to the plugin with no change to the test project, and that
+tier cannot turn a run red however much it objects. A check that fails on a
+judgement call is one people learn to argue with, and the rules with no judgement
+in them go the same way once that starts.
+
+The tier that decides is skipped for a pull request from a fork, because a first
+contribution should not be met with a red check about a convention nobody
+mentioned. This section is that mention.
+
+The rules are functions in `checks/pr-hygiene`, and each is proved in
+`PullRequestHygieneTests` rather than by opening a bad pull request to watch it
+fail.
+
 ## Before you push
 
 Run the suite. State what changed and what failure it prevents, in the commit

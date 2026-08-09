@@ -51,6 +51,14 @@
     <ProjectReference Include="..\Jellyfin.Plugin.WhisperSubtitles\Jellyfin.Plugin.WhisperSubtitles.csproj" />
   </ItemGroup>
 
+  <!-- The pull request hygiene rules, which ship nowhere and are checked here.
+       They are a project of their own so the workflow can run them over a real
+       pull request, and they are referenced here so each one is proved by a test
+       rather than by somebody opening a bad pull request to watch it fail. -->
+  <ItemGroup>
+    <ProjectReference Include="..\checks\pr-hygiene\PullRequestHygiene.csproj" />
+  </ItemGroup>
+
   <!-- The plugin excludes the Jellyfin runtime assemblies because the server
        supplies them, which is right for what ships and leaves the test host with
        nothing to load the plugin against. These bring the same pinned version back
