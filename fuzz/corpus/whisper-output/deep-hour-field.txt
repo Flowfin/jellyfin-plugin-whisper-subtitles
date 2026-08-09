@@ -1,0 +1,1 @@
+[9999:59:59.999 --> 9999:59:59.999]   At the top of the hour field.

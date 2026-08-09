@@ -1,0 +1,1 @@
+{"task":"transcribe","language":"en","duration":5.0,"text":"Hello there.","segments":[{"id":0,"seek":0,"start":0.0,"end":2.5,"text":" Hello"},{"id":1,"seek":0,"start":2.5,"end":5.0,"text":" there."}]}
