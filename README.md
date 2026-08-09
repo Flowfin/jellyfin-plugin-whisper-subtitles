@@ -182,6 +182,8 @@ is neither repeated nor softened here.
   can do about each one.
 - `docs/subtitle-format.md`, why the output is SubRip and what the writer holds
   to.
+- `docs/backend-interface.md`, what a transcription backend has to satisfy, for
+  somebody adding a third one.
 - `CONTRIBUTING.md`, how to build it, run the suite and send a change.
 
 ## License
