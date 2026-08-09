@@ -140,6 +140,11 @@ replacement is a real test.
 
 ## Adding a backend
 
+`docs/backend-interface.md` is the long version, written for somebody who has not
+read the code: what each member of the interface promises, what a backend may
+assume about the audio it is handed, how a failure is reported, and what
+cancellation means. What follows here is the short version.
+
 A backend implements `ITranscriptionBackend` and lives under
 `Jellyfin.Plugin.WhisperSubtitles/Backends/`. The interface returns timed
 segments rather than a formatted file, because formatting, naming and marking
