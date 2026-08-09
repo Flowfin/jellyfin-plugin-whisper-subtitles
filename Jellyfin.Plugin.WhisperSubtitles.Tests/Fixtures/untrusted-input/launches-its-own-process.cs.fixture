@@ -1,0 +1,17 @@
+// The convenient second launch: a helper that needs a program for one thing and
+// starts it where it stands, so nothing can see the arguments it was given.
+
+internal sealed class ProbesTheToolItself
+{
+    internal string Version(string executablePath)
+    {
+        var probe = new Process
+        {
+            StartInfo = new ProcessStartInfo(executablePath)
+        };
+
+        probe.Start();
+
+        return probe.StandardOutput.ReadToEnd();
+    }
+}

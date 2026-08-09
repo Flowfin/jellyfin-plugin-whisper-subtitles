@@ -1,0 +1,10 @@
+# A boundary list naming a type this plugin does not carry
+
+## The boundaries, and what bounds each one
+
+- The output of a child process. Bounded by `WhisperTranscriptSanitiser`. Hostile
+  case in `WhisperOutputReaderTests`.
+
+## Something after it
+
+So the reader has a heading to stop at.

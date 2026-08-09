@@ -158,6 +158,13 @@ Nothing outside that folder may name a concrete backend in a signature.
 judges against are in `BackendFixtures.cs`, including the one-change neighbour
 that has to stay green.
 
+`docs/untrusted-input.md` is the other one to read first. It lists every kind of
+input this plugin does not control, names the type holding each bound and the
+test that feeds it the hostile case, and refuses three shapes in the source: a
+process started outside the injected runner, a command line built as one string,
+and an HTTP client made outside the backend that owns its endpoint. A backend
+that needs one of those is a change to that list rather than an exception to it.
+
 Whatever the backend reaches out to goes through an injected seam, so a test
 needs no model, no binary and no network. `IProcessRunner` is the one for a child
 process, and `LocalWhisperBackendTests` shows a backend being driven through it.

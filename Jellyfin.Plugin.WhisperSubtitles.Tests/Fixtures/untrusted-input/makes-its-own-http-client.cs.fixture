@@ -1,0 +1,12 @@
+// A client built outside the backend that owns the endpoint, so the size ceiling,
+// the declared-type check and the injected handler are all somewhere else.
+
+internal sealed class AsksTheEndpointItself
+{
+    internal async Task<string> Ping(Uri endpoint)
+    {
+        using var client = new HttpClient();
+
+        return await client.GetStringAsync(endpoint).ConfigureAwait(false);
+    }
+}
