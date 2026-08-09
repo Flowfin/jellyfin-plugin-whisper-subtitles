@@ -279,14 +279,11 @@ public class UntrustedInputTests
 
         Assert.True(Trips(Vocabulary(rule), fixture), $"{fixtureName} trips no token in {rule}");
 
-        foreach (var other in _allowed.Keys)
+        foreach (var other in _allowed.Keys.Where(name => !string.Equals(name, rule, StringComparison.Ordinal)))
         {
-            if (!string.Equals(other, rule, StringComparison.Ordinal))
-            {
-                Assert.False(
-                    Trips(Vocabulary(other), fixture),
-                    $"{fixtureName} also trips {other}, so neither rule is proven by it");
-            }
+            Assert.False(
+                Trips(Vocabulary(other), fixture),
+                $"{fixtureName} also trips {other}, so neither rule is proven by it");
         }
     }
 
