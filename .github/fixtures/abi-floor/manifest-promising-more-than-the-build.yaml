@@ -1,0 +1,8 @@
+---
+# A manifest whose floor is above the package the line compiles against. The
+# shape of targetAbi being raised on its own, which promises a server newer than
+# anything this tree was built for and which nothing else here would notice.
+name: "Whisper Subtitles"
+guid: "30ed66e0-32fd-46a6-8a56-5cd95d8df10f"
+version: "1.0.0.0"
+targetAbi: "10.11.99.0"

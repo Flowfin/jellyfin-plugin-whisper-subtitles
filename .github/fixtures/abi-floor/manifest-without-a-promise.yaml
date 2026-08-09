@@ -1,0 +1,6 @@
+---
+# A manifest with no targetAbi. Every other field it needs is here, so the
+# script has a file to read and still no promise to derive a floor from.
+name: "Whisper Subtitles"
+guid: "30ed66e0-32fd-46a6-8a56-5cd95d8df10f"
+version: "1.0.0.0"

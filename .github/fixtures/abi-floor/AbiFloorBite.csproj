@@ -1,0 +1,35 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    The fixture the ABI floor is proved against. It is deliberately not in the
+    solution: it is meant to fail to compile at the floor, and a project that
+    fails to compile is not something an ordinary run should trip over.
+
+    It declares no analysis setting of its own, for the same reason the analyzer
+    fixture beside it declares none, and it names no package version either. The
+    version comes from Directory.Build.props like every other project's, so the
+    floor build overrides one property on the command line and this file has
+    nothing to keep in step.
+
+    The documentation file is on because the shared settings refuse a project
+    that has StyleCop and no documentation file, and the pinned build of this
+    fixture has to be clean. The floor build is the one that fails, and it fails
+    on the symbol rather than on a report about the compilation.
+  -->
+
+  <PropertyGroup>
+    <TargetFrameworks>$(SupportedServerLines)</TargetFrameworks>
+    <UsesJellyfinPackages>true</UsesJellyfinPackages>
+    <RootNamespace>AbiFloorBite</RootNamespace>
+    <AssemblyName>AbiFloorBite</AssemblyName>
+    <IsPackable>false</IsPackable>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Jellyfin.Controller" Version="$(JellyfinPackageVersion)">
+      <ExcludeAssets>runtime</ExcludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+</Project>
