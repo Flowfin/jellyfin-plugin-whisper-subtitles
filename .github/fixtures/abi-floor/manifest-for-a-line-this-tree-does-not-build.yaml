@@ -1,0 +1,8 @@
+---
+# A manifest promising a server line no framework in this tree maps to. The
+# shape of a plugin that kept its old manifest after the line it was for was
+# dropped, where a floor build reading it would compare nothing and pass.
+name: "Whisper Subtitles"
+guid: "30ed66e0-32fd-46a6-8a56-5cd95d8df10f"
+version: "1.0.0.0"
+targetAbi: "10.9.0.0"

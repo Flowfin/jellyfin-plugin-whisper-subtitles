@@ -1,0 +1,204 @@
+# The oldest server the manifest promises, compiled against.
+#
+# Two lines are built here and each one pins a package version. That pin is the
+# newest package of its line, not the oldest server the plugin claims to run on,
+# and the gap between the two is invisible to every other check in this tree: a
+# symbol that arrived inside the line compiles against the pin, passes the
+# suite, ships, and is missing on a server the manifest says is supported. The
+# plugin loads, and then throws where the call is reached, which for a scheduled
+# task is the middle of a run rather than the install.
+#
+# So the plugin is compiled a second time against the floor its manifest
+# promises. The floor is read out of the manifest rather than written here,
+# because a number in a workflow drifts against the promise it is supposed to
+# follow.
+#
+# This is a build and not a test run. What ships is the plugin assembly, and the
+# test project is not in the package, so holding the suite to the floor would
+# refuse a test helper for a symbol no operator ever loads.
+name: ABI floor
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ "**" ]
+
+permissions: {}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  floor:
+    name: The plugin compiles against the floor its manifest promises
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install the SDKs both server lines are built against
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          dotnet-version: |
+            9.0.x
+            10.0.x
+
+      - name: Build the plugin against every floor a manifest declares
+        run: |
+          set -eu
+          floors=$(.github/scripts/read-abi-floor.sh build.yaml \
+            Jellyfin.Plugin.WhisperSubtitles/Jellyfin.Plugin.WhisperSubtitles.csproj)
+
+          built=0
+          while read -r framework floor pin; do
+            [ -n "$framework" ] || continue
+            echo "::group::$framework at $floor, pinned at $pin"
+            dotnet build Jellyfin.Plugin.WhisperSubtitles/Jellyfin.Plugin.WhisperSubtitles.csproj \
+              --configuration Release \
+              --framework "$framework" \
+              --no-incremental \
+              --nologo \
+              -p:JellyfinPackageVersion="$floor"
+            echo "::endgroup::"
+            built=$((built + 1))
+          done <<EOF
+          $floors
+          EOF
+
+          if [ "$built" -eq 0 ]; then
+            echo "No floor build ran, so this job compiled nothing." >&2
+            exit 1
+          fi
+
+          echo "built the plugin against $built declared floor(s)"
+
+  refuses:
+    name: And it refuses a symbol the floor does not have
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install the SDKs both server lines are built against
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          dotnet-version: |
+            9.0.x
+            10.0.x
+
+      # The near miss. MediaBrowser.Controller.IO.FileSystemHelper exists in both
+      # versions and only ResolveLinkTarget is missing at the floor, so what
+      # fails here is the symbol and not the package, the namespace or the type.
+      #
+      # Which symbol that is was measured rather than remembered, by comparing
+      # the exported members of the two packages:
+      #
+      #   nuget=~/.nuget/packages
+      #   for v in 10.11.0 10.11.11; do
+      #     dump "$nuget/jellyfin.controller/$v/lib/net9.0/MediaBrowser.Controller.dll"
+      #   done
+      #
+      # where dump walks GetExportedTypes and their public members through a
+      # System.Reflection.MetadataLoadContext. Between 10.11.0 and 10.11.11 that
+      # comparison shows twenty-one added members and ten removed ones, so the
+      # gap this job is about is a real one on this line rather than a shape
+      # borrowed from somewhere else.
+      #
+      # The grep is on the diagnostic id and the identifier, both of which the
+      # compiler prints the same way in every language a runner might be set to.
+      - name: The fixture fails at the floor, on the symbol
+        run: |
+          set -eu
+          floors=$(.github/scripts/read-abi-floor.sh build.yaml \
+            Jellyfin.Plugin.WhisperSubtitles/Jellyfin.Plugin.WhisperSubtitles.csproj)
+
+          checked=0
+          while read -r framework floor pin; do
+            [ -n "$framework" ] || continue
+
+            if output=$(dotnet build .github/fixtures/abi-floor/AbiFloorBite.csproj \
+              --configuration Release \
+              --framework "$framework" \
+              --no-incremental \
+              --nologo \
+              -p:JellyfinPackageVersion="$floor" 2>&1); then
+              echo "$output"
+              echo "The fixture built against $floor. Either the floor build stopped reaching the compiler, or the symbol it names arrived in the floor package." >&2
+              exit 1
+            fi
+
+            echo "$output"
+            echo "$output" | grep -q 'error CS0117'
+            echo "$output" | grep -q 'ResolveLinkTarget'
+            echo "$framework at $floor refused the fixture, naming the symbol"
+            checked=$((checked + 1))
+          done <<EOF
+          $floors
+          EOF
+
+          if [ "$checked" -eq 0 ]; then
+            echo "No floor was checked, so nothing was refused." >&2
+            exit 1
+          fi
+
+          echo "$checked floor(s) refused the fixture"
+
+      # Without this leg the one above passes for a fixture that fails to
+      # compile for a reason of its own, and says nothing about the floor.
+      - name: And the same fixture builds against the pin
+        run: |
+          set -eu
+          floors=$(.github/scripts/read-abi-floor.sh build.yaml \
+            Jellyfin.Plugin.WhisperSubtitles/Jellyfin.Plugin.WhisperSubtitles.csproj)
+
+          while read -r framework floor pin; do
+            [ -n "$framework" ] || continue
+            dotnet build .github/fixtures/abi-floor/AbiFloorBite.csproj \
+              --configuration Release \
+              --framework "$framework" \
+              --no-incremental \
+              --nologo
+            echo "$framework builds the same fixture against its pin of $pin"
+          done <<EOF
+          $floors
+          EOF
+
+      # The floor itself is derived, so the derivation is the other thing that
+      # can be silently wrong. Each fixture below is a manifest, and each is a
+      # shape that would otherwise leave the job green having compared nothing.
+      - name: The derivation refuses a manifest it cannot read a floor out of
+        run: |
+          set -eu
+          project=Jellyfin.Plugin.WhisperSubtitles/Jellyfin.Plugin.WhisperSubtitles.csproj
+
+          refuses() {
+            if output=$(.github/scripts/read-abi-floor.sh "$1" "$project" 2>&1); then
+              echo "$output"
+              echo "read-abi-floor.sh accepted $1, which it must not." >&2
+              exit 1
+            fi
+            echo "$output"
+            echo "$output" | grep -q "$2"
+            echo "refused $1"
+          }
+
+          refuses .github/fixtures/abi-floor/manifest-without-a-promise.yaml \
+            'No targetAbi was read'
+          refuses .github/fixtures/abi-floor/manifest-for-a-line-this-tree-does-not-build.yaml \
+            'no floor was derived'
+          refuses .github/fixtures/abi-floor/manifest-promising-more-than-the-build.yaml \
+            'older than the promise'
+          refuses .github/fixtures/abi-floor/no-manifest-here.yaml \
+            'There is no manifest'
