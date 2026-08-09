@@ -154,10 +154,18 @@ Whatever the backend reaches out to goes through an injected seam, so a test
 needs no model, no binary and no network. `IProcessRunner` is the one for a child
 process, and `LocalWhisperBackendTests` shows a backend being driven through it.
 
-THE CONTRACT SUITE EVERY BACKEND MUST PASS DOES NOT EXIST YET. It is #74, and
-until it lands a new backend is measured against tests written beside it rather
-than against one suite it can be pointed at. Writing a backend now means writing
-those tests too.
+The contract suite every backend must pass is `BackendContractTests`. Add the
+backend to the list at the top of it and every clause runs against it: what its
+description has to answer before anything is configured, that its readiness answer
+transcribes nothing, that its cost hint never shrinks as the media gets longer,
+that a transcription is either ordered segments or a failure the interface
+declares, that progress never goes backwards or past its bound, and that a stopped
+backend does not answer with a transcription.
+
+Two things it does not do. It does not time the cancellation budget, because
+measuring an elapsed time needs a clock this suite refuses to read, so a backend
+that stops late passes it. And it is not all the tests a backend needs: what it
+holds is what every backend owes, not what yours does differently.
 
 ## Writing a fixture
 
