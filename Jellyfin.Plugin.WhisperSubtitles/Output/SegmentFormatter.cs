@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using Jellyfin.Plugin.WhisperSubtitles.Backends;
 
 namespace Jellyfin.Plugin.WhisperSubtitles.Output;
@@ -109,29 +110,29 @@ public static class SegmentFormatter
             StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
 
         var lines = new List<string>();
-        var current = string.Empty;
+        var current = new StringBuilder();
 
         foreach (var word in words)
         {
             if (current.Length == 0)
             {
-                current = word;
+                current.Append(word);
                 continue;
             }
 
             if (current.Length + 1 + word.Length <= SubtitleLimits.MaximumCharactersPerLine)
             {
-                current = current + " " + word;
+                current.Append(' ').Append(word);
                 continue;
             }
 
-            lines.Add(current);
-            current = word;
+            lines.Add(current.ToString());
+            current.Clear().Append(word);
         }
 
         if (current.Length > 0)
         {
-            lines.Add(current);
+            lines.Add(current.ToString());
         }
 
         return lines;

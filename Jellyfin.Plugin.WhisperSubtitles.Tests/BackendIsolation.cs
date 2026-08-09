@@ -46,12 +46,9 @@ internal static class BackendIsolation
                 continue;
             }
 
-            foreach (var named in SignatureTypes(type))
+            foreach (var named in SignatureTypes(type).Where(t => concreteBackends.Contains(t)))
             {
-                if (concreteBackends.Contains(named))
-                {
-                    found.Add($"{type.FullName} names {named.FullName}");
-                }
+                found.Add($"{type.FullName} names {named.FullName}");
             }
         }
 

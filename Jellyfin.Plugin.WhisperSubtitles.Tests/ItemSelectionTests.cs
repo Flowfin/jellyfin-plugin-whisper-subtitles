@@ -145,21 +145,24 @@ public class ItemSelectionTests
         Assert.Empty(result.Candidates);
     }
 
-    [Fact]
-    public void No_target_language_selects_nothing()
+    // One leg per spelling of "no target language" rather than a loop over the
+    // three, so a spelling that stops failing closed is named by the run instead
+    // of hiding behind whichever one broke first.
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("   ")]
+    public void No_target_language_selects_nothing(string? blank)
     {
         // Fail closed. "Does this item already have a subtitle in the language we
         // are about to write" has no answer without one, and the alternative is
         // transcribing a library into a language nobody asked for.
         var item = Item("anything");
 
-        foreach (var blank in new string?[] { null, string.Empty, "   " })
-        {
-            var result = Select(new[] { item }, Options(target: blank));
+        var result = Select(new[] { item }, Options(target: blank));
 
-            Assert.Empty(result.Candidates);
-            Assert.Equal(TimeSpan.Zero, result.TotalDuration);
-        }
+        Assert.Empty(result.Candidates);
+        Assert.Equal(TimeSpan.Zero, result.TotalDuration);
     }
 
     [Fact]
