@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Text.Json;
+using System.Text.Unicode;
 
 namespace Jellyfin.Plugin.WhisperSubtitles.Backends.Remote;
 
@@ -79,6 +80,24 @@ public static class TranscriptionResponseReader
         segments = Array.Empty<TimedSegment>();
         language = null;
         problem = null;
+
+        // Before anything reads a string out of it. JSON is UTF-8 by definition
+        // and the document parser does not check what is inside a string, so a
+        // body carrying one byte that is not valid UTF-8 parses and then throws
+        // at the moment somebody asks for the text. That is three places here,
+        // the segment text, the language and the error message, and it is not a
+        // shape a person would think to send: it is what an endpoint answering
+        // in its own eight-bit encoding sends every time.
+        //
+        // Refused whole rather than repaired per string. A reader substituting a
+        // replacement character would write a subtitle carrying it and call the
+        // answer read.
+        if (!Utf8.IsValid(json.Span))
+        {
+            problem = "The endpoint's answer is not valid UTF-8, which JSON has to be, so nothing in it can be read as text.";
+
+            return false;
+        }
 
         JsonDocument document;
 

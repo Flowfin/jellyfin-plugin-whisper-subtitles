@@ -231,5 +231,69 @@ public class TranscriptionResponseReaderTests
         Assert.Contains("Segment 1", problem!, StringComparison.Ordinal);
     }
 
+    [Theory]
+    [InlineData("""{ "language": "e@n", "segments": [ { "start": 0, "end": 1, "text": "A" } ] }""")]
+    [InlineData("""{ "language": "en", "segments": [ { "start": 0, "end": 1, "text": "A@" } ] }""")]
+    [InlineData("""{ "error": { "message": "no such m@del" } }""")]
+    public void An_answer_that_is_not_valid_text_is_refused_rather_than_read(string body)
+    {
+        // Found by the fuzzer, five separate inputs and one shape, in three
+        // different string fields. The document parser does not look inside a
+        // string, so a body carrying a byte that is not valid UTF-8 parses and
+        // then throws at the moment the text is asked for. It is not a thing
+        // somebody would think to send: it is what an endpoint answering in its
+        // own eight-bit encoding sends every time.
+        var read = TranscriptionResponseReader.TryRead(
+            WithAnInvalidByteWhereTheMarkerIs(body),
+            requestedLanguage: "en",
+            out var segments,
+            out _,
+            out var problem);
+
+        Assert.False(read);
+        Assert.Empty(segments);
+        Assert.Contains("UTF-8", problem!, StringComparison.Ordinal);
+    }
+
+    [Theory]
+    [InlineData("""{ "language": "e@n", "segments": [ { "start": 0, "end": 1, "text": "A" } ] }""")]
+    [InlineData("""{ "language": "en", "segments": [ { "start": 0, "end": 1, "text": "A@" } ] }""")]
+    public void The_same_answers_are_read_with_the_marker_left_as_it_is(string body)
+    {
+        // The other half of the pair above. Without it, a reader that refused
+        // every answer would pass it, and the refusal would be about the shape
+        // rather than about the byte.
+        var read = TranscriptionResponseReader.TryRead(
+            Bytes(body),
+            requestedLanguage: "en",
+            out var segments,
+            out _,
+            out var problem);
+
+        Assert.True(read, problem);
+        Assert.Single(segments);
+    }
+
+    /// <summary>
+    /// Puts one byte no valid UTF-8 sequence can contain where the marker is.
+    /// </summary>
+    /// <remarks>
+    /// 0x9A is a continuation byte, and a continuation byte with nothing leading
+    /// it cannot begin a sequence. Written here rather than carried as a fixture
+    /// file because the whole point of it is one byte, and a file would be a byte
+    /// this repository's own line-ending rules have an opinion about.
+    /// </remarks>
+    private static byte[] WithAnInvalidByteWhereTheMarkerIs(string json)
+    {
+        var bytes = Bytes(json);
+        var marker = Array.IndexOf(bytes, (byte)'@');
+
+        Assert.True(marker >= 0, "this body carries no marker to replace");
+
+        bytes[marker] = 0x9A;
+
+        return bytes;
+    }
+
     private static byte[] Bytes(string json) => Encoding.UTF8.GetBytes(json);
 }

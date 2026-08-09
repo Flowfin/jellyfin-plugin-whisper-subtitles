@@ -37,9 +37,10 @@ instead of going on standing for a bound nobody holds.
   `WhisperOutputReaderTests`.
 - The response from the remote endpoint, which is bounded in size before it is
   read, checked against its declared type, parsed without trusting any length
-  the body announces about itself, and refused where it times a segment past
-  anything a library holds, because a finite number nothing bounded was the one
-  way to make this reader stop answering. Bounded by
+  the body announces about itself, refused where its text is not valid UTF-8,
+  and refused where it times a segment past anything a library holds. Those last
+  two were the two ways to make this reader stop answering instead of refusing,
+  and a fuzzer found the second one. Bounded by
   `TranscriptionResponseReader`. Hostile case in
   `TranscriptionResponseReaderTests`.
 - The item name that becomes a file name, which is where a separator or a
