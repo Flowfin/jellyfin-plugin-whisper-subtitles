@@ -18,14 +18,14 @@
 # line-floor: 95
 # branch-floor: 90
 #
-# Where the numbers come from. The suite over this set stands at 97.71% of lines
-# and 93.60% of branches, measured on net10.0 by
+# Where the numbers come from. The suite over this set stands at 98.37% of lines
+# and 95.18% of branches, measured on net10.0 by
 #
 #     dotnet test -c Release -f net10.0 --nologo --collect:"XPlat Code Coverage"
 #     .github/scripts/refuse-uncovered-logic.sh <report> .github/coverage/pure-logic.txt Jellyfin.Plugin.WhisperSubtitles
 #
 # The floor sits below that rather than at it, and the gap is the disclosure:
-# 11 of the 480 lines and 11 of the 172 branches in this set can be lost without
+# 20 of the 612 lines and 11 of the 228 branches in this set can be lost without
 # this check saying anything. It is set there because two files carry branches
 # no test reaches yet, and a floor pinned to today's figure would make finishing
 # those a precondition for every unrelated change. The number moves up when they
@@ -36,11 +36,15 @@
 # workflow runs both.
 #
 # #47 names selection, the retry policy, the formatter, the language mapping,
-# the name builder, the cost estimate and the configuration validation. Three of
-# those are not written yet: the language mapping is #33, the name builder is
-# #26, the configuration validation is #40. They belong here when they land, and
-# nothing in this file knows that, which is why it is a list somebody edits
-# rather than a pattern that would quietly include or quietly miss them.
+# the name builder, the cost estimate and the configuration validation. The
+# configuration validation landed with #40 and is below; the language mapping is
+# #33 and the name builder is #26. They belong here when they land, and nothing
+# in this file knows that, which is why it is a list somebody edits rather than a
+# pattern that would quietly include or quietly miss them.
+#
+# Only the half of #40 that decides values from its arguments is here. Reading the
+# text off the disk is ConfigurationFile, which touches a serializer, and the
+# command at the top of this file is what says why that one is not in the list.
 
 Attempts/AttemptLedger.cs
 Attempts/RetryPolicy.cs
@@ -49,6 +53,7 @@ Audio/FfmpegArguments.cs
 Backends/BackendSelector.cs
 Backends/CostEstimate.cs
 Backends/Local/WhisperOutputReader.cs
+Configuration/ConfigurationValidation.cs
 Output/SegmentFormatter.cs
 Output/SubRipWriter.cs
 Scheduling/BoundedRun.cs
