@@ -36,9 +36,12 @@ instead of going on standing for a bound nobody holds.
   about over hostile bytes. Bounded by `WhisperOutputReader`. Hostile case in
   `WhisperOutputReaderTests`.
 - The response from the remote endpoint, which is bounded in size before it is
-  read, checked against its declared type, and parsed without trusting any length
-  the body announces about itself. Bounded by `TranscriptionResponseReader`.
-  Hostile case in `TranscriptionResponseReaderTests`.
+  read, checked against its declared type, parsed without trusting any length
+  the body announces about itself, and refused where it times a segment past
+  anything a library holds, because a finite number nothing bounded was the one
+  way to make this reader stop answering. Bounded by
+  `TranscriptionResponseReader`. Hostile case in
+  `TranscriptionResponseReaderTests`.
 - The item name that becomes a file name, which is where a separator or a
   traversal sequence in metadata would otherwise reach the file system. The
   destination is resolved and compared against the folder it must stay inside, so

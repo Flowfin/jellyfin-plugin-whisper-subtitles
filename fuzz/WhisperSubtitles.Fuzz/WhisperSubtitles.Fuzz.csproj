@@ -1,0 +1,45 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    The harness the two parsers that read untrusted bytes are fuzzed through.
+
+    A project of its own, and outside the plugin, for two reasons. The fuzzer is
+    a tool and a package, and neither may end up in what an operator installs,
+    which the package contents check reads off the build. And a coverage guided
+    fuzzer needs the assembly under test instrumented, which is done to the copy
+    this project's publish output carries and never to the one that ships.
+
+    It carries no reference from the plugin and none from the suite, so nothing
+    here reaches either. It is in the solution so both server lines compile it on
+    every run: a harness that stopped building would otherwise be found by the
+    scheduled run rather than by the change that broke it.
+  -->
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFrameworks>$(SupportedServerLines)</TargetFrameworks>
+    <RootNamespace>Jellyfin.Plugin.WhisperSubtitles.Fuzz</RootNamespace>
+    <AssemblyName>WhisperSubtitles.Fuzz</AssemblyName>
+    <IsPackable>false</IsPackable>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="SharpFuzz" Version="[2.3.0]" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\Jellyfin.Plugin.WhisperSubtitles\Jellyfin.Plugin.WhisperSubtitles.csproj" />
+  </ItemGroup>
+
+  <!--
+    The plugin excludes the Jellyfin runtime assemblies because the server
+    supplies them, and this harness has no server. These bring the same pinned
+    version back for the fuzzing run only, read from the one place that names it.
+  -->
+  <ItemGroup>
+    <PackageReference Include="Jellyfin.Controller" Version="$(JellyfinPackageVersion)" />
+    <PackageReference Include="Jellyfin.Model" Version="$(JellyfinPackageVersion)" />
+  </ItemGroup>
+
+</Project>

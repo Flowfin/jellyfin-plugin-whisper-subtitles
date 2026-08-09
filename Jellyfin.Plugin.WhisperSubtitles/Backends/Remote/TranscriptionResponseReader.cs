@@ -34,6 +34,26 @@ public static class TranscriptionResponseReader
     public const string RequiredResponseFormat = "verbose_json";
 
     /// <summary>
+    /// The furthest into the media a segment may be timed, in seconds.
+    /// </summary>
+    /// <remarks>
+    /// Ten thousand hours, which is over a year of continuous playback. It is not
+    /// a preference about long media: without it a finite number this reader
+    /// accepted became a <c>TimeSpan</c> the framework refused to build, so an
+    /// endpoint answering with <c>1e300</c> stopped the reader with an overflow
+    /// instead of being told its answer could not be read. This reader answers
+    /// rather than throws, and a number nothing bounded was the one way through
+    /// that.
+    ///
+    /// The bound is the one the other reader of untrusted bytes already holds
+    /// rather than a second idea about what a time can be:
+    /// <see cref="Local.WhisperOutputReader"/> reads at most four digits of hours
+    /// and says at that bound that media longer than a hundred hours is absurd
+    /// rather than impossible.
+    /// </remarks>
+    public const double SecondsCeiling = 10000d * 3600d;
+
+    /// <summary>
     /// Reads an endpoint's answer.
     /// </summary>
     /// <param name="json">The bytes the endpoint sent.</param>
@@ -172,6 +192,13 @@ public static class TranscriptionResponseReader
         if (end < start)
         {
             problem = "Segment " + at + " ends before it starts.";
+
+            return false;
+        }
+
+        if (start > SecondsCeiling || end > SecondsCeiling)
+        {
+            problem = "Segment " + at + " is timed past anything a library holds.";
 
             return false;
         }

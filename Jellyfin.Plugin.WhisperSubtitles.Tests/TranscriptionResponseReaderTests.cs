@@ -142,6 +142,9 @@ public class TranscriptionResponseReaderTests
     [InlineData("""{ "segments": [ { "start": 3, "end": 1, "text": "A" } ] }""", "ends before it starts")]
     [InlineData("""{ "segments": [ { "start": 0, "end": 1 } ] }""", "no text")]
     [InlineData("""{ "segments": [ { "start": 0, "end": 1, "text": 7 } ] }""", "no text")]
+    [InlineData("""{ "segments": [ { "start": 0, "end": 1e300, "text": "A" } ] }""", "past anything")]
+    [InlineData("""{ "segments": [ { "start": 1e300, "end": 1e300, "text": "A" } ] }""", "past anything")]
+    [InlineData("""{ "segments": [ { "start": "1e308", "end": "1e308", "text": "A" } ] }""", "past anything")]
     public void What_cannot_be_read_as_timed_segments_is_refused_with_a_reason(string body, string says)
     {
         var read = TranscriptionResponseReader.TryRead(
@@ -155,6 +158,51 @@ public class TranscriptionResponseReaderTests
         Assert.Empty(segments);
         Assert.NotNull(problem);
         Assert.Contains(says, problem!, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void A_segment_at_the_ceiling_is_read_and_one_past_it_is_refused()
+    {
+        // The near miss the ceiling is worth having. A bound written with the
+        // wrong comparison refuses the last legal value or accepts the first
+        // illegal one, and either way the run that finds out is one an operator
+        // is waiting on.
+        var atTheCeiling = TranscriptionResponseReader.TryRead(
+            Bytes($$"""
+                {
+                  "language": "en",
+                  "segments": [
+                    { "start": 0, "end": {{TranscriptionResponseReader.SecondsCeiling}}, "text": "A" }
+                  ]
+                }
+                """),
+            requestedLanguage: null,
+            out var segments,
+            out _,
+            out var problem);
+
+        Assert.True(atTheCeiling, problem);
+        Assert.Equal(
+            TimeSpan.FromSeconds(TranscriptionResponseReader.SecondsCeiling),
+            Assert.Single(segments).End);
+
+        var pastIt = TranscriptionResponseReader.TryRead(
+            Bytes($$"""
+                {
+                  "language": "en",
+                  "segments": [
+                    { "start": 0, "end": {{TranscriptionResponseReader.SecondsCeiling + 1}}, "text": "A" }
+                  ]
+                }
+                """),
+            requestedLanguage: null,
+            out var none,
+            out _,
+            out var refusal);
+
+        Assert.False(pastIt);
+        Assert.Empty(none);
+        Assert.Contains("past anything", refusal!, StringComparison.Ordinal);
     }
 
     [Fact]

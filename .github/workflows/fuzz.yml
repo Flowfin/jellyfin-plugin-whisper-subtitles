@@ -1,0 +1,271 @@
+# The two surfaces that read bytes this plugin did not produce, fuzzed.
+#
+# One reads the output of a tool the operator chose. The other reads the body an
+# endpoint the operator pointed at answered with. Both turn text into timestamps,
+# both run unattended on somebody else's server, and neither is reached by any
+# test in the suite with hostile bytes in the quantity a fuzzer produces.
+#
+# Out of band on purpose. It gates no merge: it boots a fuzzer, it takes as long
+# as it is told to, and a check that is red for a reason the author of a pull
+# request cannot fix is one people learn to ignore. What it produces is a
+# finding, and a finding is triaged with the repair in the parser, never patched
+# inside the harness.
+#
+# A crash is not the likely outcome and it is not the interesting one. What this
+# harness asserts is that a parse which SUCCEEDS answers with cues that can be
+# true, which is where a parser of timestamps actually fails.
+name: Fuzz the parsers
+
+on:
+  workflow_dispatch:
+  # Weekly. What this catches is a shape nobody has thought of rather than a
+  # change in this repository, and a change here already meets the corpus replay
+  # in the job below, which runs in seconds. So the interval is set by how long
+  # is acceptable to wait for a shape that has been reachable since the parser
+  # was written, not by how often the parsers change.
+  schedule:
+    - cron: '17 3 * * 1'
+
+permissions: {}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  # The stated duration, per target, and the reason it is this number.
+  #
+  # Ten minutes each. Both parsers are small and reach their shapes early, the
+  # run is on one runner rather than a fleet, and the corpus a run evolves is
+  # kept as an artefact rather than fed back into the next one, so a longer
+  # single run buys less here than the regular one does. Raising it is a change
+  # to this line and to the sentence above it.
+  FUZZ_SECONDS: '600'
+
+jobs:
+  # First, and cheap. The corpus and the harness are checked without a fuzzer at
+  # all, so a broken harness is not discovered halfway through a fuzzing run.
+  replay:
+    name: Every seed replays, and the one that must be reported is
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install the SDKs both server lines are built against
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          dotnet-version: |
+            9.0.x
+            10.0.x
+
+      - name: Build the harness
+        run: |
+          set -eu
+          dotnet build fuzz/WhisperSubtitles.Fuzz/WhisperSubtitles.Fuzz.csproj \
+            --configuration Release --framework net10.0 --nologo
+
+      - name: Replay the corpus
+        run: |
+          set -eu
+          .github/scripts/replay-fuzz-corpus.sh \
+            fuzz/WhisperSubtitles.Fuzz/bin/Release/net10.0/WhisperSubtitles.Fuzz.dll \
+            fuzz/corpus \
+            fuzz/reported
+
+  fuzz:
+    name: The parsers survive what a fuzzer makes of them
+    needs: replay
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install the SDKs both server lines are built against
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          dotnet-version: |
+            9.0.x
+            10.0.x
+
+      - name: Install the fuzzer
+        run: |
+          set -eu
+          sudo apt-get update
+          sudo apt-get install -y afl++
+          afl-fuzz -h 2>&1 | head -n 1
+          dotnet tool install --global SharpFuzz.CommandLine
+          echo "$HOME/.dotnet/tools" >> "$GITHUB_PATH"
+
+      # The plugin assembly is instrumented in the harness's publish output and
+      # never in the tree, so nothing an operator installs has been touched.
+      - name: Publish the harness and instrument the assembly under test
+        run: |
+          set -eu
+          dotnet publish fuzz/WhisperSubtitles.Fuzz/WhisperSubtitles.Fuzz.csproj \
+            --configuration Release --framework net10.0 --output harness --nologo
+          sharpfuzz harness/Jellyfin.Plugin.WhisperSubtitles.dll
+
+      # Before either parser is fuzzed, the fuzzer itself is shown to report what
+      # this harness finds. The target here is not a parser: it builds a cue
+      # straight out of the input and holds it to the same properties, so a seed
+      # whose end is before its start has to come back as a crash. A run of the
+      # two parsers that found nothing means nothing until this has passed.
+      - name: The fuzzer reports the seed that exists to be reported
+        env:
+          AFL_SKIP_BIN_CHECK: '1'
+          AFL_SKIP_CPUFREQ: '1'
+          AFL_I_DONT_CARE_ABOUT_MISSING_CRASHES: '1'
+          AFL_NO_UI: '1'
+        run: |
+          set -eu
+          afl-fuzz -i fuzz/corpus/property-bite -o findings-property-bite \
+            -t 5000 -m none -V 60 \
+            -- dotnet harness/WhisperSubtitles.Fuzz.dll property-bite
+
+          crashes=$(find findings-property-bite -path '*/crashes/*' -type f ! -name 'README*' | wc -l)
+          echo "the fuzzer kept $crashes crashing input(s) for the target that exists to crash"
+
+          if [ "$crashes" -eq 0 ]; then
+            echo "The fuzzer reported nothing for a target that fails on its own seed." >&2
+            echo "Nothing this run says about the two parsers can be believed." >&2
+            exit 1
+          fi
+
+      - name: Fuzz both parsers
+        env:
+          AFL_SKIP_BIN_CHECK: '1'
+          AFL_SKIP_CPUFREQ: '1'
+          AFL_I_DONT_CARE_ABOUT_MISSING_CRASHES: '1'
+          AFL_NO_UI: '1'
+        run: |
+          set -eu
+          for target in whisper-output transcription-response; do
+            echo "::group::$target for $FUZZ_SECONDS seconds"
+            afl-fuzz -i "fuzz/corpus/$target" -o "findings-$target" \
+              -t 5000 -m none -V "$FUZZ_SECONDS" \
+              -- dotnet harness/WhisperSubtitles.Fuzz.dll "$target"
+            echo "::endgroup::"
+          done
+
+      # A broken job and a clean one look identical from outside, which is what
+      # this reads the fuzzer's own numbers for. A run that executed nothing is
+      # a run that proved nothing, and it says so rather than ending green.
+      - name: Say what each run examined, and refuse a run that examined nothing
+        if: always()
+        run: |
+          set -eu
+          reported=0
+
+          for target in whisper-output transcription-response; do
+            stats="findings-$target/default/fuzzer_stats"
+
+            if [ ! -f "$stats" ]; then
+              echo "$target produced no report at all." >&2
+              exit 1
+            fi
+
+            executed=$(sed -n 's/^execs_done *: *//p' "$stats" | tr -d ' ')
+            crashes=$(sed -n 's/^saved_crashes *: *//p' "$stats" | tr -d ' ')
+            hangs=$(sed -n 's/^saved_hangs *: *//p' "$stats" | tr -d ' ')
+
+            echo "$target: $executed execution(s), $crashes crash(es), $hangs hang(s)"
+
+            if [ -z "$executed" ] || [ "$executed" -lt 1 ]; then
+              echo "$target executed nothing, so this run says nothing about it." >&2
+              exit 1
+            fi
+
+            if [ -n "$crashes" ] && [ "$crashes" -gt 0 ]; then
+              reported=$((reported + crashes))
+            fi
+          done
+
+          if [ "$reported" -gt 0 ]; then
+            echo "::error::$reported crashing input(s) were kept. Each is a finding, repaired in the parser."
+            exit 1
+          fi
+
+      - name: Keep what a reader needs to understand this run
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: fuzz-findings
+          path: |
+            findings-whisper-output
+            findings-transcription-response
+            findings-property-bite
+          retention-days: 30
+          if-no-files-found: error
+
+  # The last condition this issue names, and the one easiest to lose later. A
+  # fuzzing job in the required set turns a run that takes as long as it is told
+  # to into a thing standing between a change and the mainline.
+  not-required:
+    name: And no job here decides a merge
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Read the required set and refuse to find this workflow in it
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+        run: |
+          set -eu
+          ruleset=$(gh api "repos/$REPOSITORY/rulesets" --jq '.[] | select(.name == "gate") | .id')
+
+          if [ -z "$ruleset" ]; then
+            echo "No ruleset named gate was found, so the required set could not be read." >&2
+            exit 1
+          fi
+
+          required=$(gh api "repos/$REPOSITORY/rulesets/$ruleset" \
+            --jq '[.rules[] | select(.type == "required_status_checks") | .parameters.required_status_checks[].context] | .[]')
+
+          echo "Required by the ruleset on the default branch:"
+          echo "$required" | sed 's/^/  /'
+
+          # The job names are read out of this file rather than repeated here. A
+          # list written twice drifts, and the half that drifts is the one nobody
+          # runs: a job renamed above and left behind here would be checked
+          # against a name that no longer exists and would pass for ever.
+          jobs=$(sed -n 's/^    name: //p' .github/workflows/fuzz.yml)
+
+          if [ -z "$jobs" ]; then
+            echo "No job names were read out of this workflow, so nothing was compared." >&2
+            exit 1
+          fi
+
+          echo "Jobs in this workflow:"
+          echo "$jobs" | sed 's/^/  /'
+
+          compared=0
+          while IFS= read -r job; do
+            [ -n "$job" ] || continue
+            if echo "$required" | grep -qxF "$job"; then
+              echo "The required set names \"$job\", and no job of this workflow may be in it." >&2
+              exit 1
+            fi
+            compared=$((compared + 1))
+          done <<EOF
+          $jobs
+          EOF
+
+          echo "$compared job name(s) compared against the required set, and none is in it"
