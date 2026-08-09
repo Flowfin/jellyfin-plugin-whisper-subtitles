@@ -1,0 +1,18 @@
+// A source that reaches a program and an endpoint the way this plugin does: through
+// seams somebody else owns. It has to stay accepted, or a scanner refusing every
+// file would prove every rule.
+
+internal sealed class ReachesNothingItself
+{
+    private readonly IProcessRunner _runner;
+    private readonly HttpMessageHandler _handler;
+
+    internal ReachesNothingItself(IProcessRunner runner, HttpMessageHandler handler)
+    {
+        _runner = runner;
+        _handler = handler;
+    }
+
+    internal IStartedProcess Run(string executable, IReadOnlyList<string> arguments) =>
+        _runner.Start(new ProcessInvocation(executable, arguments));
+}

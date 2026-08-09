@@ -1,0 +1,13 @@
+# A boundary list that resolves
+
+## The boundaries, and what bounds each one
+
+- The output of a child process, read by something that answers rather than
+  throwing. Bounded by `WhisperOutputReader`. Hostile case in
+  `WhisperOutputReaderTests`.
+- The list itself, whose endings are resolved rather than believed. Bounded by
+  `Plugin`. Hostile case in `UntrustedInputTests`.
+
+## Something after it
+
+So the reader has a heading to stop at.

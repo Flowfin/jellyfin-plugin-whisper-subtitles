@@ -1,0 +1,14 @@
+// One string instead of a vector, which is the shape that puts a quoting rule
+// between the path an operator typed and what actually runs.
+
+internal sealed class AssemblesACommandLine
+{
+    internal ProcessInvocation For(string executablePath, string audioPath)
+    {
+        var startInfo = new StartInfo(executablePath);
+
+        startInfo.Arguments = "--model " + executablePath + " --file \"" + audioPath + "\"";
+
+        return startInfo;
+    }
+}

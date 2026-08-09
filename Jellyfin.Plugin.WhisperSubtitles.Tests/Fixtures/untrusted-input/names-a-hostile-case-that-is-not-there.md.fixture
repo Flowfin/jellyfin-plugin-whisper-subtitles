@@ -1,0 +1,10 @@
+# A boundary list naming a hostile case the suite does not run
+
+## The boundaries, and what bounds each one
+
+- The output of a child process. Bounded by `WhisperOutputReader`. Hostile case in
+  `WhisperOutputHostileBytesTests`.
+
+## Something after it
+
+So the reader has a heading to stop at.
