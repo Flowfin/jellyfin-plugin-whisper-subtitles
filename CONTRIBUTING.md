@@ -114,22 +114,25 @@ the suite red, and a line naming neither is refused instead of being read past.
 - A test that installs a certificate into the machine trust store to exercise a
   remote backend against TLS. Tests reach the endpoint through an injected HTTP
   message handler instead, and where a real TLS path is needed the certificate is
-  trusted by that one handler instance and never by the machine. Owed by #13.
+  trusted by that one handler instance and never by the machine. Replaced by
+  `RemoteWhisperBackendTests`.
 - A test that needs elevation to lower a process priority or apply a cgroup
   limit. What is asserted instead is the values the limiter computes and the
   calls it makes through an injected seam, together with a failure to apply a
   limit being logged and not failing the item. Owed by #22.
 - A test that requires a GPU. Capability probe tests over a stubbed device query
   stand in, together with the backend contract suite, which is hardware
-  independent by construction. Owed by #15, #74.
+  independent by construction. Replaced by `BackendContractTests`. Owed by #15,
+  for the capability probe.
 - A test that downloads a model or calls a public transcription service. The stub
-  backend and recorded response fixtures stand in. Owed by #45, #13.
+  backend and recorded response fixtures stand in. Replaced by `StubBackendTests`,
+  `RemoteWhisperBackendTests`.
 - A test that depends on the wall clock or on the machine's locale. An injected
   clock stands in, and every test that formats or parses names its culture. Owed
   by #48.
 
-Most of these are still owed, so for most of its length this list is a plan
-rather than a record, and the endings say which lines are which. What is checked
+Half of these are still owed, so for half its length this list is a plan rather
+than a record, and the endings say which lines are which. What is checked
 is the shape: that every line names a class this suite runs or an issue that owes
 one. TWO THINGS ARE NOT CHECKED. Whether a replacement covers what the refused
 test would have covered is a judgement, and no reading of this file makes it.
