@@ -5,7 +5,9 @@
 # Dangerous-Workflow, etc.) and uploads the findings as SARIF to the
 # code-scanning tab. The score is treated as a checklist, not a guarantee: each
 # check is triaged (fixed or documented-accept), same as the other security
-# insights.
+# insights. Where each finding ended up is docs/scorecard-dispositions.md, which
+# also carries the command that lists them, so the record can be compared against
+# a later run rather than believed.
 #
 # Runs where publishing is valid: on push to the default branch, on a weekly
 # schedule (keeps the Maintained check fresh and re-scores on upstream changes),
@@ -30,7 +32,12 @@ on:
   schedule:
     - cron: "27 4 * * 1"
   push:
-    branches: [main]
+    # The default branch, read from the repository rather than from the name a
+    # template used. This said `main` until #53, and the guard on the job below
+    # compares the ref against the default branch, so the mismatch cost nothing
+    # loud: the workflow simply never ran on a push, and the schedule was the
+    # only route that ever reached it.
+    branches: [master]
 
 # Read-only by default; the analysis job adds only the scopes it needs. A
 # read-only top-level declaration is itself one of the Token-Permissions checks
