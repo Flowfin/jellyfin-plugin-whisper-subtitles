@@ -70,6 +70,37 @@ public class PluginIdentityTests
     }
 
     [Fact]
+    public void The_assembly_is_stamped_with_the_version_the_manifest_declares()
+    {
+        // build.yaml is the only file the version is written in and the build reads
+        // the assembly's from it, so these two can disagree only where something has
+        // come between them: a Version property put back into a project file, or a
+        // manifest line the reader in Directory.Build.props no longer matches. What
+        // that produces is an archive whose catalogue entry and whose assembly claim
+        // different versions, and a server tells the operator the first of the two.
+        //
+        // The publish workflow makes this comparison as well, and it makes it on a
+        // pushed tag, which is after the number has been chosen and announced. This
+        // one runs on the pull request that moved it.
+        var declared = Version.Parse(ManifestField("version"));
+        var stamped = typeof(PluginUnderTest).Assembly.GetName().Version;
+
+        Assert.NotNull(stamped);
+        Assert.Equal(FourParts(declared), FourParts(stamped!));
+    }
+
+    /// <summary>
+    /// Pads a version to four parts, so 1.4.0 and 1.4.0.0 compare as the same number
+    /// written two ways rather than as a disagreement. The publish workflow pads both
+    /// sides for the same reason.
+    /// </summary>
+    private static Version FourParts(Version version) => new(
+        version.Major,
+        version.Minor,
+        Math.Max(version.Build, 0),
+        Math.Max(version.Revision, 0));
+
+    [Fact]
     public void Plugin_reports_the_name_the_manifest_declares()
     {
         var plugin = new PluginUnderTest(new UnwrittenApplicationPaths(), new ThrowingXmlSerializer());
