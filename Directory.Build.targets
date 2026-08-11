@@ -5,12 +5,12 @@
       line, and this refuses the half-change: a line renamed without its pin moving,
       or a pin bumped past the line it is supposed to belong to.
 
-      It is deliberately the only check here. A framework this repository maps to no
-      line, and a pin naming a package that does not support the framework, are both
-      already refused during restore, by NU1015 and NU1202 respectively, before any
-      target in this file runs. A second arm for either would be a guard that cannot
-      be made to bite. What is left is the case NuGet cannot see, because both halves
-      restore perfectly well and only disagree about which server the result is for.
+      A framework this repository maps to no line, and a pin naming a package that
+      does not support the framework, are both already refused during restore, by
+      NU1015 and NU1202 respectively, before any target in this file runs. A second
+      arm for either would be a guard that cannot be made to bite. What is left is
+      the case NuGet cannot see, because both halves restore perfectly well and only
+      disagree about which server the result is for.
 
       The check applies to projects that declare UsesJellyfinPackages, so a project
       with no business naming a server line is not asked to name one.
@@ -21,6 +21,27 @@
 
         <Error Condition="!$([System.String]::Copy('$(JellyfinPackageVersion)').StartsWith('$(JellyfinServerLine).'))"
                Text="Server line $(JellyfinServerLine) is pinned to Jellyfin package version $(JellyfinPackageVersion), which belongs to a different line. Framework $(TargetFramework), its line and its package version are changed together or not at all." />
+
+    </Target>
+
+    <!--
+      Directory.Build.props reads the version out of build.yaml with a line match.
+      A manifest whose version line moved, lost its quotes or gained a comma leaves
+      that match empty, and an empty AssemblyVersion is not an error anywhere in the
+      SDK: the build carries on and stamps 1.0.0.0, which is the number a project
+      that never set one gets. So the failure this refuses is silent by default and
+      arrives as an assembly whose version nobody in this repository chose.
+
+      It fails the build rather than the test run because the wrong bytes are
+      produced before any test reads them, and because the projects here that ship
+      nothing are stamped from the same property and would otherwise carry the
+      default without anything noticing.
+    -->
+    <Target Name="RefuseAVersionNothingRead"
+            BeforeTargets="BeforeBuild">
+
+        <Error Condition="'$(PluginVersion)' == ''"
+               Text="No version could be read from $(PluginManifest). The reader in Directory.Build.props wants a line at column zero reading version: followed by two to four numeric parts in double quotes, and every assembly in this tree is stamped from what it finds." />
 
     </Target>
 
