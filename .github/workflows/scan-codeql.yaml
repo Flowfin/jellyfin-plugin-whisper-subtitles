@@ -1,47 +1,103 @@
-name: '🔬 Run CodeQL'
+# Code scanning over this plugin's own C#.
+#
+# This workflow used to call jellyfin/jellyfin-meta-plugins/scan-codeql.yaml.
+# That analysis ran, but every setting on it lives in a repository nobody
+# here can change: the query pack, the severity threshold, and above all the
+# path filter. Its findings therefore included the generated sources under
+# obj/ and bin/, files that are not in this tree and that nobody reading the
+# report can edit. Writing the workflow here puts the configuration beside
+# the code it reads.
+#
+# The push trigger skips documentation-only changes, because a push to master
+# gates nothing and the baseline simply stays at the previous analysis. The
+# pull request trigger is never filtered, which the replaced file got wrong:
+# a filter there does not make the check red, it stops the check reporting at
+# all, so a documentation-only pull request went out with no verdict on it.
+# That is the class of silence #107 records for the build. The filter for
+# what the analysis READS sits at the init step below.
+name: Code scanning
 
 on:
   push:
-    branches: [ master ]
+    branches: [master]
     paths-ignore:
-      - '**/*.md'
+      - "**/*.md"
   pull_request:
-    branches: [ master ]
-    paths-ignore:
-      - '**/*.md'
+    branches: [master]
+  # A weekly run so a query pack that learns something new says so against a
+  # tree nobody has touched, rather than waiting for the next change.
   schedule:
-    - cron: '24 2 * * 4'
+    - cron: "52 2 * * 4"
   workflow_dispatch:
 
-# Deny by default at workflow level; the job below opts into what it needs.
+# Nothing at workflow level; the job below asks for what it needs and no more.
 permissions: {}
 
+# A new push replaces the run under way. An analysis of a superseded tree says
+# nothing about the branch as it now stands.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  # repository-name is not a label. The reusable workflow guards its only job
-  # with `if: github.repository == inputs.repository-name`, so a value naming
-  # another repository does not mislabel the run, it removes it: every job is
-  # skipped, the check reports skipping, and nothing on the pull request says
-  # the analysis did not happen. The value this file carried was the template's
-  # own name, which is how seventy-four runs concluded skipped and no CodeQL
-  # analysis was ever uploaded.
-  #
-  # The called workflow declares no permissions of its own, so this job is the
-  # only place the bound can be written, and running without one is what has been
-  # failing the analysis rather than anything in the C#:
-  #
-  #   ##[warning]This run of the CodeQL Action does not have permission to access
-  #   the CodeQL Action API endpoints. ... please ensure the workflow has at least
-  #   the 'security-events: read' permission. Details: Resource not accessible by
-  #   integration
-  #
-  # read on run 31255808924, the analysis of the mainline at 1784669. The upload
-  # at the end of the analysis writes, so the scope is write rather than the read
-  # the warning asks for as a minimum.
-  call:
+  analyze:
+    # This name is the check context. Changing it removes a context rather
+    # than renaming one, so it is changed only together with whatever
+    # requires it.
+    name: Code scanning (csharp)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
     permissions:
-      security-events: write # upload the analysis into the code-scanning tab
-      contents: read # checkout the code being analysed
-      actions: read # read the workflow run the analysis belongs to
-    uses: jellyfin/jellyfin-meta-plugins/.github/workflows/scan-codeql.yaml@eb99033a7ff644881b014bc0b4169916c854a68b # master, 2026-07-29
-    with:
-      repository-name: Flowfin/jellyfin-plugin-whisper-subtitles
+      contents: read
+      # The upload of the analysis, which is the whole output of this job.
+      security-events: write
+      # What the uploader reads to find the workflow run it reports against.
+      actions: read
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # Nothing here pushes, so the token is not kept in .git/config.
+          persist-credentials: false
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          # Both server lines in SupportedServerLines.
+          dotnet-version: |
+            9.0.x
+            10.0.x
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@e4fba868fa4b1b91e1fdab776edc8cfbe6e9fb81 # v4.37.3
+        with:
+          languages: csharp
+          # The default pack finds security faults. This one adds the quality
+          # queries beside them, which is what the other plugins run, and
+          # comparing plugins is only meaningful if they run the same set.
+          queries: +security-and-quality
+          # Path filtering for the ANALYSIS. This block is the reason the
+          # workflow lives here: the shared workflow it replaces has no way
+          # to carry it. The generated sources under obj/ are not in the
+          # tree, and nobody can change them.
+          config: |
+            paths-ignore:
+              - "**/obj/**"
+              - "**/bin/**"
+
+      - name: Build what is scanned
+        # Built by name rather than by autobuild. Autobuild guesses, and a
+        # guess that quietly compiles less than the tree holds is an analysis
+        # of part of the source reported as an analysis of it. A build that
+        # fails stops the job instead of producing an analysis of whatever
+        # did compile.
+        run: |
+          set -euo pipefail
+          dotnet restore Jellyfin.Plugin.WhisperSubtitles.sln
+          dotnet build Jellyfin.Plugin.WhisperSubtitles.sln --configuration Release --no-restore
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@e4fba868fa4b1b91e1fdab776edc8cfbe6e9fb81 # v4.37.3
+        with:
+          category: "/language:csharp"
