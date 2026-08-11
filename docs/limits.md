@@ -109,6 +109,37 @@ promise is refused rather than intended. Recorded in #17, which stays open for a
 separate reason: whether the task appears in a server's dashboard is evidence only
 a booted server produces, and that is #63.
 
+## It cannot tell you what happens to audio it sent away
+
+Selecting the remote backend sends audio out of the server. Three facts, and the
+third is the one worth reading twice.
+
+What leaves the machine is the extracted audio of every item the run selects,
+whole rather than sampled, as the body of one request per item.
+
+Where it goes is the host in the URL the operator configured. This plugin
+contacts nothing else, and the path under that URL is fixed rather than
+configurable, so an operator who reads the URL knows the whole of where audio is
+sent.
+
+What this plugin cannot know is what the other end does with the audio after it
+arrives. Whether it is written to disk there, kept after the transcript is
+returned, logged, or used for anything else is a property of somebody else's
+machine, and nothing this plugin can ask tells it. An operator who is answerable
+to somebody else for that audio is answerable for this setting.
+
+None of it applies to the local backend, which reads the audio on the same
+machine and opens no socket.
+
+Held today, in the sense that this is what the code does when the remote backend
+is configured: `Backends/Remote/RemoteWhisperBackend.cs` posts the extracted
+audio to the configured endpoint and reaches nothing else, and the key the
+operator configures goes into one request header and into no message, URL or
+form field, which `RemoteWhisperBackendTests` holds. Decided and not yet built is
+the other half, which is the same three facts stated to the operator before the
+backend can be selected and in the log line written when a run first uses it.
+That is #81, and the page it belongs on is #36.
+
 ## What it writes, and where
 
 Three kinds of thing, and no fourth.

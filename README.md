@@ -184,6 +184,7 @@ is neither repeated nor softened here.
   to.
 - `docs/backend-interface.md`, what a transcription backend has to satisfy, for
   somebody adding a third one.
+- `docs/logging.md`, what this plugin says in the server log and at which level.
 - `CONTRIBUTING.md`, how to build it, run the suite and send a change.
 
 ## License
