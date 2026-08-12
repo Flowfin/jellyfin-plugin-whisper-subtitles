@@ -58,6 +58,20 @@ public sealed class RemoteBackendOptions
     public static readonly TimeSpan DefaultRequestTimeout = TimeSpan.FromMinutes(10);
 
     /// <summary>
+    /// How long the readiness probe may wait for the endpoint to answer.
+    /// </summary>
+    /// <remarks>
+    /// Ten seconds, and it is short for the reason the transcription timeout is
+    /// long. A transcription waits for work to be done on somebody else's machine;
+    /// this waits for that machine to say anything at all, with a configuration page
+    /// held open in front of it. An endpoint that cannot answer a request in ten
+    /// seconds is not one a run of a library will finish against, so a probe that
+    /// waited the full transcription timeout would hold the page for ten minutes to
+    /// deliver news the operator could have had at once.
+    /// </remarks>
+    public static readonly TimeSpan DefaultProbeTimeout = TimeSpan.FromSeconds(10);
+
+    /// <summary>
     /// Initializes a new instance of the <see cref="RemoteBackendOptions"/> class.
     /// </summary>
     /// <param name="baseUrl">The endpoint's base URL.</param>
@@ -82,15 +96,38 @@ public sealed class RemoteBackendOptions
         string? model,
         TimeSpan requestTimeout,
         long maxResponseBytes)
+        : this(baseUrl, apiKey, model, requestTimeout, maxResponseBytes, DefaultProbeTimeout)
+    {
+    }
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="RemoteBackendOptions"/> class
+    /// with a probe deadline of its own.
+    /// </summary>
+    /// <param name="baseUrl">The endpoint's base URL.</param>
+    /// <param name="apiKey">The key to send, or null when the endpoint needs none.</param>
+    /// <param name="model">The model name to ask the endpoint for.</param>
+    /// <param name="requestTimeout">How long one request may take.</param>
+    /// <param name="maxResponseBytes">How many bytes of response to read before refusing it.</param>
+    /// <param name="probeTimeout">How long the readiness probe may wait for an answer.</param>
+    public RemoteBackendOptions(
+        string? baseUrl,
+        string? apiKey,
+        string? model,
+        TimeSpan requestTimeout,
+        long maxResponseBytes,
+        TimeSpan probeTimeout)
     {
         ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(requestTimeout, TimeSpan.Zero);
         ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(maxResponseBytes, 0);
+        ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(probeTimeout, TimeSpan.Zero);
 
         BaseUrl = baseUrl;
         ApiKey = apiKey;
         Model = model;
         RequestTimeout = requestTimeout;
         MaxResponseBytes = maxResponseBytes;
+        ProbeTimeout = probeTimeout;
     }
 
     /// <summary>
@@ -127,6 +164,11 @@ public sealed class RemoteBackendOptions
     /// Gets how many bytes of response this plugin will read before refusing it.
     /// </summary>
     public long MaxResponseBytes { get; }
+
+    /// <summary>
+    /// Gets how long the readiness probe may wait for the endpoint to answer.
+    /// </summary>
+    public TimeSpan ProbeTimeout { get; }
 
     /// <summary>
     /// Gets a value indicating whether the settings this backend cannot run without have been named.

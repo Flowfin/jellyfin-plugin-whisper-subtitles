@@ -37,6 +37,16 @@ turn a page refresh into a machine's afternoon.
 Where the answer is that the backend is not ready, it carries a reason a person
 can act on. "Not ready" with nothing else is a dead end for whoever is reading it.
 
+A ready answer is a statement about one moment and a narrow one. What the two
+backends that do work check is that the things an operator named are there: files
+at the configured paths for the local one, a host that answers and does not refuse
+the key for the remote one. Neither transcribes, so neither shows that the tool
+runs, that the model loads, that the endpoint serves the configured model, or that
+any of it is still true when a run starts an hour later. A backend states its own
+bound in its remarks rather than leaving a caller to read a ready answer as a
+guarantee, and each of them is bounded in time by a deadline it carries, because
+what waits for the answer is a page somebody is sitting in front of.
+
 **`EstimateCost`** turns a media duration into the wall-clock range the backend
 expects to need. It is a hint and not a promise: it exists so a dry run can say
 what a library will cost before an operator commits a machine to it. It must not

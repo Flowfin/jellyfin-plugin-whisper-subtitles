@@ -35,6 +35,18 @@ internal sealed class StubEndpoint : HttpMessageHandler
     public int Requests { get; private set; }
 
     /// <summary>
+    /// Gets how many of them asked for a transcription.
+    /// </summary>
+    /// <remarks>
+    /// The method, because that is what separates the two things this backend
+    /// sends. A transcription is posted; the readiness probe asks for a status and
+    /// sends no body. Counting every request instead was correct only while there
+    /// was one kind, and it would now read a probe as work an operator did not ask
+    /// for.
+    /// </remarks>
+    public int Transcriptions { get; private set; }
+
+    /// <summary>
     /// Gets the URL of the last request, or null when none arrived.
     /// </summary>
     public Uri? RequestedUrl { get; private set; }
@@ -116,6 +128,12 @@ internal sealed class StubEndpoint : HttpMessageHandler
         CancellationToken cancellationToken)
     {
         Requests++;
+
+        if (request.Method == HttpMethod.Post)
+        {
+            Transcriptions++;
+        }
+
         RequestedUrl = request.RequestUri;
         Authorization = request.Headers.Authorization?.ToString();
         HeaderText = Describe(request);

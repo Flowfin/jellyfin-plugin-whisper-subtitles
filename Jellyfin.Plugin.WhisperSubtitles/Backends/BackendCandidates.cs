@@ -26,6 +26,7 @@ public static class BackendCandidates
     /// given.
     /// </summary>
     /// <param name="runner">The seam every child process is started through.</param>
+    /// <param name="files">The seam the local backend's readiness probe looks through.</param>
     /// <param name="httpHandler">The seam every remote request goes through.</param>
     /// <param name="local">The paths the local backend was configured with.</param>
     /// <param name="remote">The endpoint the remote backend was configured with.</param>
@@ -38,11 +39,13 @@ public static class BackendCandidates
     /// </remarks>
     public static IReadOnlyList<BackendCandidate> From(
         IProcessRunner runner,
+        IFileFacts files,
         HttpMessageHandler httpHandler,
         LocalBackendOptions local,
         RemoteBackendOptions remote)
     {
         ArgumentNullException.ThrowIfNull(runner);
+        ArgumentNullException.ThrowIfNull(files);
         ArgumentNullException.ThrowIfNull(httpHandler);
         ArgumentNullException.ThrowIfNull(local);
         ArgumentNullException.ThrowIfNull(remote);
@@ -55,7 +58,7 @@ public static class BackendCandidates
                 Array.Empty<string>()),
             new BackendCandidate(
                 LocalWhisperBackend.BackendName,
-                new LocalWhisperBackend(runner, local),
+                new LocalWhisperBackend(runner, files, local),
                 MissingFrom(local)),
             new BackendCandidate(
                 RemoteWhisperBackend.BackendName,
