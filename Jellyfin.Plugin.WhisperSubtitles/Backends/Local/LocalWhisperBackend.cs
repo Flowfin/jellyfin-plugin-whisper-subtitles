@@ -40,16 +40,19 @@ public sealed class LocalWhisperBackend : ITranscriptionBackend
     private static readonly string[] _publishedModels = { "tiny", "base", "small", "medium", "large" };
 
     private readonly IProcessRunner _runner;
+    private readonly IFileFacts _files;
     private readonly LocalBackendOptions _options;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="LocalWhisperBackend"/> class.
     /// </summary>
     /// <param name="runner">The seam every child process is started through.</param>
+    /// <param name="files">The seam the readiness probe looks at a path through.</param>
     /// <param name="options">The tool and the model this backend was configured with.</param>
-    public LocalWhisperBackend(IProcessRunner runner, LocalBackendOptions options)
+    public LocalWhisperBackend(IProcessRunner runner, IFileFacts files, LocalBackendOptions options)
     {
         _runner = runner ?? throw new ArgumentNullException(nameof(runner));
+        _files = files ?? throw new ArgumentNullException(nameof(files));
         _options = options ?? throw new ArgumentNullException(nameof(options));
     }
 
@@ -82,23 +85,86 @@ public sealed class LocalWhisperBackend : ITranscriptionBackend
 
     /// <inheritdoc />
     /// <remarks>
-    /// What this checks is that the operator has named both paths. It does not
-    /// check that either file is there, that the tool runs, or that the model
-    /// loads, and it says so in the reason it gives rather than implying it
-    /// looked. The probe that does look is #15.
+    /// This looks. It reads what is at each of the two paths and answers from what
+    /// it found, so an operator learns that a path is wrong from the page rather
+    /// than from a run that fails on its first item hours later.
+    ///
+    /// WHAT IT DOES NOT DO is run the tool. Two things follow from that and both
+    /// are said here rather than implied by a green answer: the version string the
+    /// tool prints is not reported, because which invocation makes a whisper.cpp
+    /// compatible tool print one is not settled anywhere in this tree, and whether
+    /// the model loads is unknown, because the only thing that knows is the tool
+    /// with the model in front of it. A ready answer here means the two paths hold
+    /// files this plugin could hand to a run, and no more than that.
+    ///
+    /// The order is the order an operator fixes them in. The tool first, because a
+    /// missing tool makes the model irrelevant, and the first thing wrong is the
+    /// only thing reported: a page listing every fault at once is a page somebody
+    /// reads none of.
     /// </remarks>
-    public Task<BackendReadiness> CheckReadinessAsync(CancellationToken cancellationToken)
+    public async Task<BackendReadiness> CheckReadinessAsync(CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
 
         if (!_options.IsComplete)
         {
-            return Task.FromResult(new BackendReadiness(
+            return new BackendReadiness(
                 false,
-                "The local backend needs a path to a whisper.cpp compatible tool and a path to a model file. Set both on the plugin's configuration page."));
+                "The local backend needs a path to a whisper.cpp compatible tool and a path to a model file. Set both on the plugin's configuration page.");
         }
 
-        return Task.FromResult(new BackendReadiness(true, null));
+        // Linked rather than replacing the caller's token, so an operator who
+        // navigates away from the page stops the probe, and the deadline stops one
+        // they are still waiting on. Which of the two fired is what the catch below
+        // tells apart, and reporting a deadline as a cancelled probe would leave
+        // the page saying nothing at all.
+        using var deadline = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        deadline.CancelAfter(_options.ProbeTimeout);
+
+        try
+        {
+            var tool = await _files.DescribeAsync(_options.ExecutablePath!, deadline.Token).ConfigureAwait(false);
+
+            if (!tool.Exists)
+            {
+                return NotReady("There is no file at the transcription tool path, {0}.", _options.ExecutablePath!);
+            }
+
+            if (tool.IsExecutable == false)
+            {
+                return NotReady(
+                    "The file at the transcription tool path, {0}, may not be executed by the account this server runs as.",
+                    _options.ExecutablePath!);
+            }
+
+            var model = await _files.DescribeAsync(_options.ModelPath!, deadline.Token).ConfigureAwait(false);
+
+            if (!model.Exists)
+            {
+                return NotReady("There is no file at the model path, {0}.", _options.ModelPath!);
+            }
+
+            if (model.SizeInBytes < LocalBackendOptions.SmallestPlausibleModelBytes)
+            {
+                return NotReady(
+                    "The file at the model path, {0}, is {1} bytes, which is far too small to be a whisper model. A download that was refused and saved anyway looks like this.",
+                    _options.ModelPath!,
+                    model.SizeInBytes.ToString(CultureInfo.InvariantCulture));
+            }
+
+            return new BackendReadiness(true, null);
+        }
+        catch (OperationCanceledException)
+        {
+            // The caller's token wins the tie, for the same reason it wins it in a
+            // transcription: somebody who stopped the probe themselves has not
+            // discovered anything about their file system.
+            cancellationToken.ThrowIfCancellationRequested();
+
+            return NotReady(
+                "The file system did not answer about the configured paths within {0}, so nothing is known about either.",
+                _options.ProbeTimeout.ToString("g", CultureInfo.InvariantCulture));
+        }
     }
 
     /// <inheritdoc />
@@ -239,6 +305,18 @@ public sealed class LocalWhisperBackend : ITranscriptionBackend
 
         return new ProcessInvocation(_options.ExecutablePath!, arguments);
     }
+
+    /// <summary>
+    /// A refusal with the path in it, formatted once so every reason reads the same.
+    /// </summary>
+    /// <remarks>
+    /// The path is quoted back because the operator typed it and a trailing space or
+    /// a path they meant to change is invisible in a settings field and obvious in a
+    /// sentence. Neither path is a secret: the key that is one belongs to the other
+    /// backend and never comes near this class.
+    /// </remarks>
+    private static BackendReadiness NotReady(string sentence, params object[] values) =>
+        new(false, string.Format(CultureInfo.InvariantCulture, sentence, values));
 
     private static string Describe(string standardError) =>
         string.IsNullOrWhiteSpace(standardError)

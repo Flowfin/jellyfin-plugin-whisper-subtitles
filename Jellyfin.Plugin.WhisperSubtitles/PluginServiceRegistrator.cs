@@ -39,6 +39,7 @@ public sealed class PluginServiceRegistrator : IPluginServiceRegistrator
         ArgumentNullException.ThrowIfNull(serviceCollection);
 
         serviceCollection.AddSingleton<IProcessRunner, SystemProcessRunner>();
+        serviceCollection.AddSingleton<IFileFacts, SystemFileFacts>();
         serviceCollection.AddSingleton<RemoteHttpHandler>();
 
         // The two backends that do work need settings, and no setting on the
@@ -52,6 +53,7 @@ public sealed class PluginServiceRegistrator : IPluginServiceRegistrator
 
         serviceCollection.AddSingleton<IReadOnlyList<BackendCandidate>>(provider => BackendCandidates.From(
             provider.GetRequiredService<IProcessRunner>(),
+            provider.GetRequiredService<IFileFacts>(),
             provider.GetRequiredService<RemoteHttpHandler>().Handler,
             provider.GetRequiredService<LocalBackendOptions>(),
             provider.GetRequiredService<RemoteBackendOptions>()));

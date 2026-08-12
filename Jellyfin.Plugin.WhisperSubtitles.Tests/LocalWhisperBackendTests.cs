@@ -54,7 +54,7 @@ public class LocalWhisperBackendTests
         // a different path decide what runs.
         var runner = ScriptedProcessRunner.Starting(ScriptedProcess.Printing(_threeCues));
 
-        await new LocalWhisperBackend(runner, Configured()).TranscribeAsync(
+        await new LocalWhisperBackend(runner, Files(), Configured()).TranscribeAsync(
             Request("de"),
             new RecordingProgress(),
             CancellationToken.None);
@@ -158,7 +158,7 @@ public class LocalWhisperBackendTests
         var runner = ScriptedProcessRunner.Refusing(new FileNotFoundException("no such file"));
 
         var failed = await Assert.ThrowsAsync<TranscriptionFailedException>(
-            () => new LocalWhisperBackend(runner, Configured()).TranscribeAsync(
+            () => new LocalWhisperBackend(runner, Files(), Configured()).TranscribeAsync(
                 Request("en"),
                 new RecordingProgress(),
                 CancellationToken.None));
@@ -173,7 +173,7 @@ public class LocalWhisperBackendTests
         var runner = ScriptedProcessRunner.Starting(ScriptedProcess.Printing(_threeCues));
 
         var failed = await Assert.ThrowsAsync<TranscriptionFailedException>(
-            () => new LocalWhisperBackend(runner, new LocalBackendOptions(null, null)).TranscribeAsync(
+            () => new LocalWhisperBackend(runner, Files(), new LocalBackendOptions(null, null)).TranscribeAsync(
                 Request("en"),
                 new RecordingProgress(),
                 CancellationToken.None));
@@ -189,7 +189,7 @@ public class LocalWhisperBackendTests
         // whatever came back would put a language on the subtitle that nobody
         // measured.
         var runner = ScriptedProcessRunner.Starting(ScriptedProcess.Printing(_threeCues));
-        var backend = new LocalWhisperBackend(runner, Configured());
+        var backend = new LocalWhisperBackend(runner, Files(), Configured());
 
         Assert.False(backend.Description.CanDetectLanguage);
 
@@ -200,23 +200,12 @@ public class LocalWhisperBackendTests
         Assert.Null(runner.Invocation);
     }
 
-    [Fact]
-    public async Task Readiness_answers_on_the_settings_and_says_it_looked_no_further()
-    {
-        var runner = ScriptedProcessRunner.Starting(ScriptedProcess.Printing(_threeCues));
-
-        var unset = await new LocalWhisperBackend(runner, new LocalBackendOptions(" ", Model))
-            .CheckReadinessAsync(CancellationToken.None);
-
-        Assert.False(unset.IsReady);
-        Assert.Contains("configuration page", unset.Reason, StringComparison.Ordinal);
-
-        var set = await new LocalWhisperBackend(runner, Configured()).CheckReadinessAsync(CancellationToken.None);
-
-        Assert.True(set.IsReady);
-        Assert.Null(set.Reason);
-        Assert.Null(runner.Invocation);
-    }
+    // What readiness answers, and what it looked at to answer it, is
+    // LocalReadinessProbeTests. It moved there when the probe stopped answering off
+    // the settings alone: the cases worth asserting are now a file that is not
+    // there, one that may not be executed and one too small to be a model, and
+    // three lines here would have been a thinner version of that suite in the file
+    // about transcription.
 
     [Fact]
     public void The_cost_hint_never_shrinks_as_the_media_grows()
@@ -225,6 +214,7 @@ public class LocalWhisperBackendTests
         // placeholder that #38 replaces with a measurement.
         var backend = new LocalWhisperBackend(
             ScriptedProcessRunner.Starting(ScriptedProcess.Printing(_threeCues)),
+            Files(),
             Configured());
 
         var shorter = backend.EstimateCost(TimeSpan.FromMinutes(20));
@@ -240,5 +230,11 @@ public class LocalWhisperBackendTests
     private static TranscriptionRequest Request(string? language) => new(Audio, language);
 
     private static LocalWhisperBackend Backend(ScriptedProcess process) =>
-        new(ScriptedProcessRunner.Starting(process), Configured());
+        new(ScriptedProcessRunner.Starting(process), Files(), Configured());
+
+    /// <summary>
+    /// A file system holding the tool and the model these tests are configured
+    /// with, so a transcription test is not answering a readiness question.
+    /// </summary>
+    private static StubFileFacts Files() => StubFileFacts.Empty().WithTool(Tool).WithModel(Model);
 }

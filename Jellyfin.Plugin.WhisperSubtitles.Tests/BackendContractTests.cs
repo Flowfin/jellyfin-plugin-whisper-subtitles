@@ -490,9 +490,14 @@ public sealed class BackendContractTests : IDisposable
 
             case "local":
                 var runner = ScriptedProcessRunner.Starting(ScriptedProcess.Printing(_threeCues));
+                var tool = "/opt/whisper/whisper-cli";
+                var model = "/var/lib/models/ggml-base.bin";
                 return new BackendCase(
                     implementation,
-                    new LocalWhisperBackend(runner, new LocalBackendOptions("/opt/whisper/whisper-cli", "/var/lib/models/ggml-base.bin")),
+                    new LocalWhisperBackend(
+                        runner,
+                        StubFileFacts.Empty().WithTool(tool).WithModel(model),
+                        new LocalBackendOptions(tool, model)),
                     () => runner.Invocation is null ? 0 : 1);
 
             case "remote":
@@ -502,7 +507,7 @@ public sealed class BackendContractTests : IDisposable
                     new RemoteWhisperBackend(
                         endpoint,
                         new RemoteBackendOptions("https://transcription.example", "sk-a-key", "a-model")),
-                    () => endpoint.Requests);
+                    () => endpoint.Transcriptions);
 
             default:
                 throw new ArgumentOutOfRangeException(nameof(implementation), implementation, "no such backend in this suite");

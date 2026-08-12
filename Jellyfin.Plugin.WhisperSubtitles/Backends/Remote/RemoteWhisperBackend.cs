@@ -1,6 +1,7 @@
 using System;
 using System.Globalization;
 using System.IO;
+using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
@@ -103,28 +104,95 @@ public sealed class RemoteWhisperBackend : ITranscriptionBackend
 
     /// <inheritdoc />
     /// <remarks>
-    /// What this checks is the configuration: that a URL and a model are named and
-    /// that the URL is one this backend could post to. It reaches nothing, and the
-    /// reason it gives says so rather than implying the endpoint answered. The
-    /// probe that makes one cheap request is #15.
+    /// The configuration is read first and the endpoint is only reached once it
+    /// makes sense to, so an operator who has typed nothing is told that rather than
+    /// being told a request failed.
+    ///
+    /// The request is a GET to the same URL a transcription is posted to, and it is
+    /// the cheapest thing that can be asked of it: no audio leaves the machine, and
+    /// the endpoint is not asked to enumerate anything, so nothing here depends on a
+    /// path beyond the one this backend already uses. An endpoint that accepts POST
+    /// there and nothing else refuses the method, which is an answer and therefore a
+    /// pass. What it separates is a host that answers from one that does not, and a
+    /// key this endpoint accepts from one it refuses.
+    ///
+    /// WHAT A READY ANSWER DOES NOT MEAN, said here because the opposite is the easy
+    /// reading of a green tick: nothing has been transcribed, so nothing here shows
+    /// the endpoint can transcribe, that it serves the configured model, or that it
+    /// will still be there when a run starts. It reached the host, and the host did
+    /// not refuse the key.
     /// </remarks>
-    public Task<BackendReadiness> CheckReadinessAsync(CancellationToken cancellationToken)
+    public async Task<BackendReadiness> CheckReadinessAsync(CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
 
         if (!_options.IsComplete)
         {
-            return Task.FromResult(new BackendReadiness(
+            return new BackendReadiness(
                 false,
-                "The remote backend needs an endpoint URL and a model name. Set both on the plugin's configuration page."));
+                "The remote backend needs an endpoint URL and a model name. Set both on the plugin's configuration page.");
         }
 
-        if (!_options.TryGetEndpoint(out _, out var problem))
+        if (!_options.TryGetEndpoint(out var endpoint, out var problem))
         {
-            return Task.FromResult(new BackendReadiness(false, problem));
+            return new BackendReadiness(false, problem);
         }
 
-        return Task.FromResult(new BackendReadiness(true, null));
+        using var client = new HttpClient(_handler, disposeHandler: false)
+        {
+            Timeout = Timeout.InfiniteTimeSpan,
+        };
+
+        using var deadline = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        deadline.CancelAfter(_options.ProbeTimeout);
+
+        try
+        {
+            using var message = new HttpRequestMessage(HttpMethod.Get, endpoint);
+
+            if (!string.IsNullOrWhiteSpace(_options.ApiKey))
+            {
+                message.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _options.ApiKey.Trim());
+            }
+
+            // Headers and not the body. What this reads is the status line, and a
+            // probe that pulled a response body down would be the one request in
+            // this plugin with no ceiling on what it reads.
+            using var response = await client
+                .SendAsync(message, HttpCompletionOption.ResponseHeadersRead, deadline.Token)
+                .ConfigureAwait(false);
+
+            if (response.StatusCode is HttpStatusCode.Unauthorized or HttpStatusCode.Forbidden)
+            {
+                return new BackendReadiness(
+                    false,
+                    string.IsNullOrWhiteSpace(_options.ApiKey)
+                        ? "The endpoint answered, and it will not accept a request without a key. Set one on the plugin's configuration page."
+                        : "The endpoint answered, and it refused the configured key.");
+            }
+
+            return new BackendReadiness(true, null);
+        }
+        catch (OperationCanceledException)
+        {
+            // The caller's token wins the tie, for the same reason it wins it in a
+            // transcription: somebody who navigated away from the page has not
+            // discovered anything about their endpoint.
+            cancellationToken.ThrowIfCancellationRequested();
+
+            return new BackendReadiness(
+                false,
+                string.Format(
+                    CultureInfo.InvariantCulture,
+                    "The endpoint did not answer within {0}.",
+                    _options.ProbeTimeout.ToString("g", CultureInfo.InvariantCulture)));
+        }
+        catch (HttpRequestException unreached)
+        {
+            return new BackendReadiness(
+                false,
+                "The endpoint could not be reached. " + Redact(unreached.Message));
+        }
     }
 
     /// <inheritdoc />

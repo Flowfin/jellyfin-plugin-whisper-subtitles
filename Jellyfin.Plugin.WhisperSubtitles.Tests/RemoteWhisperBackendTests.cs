@@ -402,18 +402,10 @@ public sealed class RemoteWhisperBackendTests : IDisposable
             endpoint.RequestedUrl);
     }
 
-    [Fact]
-    public async Task A_configured_endpoint_is_ready_without_anything_being_reached()
-    {
-        var endpoint = StubEndpoint.Answering(HttpStatusCode.OK, VerboseAnswer);
-        var backend = new RemoteWhisperBackend(endpoint, Options());
-
-        var readiness = await backend.CheckReadinessAsync(CancellationToken.None);
-
-        Assert.True(readiness.IsReady);
-        Assert.Null(readiness.Reason);
-        Assert.Equal(0, endpoint.Requests);
-    }
+    // What readiness answers, and what it sends to find out, is
+    // RemoteReadinessProbeTests. It moved there when the probe stopped answering
+    // off the configuration alone: this file is about a transcription's failure
+    // half, and the probe's is a different set of endpoints.
 
     [Fact]
     public void The_estimate_never_makes_a_longer_item_cheaper_than_a_shorter_one()

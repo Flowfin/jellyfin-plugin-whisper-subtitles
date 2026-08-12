@@ -1,3 +1,5 @@
+using System;
+
 namespace Jellyfin.Plugin.WhisperSubtitles.Backends.Local;
 
 /// <summary>
@@ -17,15 +19,68 @@ namespace Jellyfin.Plugin.WhisperSubtitles.Backends.Local;
 public sealed class LocalBackendOptions
 {
     /// <summary>
+    /// The smallest file this plugin will believe is a model.
+    /// </summary>
+    /// <remarks>
+    /// One mebibyte, and it is a floor against a file that is plainly not a model
+    /// rather than a measurement of any model. The smallest whisper.cpp publishes
+    /// is tens of megabytes even quantised, and what this catches sits three orders
+    /// of magnitude below that: a download that was refused and saved anyway, a
+    /// page of HTML from a proxy, a pointer file from a repository that stores
+    /// large objects elsewhere, an empty file made by a shell redirect. Each of
+    /// those otherwise reaches the operator as a tool that starts and fails on the
+    /// first item.
+    ///
+    /// Deliberately not a ceiling and deliberately not per model name. A number
+    /// that tracked what each published model weighs would refuse a model somebody
+    /// quantised themselves, and being wrong in that direction costs more than
+    /// letting a small but real model through.
+    /// </remarks>
+    public const long SmallestPlausibleModelBytes = 1024L * 1024;
+
+    /// <summary>
+    /// How long the readiness probe may spend looking before it gives up.
+    /// </summary>
+    /// <remarks>
+    /// Five seconds, and it covers looking at both paths rather than each one. It
+    /// is short because everything under it is a metadata read on a local disk,
+    /// which takes microseconds, and because what sits on the other end of this is
+    /// a configuration page somebody is waiting in front of. The case it exists for
+    /// is the path that is not on a local disk: a mount whose server has gone
+    /// answers no faster than that server comes back.
+    /// </remarks>
+    public static readonly TimeSpan DefaultProbeTimeout = TimeSpan.FromSeconds(5);
+
+    /// <summary>
     /// Initializes a new instance of the <see cref="LocalBackendOptions"/> class.
     /// </summary>
     /// <param name="executablePath">The whisper.cpp compatible command line tool.</param>
     /// <param name="modelPath">The model file to hand it.</param>
     public LocalBackendOptions(string? executablePath, string? modelPath)
+        : this(executablePath, modelPath, DefaultProbeTimeout)
     {
+    }
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="LocalBackendOptions"/> class
+    /// with a probe deadline of its own.
+    /// </summary>
+    /// <param name="executablePath">The whisper.cpp compatible command line tool.</param>
+    /// <param name="modelPath">The model file to hand it.</param>
+    /// <param name="probeTimeout">How long the readiness probe may spend looking.</param>
+    public LocalBackendOptions(string? executablePath, string? modelPath, TimeSpan probeTimeout)
+    {
+        ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(probeTimeout, TimeSpan.Zero);
+
         ExecutablePath = executablePath;
         ModelPath = modelPath;
+        ProbeTimeout = probeTimeout;
     }
+
+    /// <summary>
+    /// Gets how long the readiness probe may spend looking.
+    /// </summary>
+    public TimeSpan ProbeTimeout { get; }
 
     /// <summary>
     /// Gets the whisper.cpp compatible command line tool, or null when the operator has named none.
