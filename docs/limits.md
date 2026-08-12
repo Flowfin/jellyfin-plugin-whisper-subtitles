@@ -109,6 +109,30 @@ promise is refused rather than intended. Recorded in #17, which stays open for a
 separate reason: whether the task appears in a server's dashboard is evidence only
 a booted server produces, and that is #63.
 
+## It waits for other work rather than asking other work to wait
+
+A machine that is transcribing has very little left to give, so the interesting
+collision between this plugin and another one is the machine rather than a name
+either of them chose. The rule runs in one direction. This plugin waits for
+another plugin's heavy task, and it never asks another plugin to wait for it.
+
+The asymmetry is the decision and not a consequence of how it happens to be
+written. A transcription that starts an hour later costs nobody anything they
+can see. A library scan or a metadata refresh that runs an hour late is a delay
+an operator does see, and this plugin is a guest on their server.
+
+A run that stands aside says that is what it did. Reporting nothing to do is the
+answer an operator gets when the selection is empty, and a run that found work
+and declined to start it is a different answer to a different question.
+
+Decided, not yet built, and the whole of it is decided. Nothing in the plugin
+asks the server what it is running: no type here reaches `ITaskManager`, which
+is the server's own answer to that question, so today a run neither yields nor
+reports that it did. Recorded in #65, which holds the rule and the report it
+owes. The place that answers whether the machine is busy is the seam in #22, and
+the busy-server rule there watches transcoding rather than another plugin's
+task, so the two differ in what they look at and not in what they do about it.
+
 ## It cannot tell you what happens to audio it sent away
 
 Selecting the remote backend sends audio out of the server. Three facts, and the
