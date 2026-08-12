@@ -23,6 +23,11 @@ namespace Jellyfin.Plugin.WhisperSubtitles.Configuration;
 /// to a working state is the backend: falling back to doing work is not failing
 /// closed, so an unusable backend setting reaches selection unchanged and
 /// selection answers with the do-nothing backend.
+///
+/// One file is stood back from rather than read field by field, and it is the one
+/// written by a later release than this one. That is not a value failing its rule;
+/// it is a document in a vocabulary this release does not have, and #41 is where
+/// it is argued.
 /// </remarks>
 public static class ConfigurationValidation
 {
@@ -90,6 +95,13 @@ public static class ConfigurationValidation
             return Defaults(complaints);
         }
 
+        if (configuration.SchemaVersion > CurrentSchemaVersion)
+        {
+            complaints.Add(WrittenByANewerRelease(configuration.SchemaVersion));
+
+            return Defaults(complaints);
+        }
+
         var version = SchemaVersion(configuration.SchemaVersion, complaints);
         var backend = Backend(configuration.Backend, complaints);
         var target = TargetLanguage(configuration.TargetLanguage, complaints);
@@ -100,6 +112,41 @@ public static class ConfigurationValidation
             complaints);
     }
 
+    /// <summary>
+    /// The complaint for a file a later release wrote, and the reason nothing else
+    /// in it is looked at.
+    /// </summary>
+    /// <remarks>
+    /// Returning before any other field is read is the whole of it. Every value in
+    /// such a file may parse and may be a value this release accepts, and that says
+    /// nothing: what a later release means by a field is a thing this one cannot
+    /// know, so a backend name it recognises is a backend name whose meaning may
+    /// have moved underneath it. Reading them anyway is a run configured out of a
+    /// document written in a vocabulary nobody here has.
+    ///
+    /// The direction is the one the field only goes in. A file older than this
+    /// release is migrated forward, because this release knows what the earlier
+    /// vocabulary meant; a newer one is not migrated backwards, because it does
+    /// not.
+    ///
+    /// Nothing writes the file back, so it survives a downgrade untouched and the
+    /// release that wrote it finds its own settings when the operator returns to
+    /// it. That is a property of what this plugin does not do rather than of
+    /// anything here, and the command behind it is in the pull request that landed
+    /// this branch.
+    /// </remarks>
+    /// <param name="declared">The version the file declared.</param>
+    /// <returns>The one complaint such a file produces.</returns>
+    private static SettingComplaint WrittenByANewerRelease(int declared) =>
+        new(
+            nameof(PluginConfiguration.SchemaVersion),
+            string.Format(
+                CultureInfo.InvariantCulture,
+                "the file was written by a newer version of this plugin: it declares schema version {0} and the newest this release knows is {1}.",
+                declared,
+                CurrentSchemaVersion),
+            "Nothing else in the file is read, every setting is at its default, and nothing is transcribed.");
+
     private static ConfigurationLoad Defaults(List<SettingComplaint> complaints) =>
         new(
             new SettingsInForce(
@@ -109,6 +156,16 @@ public static class ConfigurationValidation
                 new Dictionary<Guid, string>()),
             complaints);
 
+    /// <remarks>
+    /// Only the low side reaches here. A version above the current one is answered
+    /// in <see cref="Of"/> before any other field is read, so what is left is a
+    /// number no release ever wrote: an absent element cannot produce it, and
+    /// nothing below one is a version at all. That is a malformed field rather than
+    /// a file from elsewhere, so it falls back like every other field does.
+    /// </remarks>
+    /// <param name="declared">The version the file declared.</param>
+    /// <param name="complaints">Where a refused value is recorded.</param>
+    /// <returns>The version the rest of the file is read under.</returns>
     private static int SchemaVersion(int declared, List<SettingComplaint> complaints)
     {
         if (declared >= 1 && declared <= CurrentSchemaVersion)

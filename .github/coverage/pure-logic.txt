@@ -16,24 +16,48 @@
 # its last branch is a mock of the world.
 #
 # line-floor: 95
-# branch-floor: 90
+# branch-floor: 91
 #
-# Where the numbers come from. The suite over this set stands at 98.37% of lines
-# and 95.18% of branches, measured on net10.0 by
+# Where the numbers come from. The suite over this set stands at 98.39% of lines
+# and 95.22% of branches, which the workflow reports for each supported line by
 #
-#     dotnet test -c Release -f net10.0 --nologo --collect:"XPlat Code Coverage"
+#     dotnet test -c Release -f <line> --nologo --collect:"XPlat Code Coverage"
 #     .github/scripts/refuse-uncovered-logic.sh <report> .github/coverage/pure-logic.txt Jellyfin.Plugin.WhisperSubtitles
 #
+# and both lines report the same figures.
+#
 # The floor sits below that rather than at it, and the gap is the disclosure:
-# 20 of the 612 lines and 11 of the 228 branches in this set can be lost without
+# 21 of the 623 lines and 9 of the 230 branches in this set can be lost without
 # this check saying anything. It is set there because two files carry branches
 # no test reaches yet, and a floor pinned to today's figure would make finishing
 # those a precondition for every unrelated change. The number moves up when they
 # are covered; it does not move down.
 #
-# The figures above were measured on net10.0 only, because the machine they were
-# taken on has no .NET 9 SDK. The net9.0 figure is not measured here, and the
-# workflow runs both.
+# The branch floor was 90, and it moved because #41 added a branch to the
+# configuration load with tests reaching both of its sides. The leg that drops a
+# test class and requires this floor to refuse the result was passing by less
+# than a tenth of a point, and two more covered branches ended that. Measured on
+# each side rather than reasoned about, with
+#
+#     dotnet test -c Release -f net10.0 --nologo \
+#       --filter "FullyQualifiedName!~WhisperOutputReaderTests" \
+#       --collect:"XPlat Code Coverage" --results-directory coverage-dropped
+#     .github/scripts/refuse-uncovered-logic.sh <report> .github/coverage/pure-logic.txt Jellyfin.Plugin.WhisperSubtitles
+#
+# on the commit before that change:
+#
+#     the set, against floors 95% and 90%    95.42% (584/612)  89.91% (205/228)
+#
+# and on the commit with it, where the same run is what the workflow reported for
+# both lines:
+#
+#     the set, against floors 95% and 90%    95.51% (595/623)  90.00% (207/230)
+#
+# 89.91 is below 90 and 90.00 is not, so a floor that had proved it bites stopped
+# proving it, with no test removed and no coverage lost. That leg is what stands
+# between this file and a number nothing can reach, so the floor follows the
+# coverage up rather than the leg being weakened to match a number that has
+# stopped refusing anything.
 #
 # #47 names selection, the retry policy, the formatter, the language mapping,
 # the name builder, the cost estimate and the configuration validation. The

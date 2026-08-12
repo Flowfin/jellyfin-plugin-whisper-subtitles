@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Reflection;
 using System.Threading;
@@ -85,6 +86,92 @@ public class ConfigurationValidationTests
         Assert.True(LanguageTarget.IsAbsent(load.InForce.TargetLanguage));
         Assert.Empty(load.InForce.TargetLanguagesByLibrary);
         Assert.Equal(3, load.Complaints.Count);
+    }
+
+    [Fact]
+    public void A_file_a_newer_release_wrote_is_not_read_on_this_release_s_terms()
+    {
+        // Every field below is one this release accepts, and that is the point.
+        // The reason not to read them is where they came from rather than whether
+        // they parse: a later release may mean something else by a field, and a
+        // value whose meaning moved looks exactly like a valid one. So the whole
+        // file goes unread rather than the version alone being complained about.
+        //
+        // Written against the current version plus one so it stays the case it is
+        // about on the day a second schema version lands.
+        var newer = (ConfigurationValidation.CurrentSchemaVersion + 1)
+            .ToString(CultureInfo.InvariantCulture);
+
+        var load = ConfigurationFile.Read(File(
+            schemaVersion: newer,
+            backend: LocalName,
+            targetLanguage: "eng",
+            rows: Row(_recordings, "deu")));
+
+        var complaint = Assert.Single(load.Complaints);
+        Assert.Equal(nameof(PluginConfiguration.SchemaVersion), complaint.Field);
+        AssertEverythingIsAtItsDefault(load);
+    }
+
+    [Fact]
+    public void A_file_a_newer_release_wrote_says_so_and_says_what_runs_instead()
+    {
+        // An operator who is told a setting was refused and not told what is in
+        // force assumes theirs is. Here that assumption is the expensive one: the
+        // file on their disk still holds everything they chose, and none of it
+        // applies.
+        var load = ConfigurationFile.Read(File("9", LocalName, "eng", string.Empty));
+
+        var complaint = Assert.Single(load.Complaints);
+
+        Assert.Contains("newer version", complaint.Problem, StringComparison.Ordinal);
+        Assert.Contains("9", complaint.Problem, StringComparison.Ordinal);
+        Assert.Contains(
+            ConfigurationValidation.CurrentSchemaVersion.ToString(CultureInfo.InvariantCulture),
+            complaint.Problem,
+            StringComparison.Ordinal);
+        Assert.Contains("nothing is transcribed", complaint.InForce, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task A_file_a_newer_release_wrote_yields_the_do_nothing_backend()
+    {
+        // The two halves pass separately and the join is where a backend the file
+        // asked for could still appear, so this is read from the bytes on disk to
+        // the object that would transcribe. The candidate below is ready and its
+        // name is the one in the file, so anything short of the whole file being
+        // stood back from ends with it selected.
+        var newer = (ConfigurationValidation.CurrentSchemaVersion + 1)
+            .ToString(CultureInfo.InvariantCulture);
+
+        var load = ConfigurationFile.Read(File(newer, LocalName, "eng", Row(_recordings, "deu")));
+
+        var choice = await BackendSelector.SelectAsync(
+            load.InForce.Backend,
+            [new BackendCandidate(LocalName, new StubBackend(LocalName), Array.Empty<string>())],
+            CancellationToken.None).ConfigureAwait(true);
+
+        Assert.IsType<NotConfiguredBackend>(choice.Backend);
+        Assert.Equal(BackendSelectionOutcome.NothingConfigured, choice.Outcome);
+    }
+
+    [Fact]
+    public async Task The_same_file_at_a_version_this_release_knows_is_read_and_its_backend_runs()
+    {
+        // The neighbour, one character different from the test above. Without it
+        // that test passes for a load that stood back from every file, which would
+        // be a plugin that never transcribes anything and a suite that called it
+        // fail-closed.
+        var load = ConfigurationFile.Read(File("1", LocalName, "eng", Row(_recordings, "deu")));
+
+        Assert.Empty(load.Complaints);
+
+        var choice = await BackendSelector.SelectAsync(
+            load.InForce.Backend,
+            [new BackendCandidate(LocalName, new StubBackend(LocalName), Array.Empty<string>())],
+            CancellationToken.None).ConfigureAwait(true);
+
+        Assert.Equal(BackendSelectionOutcome.Selected, choice.Outcome);
     }
 
     [Fact]
