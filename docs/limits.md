@@ -78,9 +78,15 @@ removed. The item is recorded as skipped, with the reason, and the run carries
 on. A hand corrected subtitle is somebody's work and losing it would be the
 worst thing this plugin could do.
 
-Decided, not yet built. Recorded in #28, which asks for a test that a
-pre-existing file's bytes are unchanged after a run, that no numbered variant
-appears beside it, and that the item is reported as skipped.
+Held today. Recorded in #28, and refused by `ExistingSubtitleTests`: a run over a
+directory holding one hand corrected file leaves that file's bytes as they were,
+the names left behind are one per item with no numbered variant beside the one
+that was in the way, and the item is reported as `SkippedTargetExists` while the
+run carries on. The file in the way is never opened for writing, which that suite
+arranges by holding it open for reading with no write sharing, so a publish that
+opened it to find out whether it could would fail on the file rather than on an
+assertion about it. A file of nought bytes is in the way for the same reason a
+full one is.
 
 ## It promises nothing about accuracy
 
@@ -176,8 +182,11 @@ it is complete.
 
 Temporary audio, extracted from the item so a backend has something to work
 from, in a directory this plugin owns. It is deleted on every exit path, and
-anything a dead process orphaned is swept before the next run begins rather than
-by a handler that may never run. #11 and #21.
+`AudioExtractorTests` holds that for a clean run, for a non-zero exit and for a
+cancellation. What a dead process orphaned is collected by a sweep rather than by
+a handler that may never run, and that half is decided and not yet built:
+`TemporaryAudioSweep` is the sweep, and nothing calls it at the start of a run
+because a run has no items for it to be before. #11 and #21.
 
 Its own configuration and its record of what it produced, where the server puts
 plugin data. #42.
