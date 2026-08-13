@@ -70,11 +70,12 @@ of them somebody wrote in it.
 Resolving the endings above says each bound exists. It says nothing about a second
 route around one, and a second route is what a later change adds without meaning
 to: a process launched where it is convenient, a command line assembled as a
-string, an HTTP client built outside the backend that owns the endpoint. None of
-those would fail any test here, because the code that used to be the only way in
-would still be there and would still pass.
+string, an HTTP client built outside the backend that owns the endpoint, a media
+tool found rather than reported. None of those would fail any test here, because
+the code that used to be the only way in would still be there and would still
+pass.
 
-So three shapes are refused in the source itself, in the same
+So four shapes are refused in the source itself, in the same
 `UntrustedInputTests`, each with a fixture in the tree that trips it and a
 neighbour that has to stay accepted.
 
@@ -88,6 +89,13 @@ neighbour that has to stay accepted.
   is that backend's boundary, and a client made elsewhere reaches the network past
   the size ceiling, the declared-type check and the injected handler every test
   drives.
+- A media tool path this plugin chose rather than the one the server reports. The
+  server knows where a working encoder is and says so, and that value reaches the
+  extractor as an argument. A setting for the tool, a variable read out of the
+  environment the server was started in, or a bare name left to the search path
+  each move the choice of which program runs to an operator, to whatever can write
+  the configuration, or to whatever is first on a path, and the caller that passes
+  the server's own value would still be there and would still pass.
 
 What this does not do is read what the code means. It reads the source for the
 tokens each shape is written with, so a launch reached through reflection or a

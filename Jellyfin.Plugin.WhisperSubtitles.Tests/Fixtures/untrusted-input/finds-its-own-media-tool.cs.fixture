@@ -1,0 +1,30 @@
+// A helper that decides for itself which media tool to run: a setting somebody can
+// write, the environment the server happened to be started in, and a bare name left
+// to whatever is first on the search path. The launch still goes through the
+// injected runner, so every other rule here is satisfied and the program that runs
+// is nobody's decision.
+
+internal sealed class FindsItsOwnMediaTool
+{
+    private readonly IProcessRunner _runner;
+
+    internal FindsItsOwnMediaTool(IProcessRunner runner)
+    {
+        _runner = runner;
+    }
+
+    internal string FfmpegPath { get; set; } = string.Empty;
+
+    internal IStartedProcess Run(IReadOnlyList<string> arguments) =>
+        _runner.Start(new ProcessInvocation(Resolve(), arguments));
+
+    private string Resolve()
+    {
+        if (!string.IsNullOrWhiteSpace(FfmpegPath))
+        {
+            return FfmpegPath;
+        }
+
+        return Environment.GetEnvironmentVariable("WHISPER_SUBTITLES_ENCODER") ?? "ffmpeg";
+    }
+}
