@@ -1,0 +1,82 @@
+name: Defect report
+description: This plugin does something it should not, or does not do what it says.
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Three of the fields below decide what almost every answer about this
+        plugin is: which server line you are on, which backend did the work, and
+        which model it was given. A report without those three needs a round trip
+        before anybody can read it, which is why they are required and the rest is
+        not.
+
+        Do not paste a configured key. The remote backend's key is a secret, no
+        answer here needs it, and an issue is public.
+
+        `docs/troubleshooting.md` lists every reason a run can report, with what
+        to do about each one. If a run gave you a reason, that page is worth a
+        look before this form.
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: What you did, what you expected, and what you got instead.
+    validations:
+      required: true
+
+  # The two options-lists below are read by `CommunityFilesTests`, which compares
+  # each one against the place in this tree that decides it: the server lines
+  # against Directory.Build.props, the backend names against BackendNames.
+  # A list here that offers something this plugin does not build or does not
+  # answer to asks a reporter a question with no right answer, and the same test
+  # refuses a list missing one it does.
+  - type: dropdown
+    id: server-line
+    attributes:
+      label: Server line
+      description: The Jellyfin line your server is on. This plugin builds for these and nothing else.
+      options:
+        - "10.11"
+        - "12.0"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: backend
+    attributes:
+      label: Backend
+      description: The name the configuration holds. None is the do-nothing backend a fresh install has.
+      options:
+        - "None"
+        - "Local"
+        - "Remote"
+    validations:
+      required: true
+
+  - type: input
+    id: model
+    attributes:
+      label: Model
+      description: For a local tool, the model file it was pointed at. For a remote endpoint, the model name in the request.
+    validations:
+      required: true
+
+  - type: input
+    id: reason
+    attributes:
+      label: The reason a run reported
+      description: The typed reason from the task's report or from a log line, if there was one.
+    validations:
+      required: false
+
+  - type: textarea
+    id: log
+    attributes:
+      label: Log lines
+      description: The lines around the failure. Take out anything you would rather not publish.
+      render: text
+    validations:
+      required: false
