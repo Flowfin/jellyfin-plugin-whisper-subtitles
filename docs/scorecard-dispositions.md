@@ -190,8 +190,18 @@ git grep -nE '^ +dotnet restore' -- .github/workflows/
 ```
 
 The second of those is the line the finding names. It restores the solution, which is
-two projects the lock file does not cover, so pointing it at locked mode is a change
-about the suite's graph as well and is not the one-word edit it looks like.
+four projects, and the lock file covers one of them:
+
+```
+grep -oE '[A-Za-z.]+\.csproj' Jellyfin.Plugin.WhisperSubtitles.sln | sort -u
+Jellyfin.Plugin.WhisperSubtitles.csproj
+Jellyfin.Plugin.WhisperSubtitles.Tests.csproj
+PullRequestHygiene.csproj
+WhisperSubtitles.Fuzz.csproj
+```
+
+So pointing that restore at locked mode is a change about three more graphs, none of
+which ships, and it is not the one-word edit it looks like.
 
 The line the finding points at arrived with `#174`, which took this repository's code
 scanning off a shared workflow and gave it a build of its own. That build restores, so
