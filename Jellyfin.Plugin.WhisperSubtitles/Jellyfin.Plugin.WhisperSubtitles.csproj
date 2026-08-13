@@ -6,6 +6,20 @@
     <RootNamespace>Jellyfin.Plugin.WhisperSubtitles</RootNamespace>
     <AssemblyName>Jellyfin.Plugin.WhisperSubtitles</AssemblyName>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
+
+    <!-- The dependency graph of the thing that ships is written down and committed.
+         Both package references below name a bare version, which NuGet reads as a
+         floor rather than as a pin, so without a lock file the assembly an operator
+         installs is built from whatever the feed served at that minute. The release
+         route already refuses to build without this file, in
+         `.github/workflows/publish.yaml`, and locked mode there is what makes the
+         graph the reviewed one rather than the newest one.
+
+         Only this project. The suite and the hygiene tool ship nowhere, so a lock
+         file for them would be a file to maintain for a graph nobody installs, and
+         `Directory.Build.props` is deliberately not where this goes for that
+         reason. -->
+    <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
   </PropertyGroup>
 
   <ItemGroup>
