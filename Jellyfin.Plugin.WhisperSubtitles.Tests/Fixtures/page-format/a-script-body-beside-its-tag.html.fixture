@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>A page this fixture is about</title>
+</head>
+<body>
+    <div id="Page" data-role="page">
+        <div data-role="content">
+            <form id="Form">
+                <button is="emby-button" type="submit">
+                    <span>Save</span>
+                </button>
+            </form>
+        </div>
+
+        <script type="text/javascript">
+        var Page = {
+            id: 'a-fixture'
+        };
+
+        Page.load = function () {
+            return Page.id;
+        };
+        </script>
+    </div>
+</body>
+</html>
