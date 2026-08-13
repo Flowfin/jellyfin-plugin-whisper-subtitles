@@ -164,31 +164,47 @@ gh api "repos/Flowfin/jellyfin-plugin-whisper-subtitles/code-scanning/alerts?too
 Owed rather than accepted, and this is the one entry on this page that names work
 instead of a reason for leaving something alone. The actions this repository calls are
 pinned by commit with a version comment, which is what carries the other nine tenths of
-the score. What is not pinned is the package restore, because there is no lock file for
-it to be pinned to:
+the score.
+
+The half of it that was missing is here now. The plugin's graph is written down, for
+both server lines, and the project asks for the file to be kept:
 
 ```
 git ls-files | grep -c 'packages.lock.json'
-0
+1
+
+git grep -n 'RestorePackagesWithLockFile' -- Jellyfin.Plugin.WhisperSubtitles/Jellyfin.Plugin.WhisperSubtitles.csproj
+Jellyfin.Plugin.WhisperSubtitles/Jellyfin.Plugin.WhisperSubtitles.csproj:22:    <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
 ```
+
+That does not make this finding green, and the distinction is the whole of what is
+left here. The finding is about a command rather than about the repository: the audit
+reads the restore in a workflow and asks whether that invocation is pinned, and the
+one it points at is not in locked mode. So the score moves when a route reads the
+file, not when the file exists.
+
+```
+git grep -nE '^ +dotnet restore' -- .github/workflows/
+.github/workflows/publish.yaml:295:          dotnet restore "${project}" --locked-mode
+.github/workflows/scan-codeql.yaml:97:          dotnet restore Jellyfin.Plugin.WhisperSubtitles.sln
+```
+
+The second of those is the line the finding names. It restores the solution, which is
+two projects the lock file does not cover, so pointing it at locked mode is a change
+about the suite's graph as well and is not the one-word edit it looks like.
 
 The line the finding points at arrived with `#174`, which took this repository's code
 scanning off a shared workflow and gave it a build of its own. That build restores, so
 the restore became visible to the audit; the absence it made visible is older than the
 change and belongs to no part of it.
 
-The same absence already stops something else, which is why this is worth fixing rather
-than accepting. One route in the tree restores in locked mode:
-
-```
-git grep -n 'locked-mode' -- .github/workflows/
-.github/workflows/publish.yaml:295:          dotnet restore "${project}" --locked-mode
-```
-
-so a publish run started today ends at that step, before it reaches anything it exists
-to do. That is recorded on `#59` from the other side. `#53` is where the lock file
-belongs, since pinning what this plugin is built from is the half of that issue the
-pinned actions are the other half of.
+What the file did end is on the other route. `publish.yaml` refuses to build without
+it, so a publish run started before it existed stopped at that step before reaching
+anything it exists to do. That is recorded on `#59` from the other side. One thing
+about that route is worth writing here rather than leaving as an assumption: locked
+mode refusing a lock file that disagrees with the project is the property the release
+rests on, and it has not been watched happen in this repository. What was tried and
+what it did is on `#53`.
 
 ## CII-Best-Practices, score 0
 

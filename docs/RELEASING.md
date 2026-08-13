@@ -69,8 +69,12 @@ is gone and no catalog is fed until a manifest generator is added.
 - The tagged commit is not contained in a release branch, or the tag was moved after
   the run started.
 - There is no `packages.lock.json` next to the plugin project, so the release build
-  cannot restore against a reviewed dependency graph. Create one with
-  `dotnet restore <project> -p:RestorePackagesWithLockFile=true` and commit it.
+  cannot restore against a reviewed dependency graph. One is committed, and the
+  plugin project sets `RestorePackagesWithLockFile`, so an ordinary
+  `dotnet restore` writes it. What this bullet is about is the file being removed
+  or never regenerated after a dependency changed: a restore that is not in locked
+  mode updates the file and says nothing, so a version raised without committing
+  the result leaves every check on that change green and this step red at the tag.
 - The version stamped into the assembly is not the version in `build.yaml`.
 - The build produced no archive, or more than one, or no packaging metadata.
 - A release already exists for the tag.
