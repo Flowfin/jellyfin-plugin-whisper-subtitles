@@ -1,0 +1,28 @@
+# Who gets asked to look at a change, for every path in this tree.
+#
+# This file requests a review; it does not hold one back. The ruleset on master
+# does not require a code owner's approval, and it requires no approval at all:
+#
+#     gh api repos/Flowfin/jellyfin-plugin-whisper-subtitles/rulesets/20467991 \
+#       --jq '.rules[] | select(.type=="pull_request") | .parameters
+#             | {require_code_owner_review, required_approving_review_count}'
+#     {"require_code_owner_review":false,"required_approving_review_count":0}
+#
+# So what a reader gets from this file is a request on the pull request rather
+# than a gate, and #54 is where the gate is decided. Saying that here is the
+# point: a CODEOWNERS file reads like enforcement, and this one is not.
+#
+# One rule over every path rather than a split by directory. A per-directory
+# split would be a claim about who maintains which part of this plugin, and
+# writing a claim like that before it is true gives a reader the impression that
+# a review request went somewhere it did not.
+#
+# An owner without write access is dropped silently, and a dropped owner is
+# invisible on the pull request that should have named them. Read rather than
+# assumed:
+#
+#     gh api repos/Flowfin/jellyfin-plugin-whisper-subtitles/collaborators \
+#       --jq '.[] | "\(.login) \(.permissions.push)"'
+#     iderex true
+
+* @iderex
