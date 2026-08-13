@@ -1,0 +1,19 @@
+// The same helper, one change away: the media tool arrives as an argument and this
+// source names none. It has to stay accepted, or the rule beside it would be a rule
+// against reaching a media tool at all rather than against choosing which one, and
+// its own fixture could not tell the two apart.
+
+internal sealed class RunsTheMediaToolItWasGiven
+{
+    private readonly IProcessRunner _runner;
+    private readonly string _encoderPath;
+
+    internal RunsTheMediaToolItWasGiven(IProcessRunner runner, string encoderPath)
+    {
+        _runner = runner;
+        _encoderPath = encoderPath;
+    }
+
+    internal IStartedProcess Run(IReadOnlyList<string> arguments) =>
+        _runner.Start(new ProcessInvocation(_encoderPath, arguments));
+}

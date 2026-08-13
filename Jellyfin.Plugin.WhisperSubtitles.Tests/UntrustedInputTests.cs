@@ -46,6 +46,8 @@ public class UntrustedInputTests
 
     private const string Dot = ".";
 
+    private const string Quote = "\"";
+
     /// <summary>
     /// Starting a process anywhere but the one injected runner. A second launch is
     /// a program run with arguments no test can see.
@@ -84,15 +86,46 @@ public class UntrustedInputTests
     ];
 
     /// <summary>
+    /// A media tool path from anywhere but the server. The server already knows
+    /// where a working one is and reports it, and the path handed to the extractor
+    /// may come from there and from nowhere else.
+    /// </summary>
+    /// <remarks>
+    /// What it prevents: a later change that adds a setting for the tool, reads a
+    /// path out of the environment the server was started in, or falls back to a
+    /// bare name left to the search path. Each of the three hands the choice of
+    /// which program this plugin executes to an operator, to whatever can write the
+    /// configuration, or to whatever is first on a path, and none of them would fail
+    /// anything else here: the caller passing the server's own value would still be
+    /// there and would still pass.
+    ///
+    /// The last entry carries its accessors because reading the server's own
+    /// property is the one legal origin and declaring a settable one beside it is
+    /// the shape being refused, so the accessors are what separates the two.
+    /// </remarks>
+    private static readonly string[] _mediaToolPath =
+    [
+        Quote + "ff" + "mpeg",
+        Quote + "ff" + "probe",
+        "Environment" + Dot + "Get" + "EnvironmentVariable",
+        "Ffmpeg" + "Path",
+        "MediaTool" + "Path",
+        "EncoderPath" + " { get; set; }"
+    ];
+
+    /// <summary>
     /// The one file allowed to start a process, and the one folder allowed to build
     /// an HTTP client. Named rather than pattern matched, so widening the permission
-    /// is a change somebody makes on purpose.
+    /// is a change somebody makes on purpose. No file is allowed to decide which
+    /// media tool runs, because the one that may is the one the server reported and
+    /// it arrives as an argument rather than as a name in a source file.
     /// </summary>
     private static readonly Dictionary<string, string[]> _allowed = new(StringComparer.Ordinal)
     {
         [nameof(_processLaunch)] = ["SystemProcessRunner.cs"],
         [nameof(_commandLine)] = [],
         [nameof(_httpClient)] = ["RemoteWhisperBackend.cs"],
+        [nameof(_mediaToolPath)] = [],
     };
 
     private static readonly Regex _bound = new(@"Bounded by `([A-Za-z0-9_]+)`", RegexOptions.None, TimeSpan.FromSeconds(5));
@@ -110,7 +143,8 @@ public class UntrustedInputTests
         {
             { nameof(_processLaunch), "launches-its-own-process" },
             { nameof(_commandLine), "builds-a-command-line" },
-            { nameof(_httpClient), "makes-its-own-http-client" }
+            { nameof(_httpClient), "makes-its-own-http-client" },
+            { nameof(_mediaToolPath), "finds-its-own-media-tool" }
         };
 
     [Fact]
@@ -243,7 +277,7 @@ public class UntrustedInputTests
     {
         // The vocabularies are assembled from fragments, so a typo in the assembly
         // would leave a rule matching nothing and passing forever.
-        foreach (var forbidden in _processLaunch.Concat(_commandLine).Concat(_httpClient))
+        foreach (var forbidden in _processLaunch.Concat(_commandLine).Concat(_httpClient).Concat(_mediaToolPath))
         {
             Assert.False(string.IsNullOrWhiteSpace(forbidden));
             Assert.Contains(forbidden, "        var x = " + forbidden + "something;", StringComparison.Ordinal);
@@ -269,6 +303,27 @@ public class UntrustedInputTests
     public void Nothing_builds_an_http_client_outside_the_remote_backend(string fileName)
     {
         AssertNoneOf(fileName, nameof(_httpClient), "reaches the network past the backend that owns the endpoint and the handler every test injects");
+    }
+
+    [Theory]
+    [MemberData(nameof(EveryPluginSourceFile))]
+    public void Nothing_takes_a_media_tool_path_the_server_did_not_report(string fileName)
+    {
+        AssertNoneOf(fileName, nameof(_mediaToolPath), "decides for itself which media tool to run, and the server's own encoder is the only one this plugin may execute");
+    }
+
+    [Fact]
+    public void The_neighbour_that_runs_the_media_tool_it_was_handed_is_accepted()
+    {
+        // The near miss rather than a distant one. This fixture differs from the one
+        // above it in where the path comes from and in nothing else, so a rule that
+        // refused any source reaching a media tool at all would pass its own fixture
+        // and fail here. Without it the rule could be as coarse as the word tool and
+        // nothing would say so.
+        var neighbour = Fixture("takes-the-media-tool-it-was-given", "cs");
+
+        Assert.False(Trips(Vocabulary(nameof(_mediaToolPath)), neighbour));
+        Assert.Contains("encoderPath", neighbour, StringComparison.Ordinal);
     }
 
     [Theory]
@@ -341,6 +396,7 @@ public class UntrustedInputTests
         nameof(_processLaunch) => _processLaunch,
         nameof(_commandLine) => _commandLine,
         nameof(_httpClient) => _httpClient,
+        nameof(_mediaToolPath) => _mediaToolPath,
         _ => throw new ArgumentOutOfRangeException(nameof(rule), rule, "no vocabulary by that name"),
     };
 
