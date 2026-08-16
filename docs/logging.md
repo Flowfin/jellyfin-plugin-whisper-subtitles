@@ -64,13 +64,26 @@ page is for.
 
 Nothing. This plugin does not log at all:
 
-    git grep -c 'ILogger' -- '*.cs'
+    git grep -c 'ILogger' -- Jellyfin.Plugin.WhisperSubtitles/
     exit=1
 
 So there is no logger for this table to sit beside, and no line of it is held by
 anything. It is a decision written down, not a property a machine refuses, and
 the distinction matters here for the same reason it matters in `docs/limits.md`:
 a table in a document that reads like a guarantee is worse than no table.
+
+The sentence above is the one thing on this page a run reads. `LoggingPageTests`
+asks the same question of the same files and refuses the two ways this page and
+the tree can disagree: the sentence surviving the arrival of a logger, which is
+this table turning into a description of a running server without anybody saying
+so, and the sentence disappearing while nothing logs, which leaves the table
+looking held. It has no opinion about the table itself, because none of the three
+tests that would hold a row of it can be written before something logs.
+
+The population it reads is the plugin project rather than the whole tree, which
+is why the command above names it. A test double that mentions a logger is not
+this plugin logging, and a search over everything would also read the file the
+check is written in.
 
 What would make it one is in #73's own done-when. A run of several hundred items
 through a stubbed backend, asserting that the number of lines above debug follows
