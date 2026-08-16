@@ -1,0 +1,21 @@
+using System;
+using System.IO;
+
+namespace Jellyfin.Plugin.WhisperSubtitles.Scheduling;
+
+/// <summary>
+/// A ledger that survives a restart by keeping its rows beside the plugin's other
+/// state. Plausible, useful, and a third location the page never learned about.
+/// </summary>
+public sealed class PersistentAttemptLedger
+{
+    private readonly string _folder;
+
+    public PersistentAttemptLedger(string folder) => _folder = folder;
+
+    public void Record(string itemId, string outcome)
+    {
+        Directory.CreateDirectory(_folder);
+        File.WriteAllText(Path.Combine(_folder, itemId + ".row"), outcome);
+    }
+}

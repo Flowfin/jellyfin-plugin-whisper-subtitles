@@ -1,0 +1,27 @@
+using System;
+using System.IO;
+using System.Net.Http;
+
+namespace Jellyfin.Plugin.WhisperSubtitles.Backends.Remote;
+
+/// <summary>
+/// The near miss. This opens a file and sends it, which is what the remote backend
+/// does with the extracted audio, and it creates, moves and removes nothing.
+/// </summary>
+public sealed class SendsTheAudioItWasGiven
+{
+    public HttpContent Body(string audioFilePath)
+    {
+        if (!File.Exists(audioFilePath))
+        {
+            throw new FileNotFoundException("the extracted audio is gone", audioFilePath);
+        }
+
+        var audio = File.OpenRead(audioFilePath);
+
+        return new StreamContent(audio);
+    }
+
+    public string Newest(string folder) =>
+        Directory.EnumerateFiles(folder, "*.wav").First();
+}
