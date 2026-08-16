@@ -1,0 +1,21 @@
+using System;
+
+namespace Jellyfin.Plugin.WhisperSubtitles.Audio;
+
+/// <summary>
+/// A seam that explains itself by naming the framework method behind it. The plugin
+/// carries one of these, and a scanner reading its prose as code would report a
+/// writer nobody can point at a location for.
+/// </summary>
+/// <remarks>
+/// The difference between what <c>File.Delete</c> does and what a caller sweeping
+/// leftovers needs is the reason this exists: one throws when the folder above the
+/// file is missing, and the other wants a missing file to be the answer rather than
+/// an exception.
+/// </remarks>
+public interface INamesAWriteWithoutMakingOne
+{
+    // Directory.Delete is what an implementation would reach for, and this file
+    // reaches for nothing.
+    bool Remove(string path);
+}

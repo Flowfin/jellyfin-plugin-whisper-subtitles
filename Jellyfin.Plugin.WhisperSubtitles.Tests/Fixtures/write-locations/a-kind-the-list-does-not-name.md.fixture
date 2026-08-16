@@ -1,0 +1,34 @@
+# What this plugin will not do
+
+The section on the way out answers for three kinds and the list names two. This is
+the direction a change to the code produces: something starts being written, and
+the page goes on describing what was written before it.
+
+## What it writes, and where
+
+Two kinds of thing, and no third.
+
+The subtitle file, next to the media file or in the item's metadata folder,
+following the library's own setting for where the server saves subtitles.
+
+Temporary audio, extracted from the item so a backend has something to work from,
+in a directory this plugin owns. It is deleted on every exit path.
+
+Nothing else.
+
+## What removing the plugin does not delete
+
+Removing the plugin removes its configuration and its records, because those are
+plugin data and the server removes plugin data. Temporary audio is already gone,
+because it never survives a run.
+
+Generated subtitle files stay on disk. They are in the operator's library, and
+deleting a viewer's subtitles as a side effect of uninstalling a plugin would be
+wrong.
+
+Decided, not yet built. Recorded in #42.
+
+## When this list is checked against the code
+
+At the first release, and not only when somebody notices. The release checklist is
+#62 and that is where the condition belongs.
