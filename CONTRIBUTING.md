@@ -128,8 +128,11 @@ the suite red, and a line naming neither is refused instead of being read past.
   backend and recorded response fixtures stand in. Replaced by `StubBackendTests`,
   `RemoteWhisperBackendTests`.
 - A test that depends on the wall clock or on the machine's locale. An injected
-  clock stands in, and every test that formats or parses names its culture. Owed
-  by #48.
+  clock stands in, and every test that formats or parses names its culture. The
+  locale half is carried already, and not by a test: CA1305 is an error in
+  `jellyfin.ruleset` and warnings are errors, so a format or a parse naming no
+  culture fails the build. Owed by #71, for the injected clock, which is one of
+  the four seams that issue holds.
 
 Half of these are still owed, so for half its length this list is a plan rather
 than a record, and the endings say which lines are which. What is checked
@@ -138,8 +141,11 @@ one. TWO THINGS ARE NOT CHECKED. Whether a replacement covers what the refused
 test would have covered is a judgement, and no reading of this file makes it.
 Whether an owed issue has since landed is an answer that lives on the tracker,
 and the suite is offline by the rule two sections above, so an ending that has
-gone stale stays green until a person moves it. #46 stays open until each
-replacement is a real test.
+gone stale stays green until a person moves it. This list stays half a plan until
+every `Owed by` on it has become a `Replaced by`, and no issue holds that
+condition now: the one this paragraph used to name closed while the sentence went
+on saying it was open, which is the direction above happening to the sentence
+that describes it.
 
 ## Adding a backend
 
