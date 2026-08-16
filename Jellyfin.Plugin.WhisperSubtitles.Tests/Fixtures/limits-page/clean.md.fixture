@@ -1,0 +1,19 @@
+# What this plugin will not do
+
+The neighbour. Nothing here breaks a rule, and a reader that refused every entry
+would pass every leg above without it.
+
+## It is held by something a run reads
+
+Held today. The thing that holds it is `docs/subtitle-format.md`, and the class
+that reads this page is `LimitsPageTests`. Recorded in #57.
+
+## It is a decision nobody has built yet
+
+Decided, not yet built. Recorded in #62, which is where the review this page
+promises belongs.
+
+## When this list is checked against the code
+
+The closing section, which is about the list rather than a limit in it, and it
+has to stay out of the count.

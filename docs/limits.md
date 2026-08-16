@@ -216,3 +216,13 @@ either names a limit a check already holds or names the issue that will build
 it, so the review is a comparison rather than a rereading: each "decided, not
 yet built" entry is either built by then and moves up, or it is still open and
 says so. The release checklist is #62 and that is where the condition belongs.
+
+Part of that comparison is made on every run rather than once. `LimitsPageTests`
+reads this page and refuses an entry that is in neither of the two states above,
+one that names no issue, one that points a reader at a file this tree does not
+have, and one that says a suite refuses it when the suite runs no such class.
+What it cannot do is say whether a marker is TRUE: it reaches no tracker, so an
+entry filed as decided and not yet built whose issue closed yesterday stays
+green until a person moves it, and whether a named thing really holds a limit is
+a reading rather than a comparison. So the review at the first release is
+smaller than it was and it is not replaced.
