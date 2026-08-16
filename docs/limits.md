@@ -188,11 +188,20 @@ a handler that may never run, and that half is decided and not yet built:
 `TemporaryAudioSweep` is the sweep, and nothing calls it at the start of a run
 because a run has no items for it to be before. #11 and #21.
 
-Its own configuration and its record of what it produced, where the server puts
-plugin data. #42.
+Its own configuration, where the server puts plugin data. Held today, in the
+sense that the server writes that file and nothing in this plugin reaches the
+location. A record of what it produced belongs in the same place and is decided
+and not yet built: the kind was decided in #42, which closed without one, so
+nothing writes such a record and no open issue owns writing it. #43 is where that
+absence is recorded, because the removal surface it asks for matches a file
+against the record rather than against a name somebody could have chosen.
 
-Nothing else. #42 asks for a test that a full run writes nowhere outside that
-list, which is what turns this paragraph from a description into a limit.
+Nothing else, and `WriteLocationsTests` is what turns this paragraph from a
+description into a limit. It reads every source of this plugin and refuses one
+that puts something on a disk which no kind above names, so the day something
+here writes plugin data is the day this paragraph has to gain a sentence. What it
+does not do is the other direction: a kind named here that nothing writes passes
+it, which is why the record above says so itself. #42.
 
 ## What removing the plugin does not delete
 
