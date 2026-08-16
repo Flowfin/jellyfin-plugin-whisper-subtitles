@@ -1,0 +1,12 @@
+# What this plugin will not do
+
+One entry, in a state the page keeps and naming the issue behind it, and the
+evidence it points a reader at is a file this tree does not have.
+
+## It is held where nobody can look
+
+Held today, by `Backends/TheFileThisEntryWasWrittenAgainst.cs`. Recorded in #57.
+
+## When this list is checked against the code
+
+The closing section, which is about the list rather than a limit in it.

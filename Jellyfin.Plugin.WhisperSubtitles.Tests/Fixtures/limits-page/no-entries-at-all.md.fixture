@@ -1,0 +1,9 @@
+# What this plugin will not do
+
+A page whose entries have all gone, leaving the closing section that is about
+the list rather than a limit in it. Every leg that walks the entries passes over
+nothing, in green.
+
+## When this list is checked against the code
+
+At the first release, and not only when somebody notices. #62.

@@ -1,0 +1,14 @@
+# What this plugin will not do
+
+One entry, and it says what the plugin does in the present tense without saying
+whether a run does it. Recorded in #57 so the leg about issues is not the one
+that trips.
+
+## Stale audio is swept before the next run begins
+
+The sweep collects what a dead process left behind, so a directory this plugin
+owns does not fill up. Recorded in #21.
+
+## When this list is checked against the code
+
+The closing section, which is about the list rather than a limit in it.
