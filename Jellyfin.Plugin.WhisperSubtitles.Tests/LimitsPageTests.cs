@@ -26,7 +26,7 @@ namespace Jellyfin.Plugin.WhisperSubtitles.Tests;
 /// by reading every marker against the tree by hand. This is that reading, run by
 /// the suite instead.
 ///
-/// Four legs, and each one is a different accident:
+/// Five legs, and each one is a different accident:
 ///
 /// An entry in neither state is the shape above. An entry naming no issue is the
 /// page's own opening promise broken, that a reader who disagrees can argue with
@@ -35,6 +35,17 @@ namespace Jellyfin.Plugin.WhisperSubtitles.Tests;
 /// sends a reader looking for evidence that moved. An entry naming a suite this
 /// assembly does not run is the same accident one step quieter, because a renamed
 /// test class still leaves the page reading as though the coverage were somewhere.
+///
+/// The fifth is the state question asked at a finer grain than a heading, and it
+/// exists because the first leg is answered once per section. One entry on this page
+/// is a list rather than a single claim: it names three kinds of thing this plugin
+/// puts on a disk, one paragraph each. A section carrying a marker for one of them
+/// satisfies the first leg for all three, so a kind stating an unbuilt thing in the
+/// present tense passes on a neighbour's marker. That has happened twice, both times
+/// found by a person reading the page against the tree, and the second correction
+/// said in its own words that no leg makes this comparison. This is that leg. The
+/// kinds are read from <see cref="WriteLocationsTests"/>, which already resolves them
+/// against the page, rather than being listed again here.
 ///
 /// WHAT THIS DOES NOT DO, and none of it is an oversight.
 ///
@@ -104,8 +115,20 @@ public class LimitsPageTests
         RegexOptions.CultureInvariant,
         TimeSpan.FromSeconds(5));
 
+    // A blank line, which is the only thing separating one kind from the next in the
+    // entry that lists them. A paragraph is the finest unit this page writes, so it
+    // is the finest one a state can be asked of without the question becoming a rule
+    // about sentences.
+    private static readonly Regex _paragraphBreak = new(
+        @"\r?\n[ \t]*\r?\n",
+        RegexOptions.CultureInvariant,
+        TimeSpan.FromSeconds(5));
+
     public static TheoryData<string> EveryEntry =>
         new(Entries(Page()).Select(entry => entry.Title).ToArray());
+
+    public static TheoryData<string> EveryKindTheWriteListNames =>
+        new(WriteLocationsTests.KindsAsTheListNamesThem.ToArray());
 
     [Fact]
     public void The_reader_finds_the_entries_and_stops_before_the_section_that_is_about_them()
@@ -170,6 +193,38 @@ public class LimitsPageTests
                 running.Contains(named),
                 $"the entry \"{title}\" on the limits page says {named} holds it and this assembly runs no tests in a class by that name");
         }
+    }
+
+    [Theory]
+    [MemberData(nameof(EveryKindTheWriteListNames))]
+    public void Every_kind_the_write_list_names_carries_a_state_of_its_own(string phrase)
+    {
+        var paragraph = ParagraphNaming(Entry(WriteLocationsTests.ListTitle).Body, phrase);
+
+        Assert.True(
+            _state.IsMatch(paragraph),
+            $"the kind the limits page introduces with \"{phrase}\" says neither that it is held today nor that it is decided and not yet built, and the entry around it passes the state leg on a marker belonging to a different kind");
+    }
+
+    [Fact]
+    public void The_reader_refuses_a_kind_that_leans_on_a_neighbours_state()
+    {
+        // The accident this leg is for, and the one the leg above cannot see. The
+        // fixture's entry carries both spellings of a state, so it passes the leg
+        // that asks the question once per heading, and one of its three kinds says
+        // nothing about which state it is in.
+        var entry = Assert.Single(Entries(Fixture("a-kind-with-no-state-of-its-own")));
+        var kinds = WriteLocationsTests.KindsAsTheListNamesThem;
+
+        Assert.True(
+            _state.IsMatch(entry.Body) && _issue.IsMatch(entry.Body),
+            "the fixture has to trip this leg and no other");
+
+        var unstated = kinds
+            .Where(phrase => !_state.IsMatch(ParagraphNaming(entry.Body, phrase)))
+            .ToList();
+
+        Assert.Equal(["The subtitle file"], unstated);
     }
 
     [Fact]
@@ -291,6 +346,38 @@ public class LimitsPageTests
 
     private static Section Entry(string title) =>
         Entries(Page()).Single(entry => entry.Title.Equals(title, StringComparison.Ordinal));
+
+    /// <summary>
+    /// The one paragraph of an entry that names a kind, as one line.
+    /// </summary>
+    /// <remarks>
+    /// Exactly one, and the assertion is part of the rule rather than a convenience.
+    /// A list that named a kind in two places would let a marker in either of them
+    /// answer for both, which is the hole this leg exists to close one level up. A
+    /// kind named nowhere is refused here too, because the phrase is the same one
+    /// <see cref="WriteLocationsTests"/> resolves against the page, and a leg walking
+    /// past a phrase that has been reworded would report every kind as stated.
+    ///
+    /// Flattened for the reason its neighbour gives: the page names its third kind
+    /// across a wrap, so a reader comparing the text as written would answer to where
+    /// somebody's editor broke the line.
+    /// </remarks>
+    private static string ParagraphNaming(string body, string phrase)
+    {
+        var naming = _paragraphBreak.Split(body)
+            .Select(Flattened)
+            .Where(paragraph => paragraph.Contains(phrase, StringComparison.Ordinal))
+            .ToList();
+
+        Assert.True(
+            naming.Count == 1,
+            $"{naming.Count} paragraphs of the write list name the kind introduced with \"{phrase}\", and a state can only be asked of one");
+
+        return naming[0];
+    }
+
+    private static string Flattened(string paragraph) =>
+        string.Join(' ', paragraph.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries));
 
     private static List<string> Backticked(string body) =>
         _backticked.Matches(body).Select(match => match.Groups[1].Value).ToList();

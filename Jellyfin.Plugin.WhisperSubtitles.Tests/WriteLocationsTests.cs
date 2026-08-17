@@ -53,9 +53,15 @@ namespace Jellyfin.Plugin.WhisperSubtitles.Tests;
 public class WriteLocationsTests
 {
     /// <summary>
+    /// The section listing the kinds of thing this plugin puts on a disk, as the
+    /// reader beside this one splits a heading from its title.
+    /// </summary>
+    internal const string ListTitle = "What it writes, and where";
+
+    /// <summary>
     /// The section listing the kinds of thing this plugin puts on a disk.
     /// </summary>
-    private const string ListHeading = "## What it writes, and where";
+    private const string ListHeading = "## " + ListTitle;
 
     /// <summary>
     /// The section saying what survives the plugin being removed.
@@ -119,6 +125,18 @@ public class WriteLocationsTests
             "the server removes plugin data",
             []),
     ];
+
+    /// <summary>
+    /// How the list section names each kind.
+    /// </summary>
+    /// <remarks>
+    /// Handed out so that <see cref="LimitsPageTests"/> can ask its state question of
+    /// each kind's own paragraph rather than of the section around them. The phrases
+    /// are the ones this class already resolves against the page, so the neighbour
+    /// reads the vocabulary rather than keeping a second copy of it that drifts.
+    /// </remarks>
+    internal static IReadOnlyList<string> KindsAsTheListNamesThem =>
+        _kinds.Select(kind => kind.OnTheList).ToArray();
 
     public static TheoryData<string> EveryPluginSourceFile =>
         new(PluginSourceFiles().Select(Path.GetFileName).ToArray()!);
