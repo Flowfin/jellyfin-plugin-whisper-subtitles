@@ -224,17 +224,33 @@ Accepted, and not pursued. The badge is a separate self-certification programme 
 project applies to and answers a questionnaire for, and no part of this repository's
 gate depends on it. Nothing in the tree raises this score.
 
-## What this record is not
+## What reads this, and what it does not read
 
-Nothing reads it. No check compares the findings a Scorecard run produces against the
-entries above, so a run that adds a finding leaves this file green and silent, and an
-entry whose reasoning has gone stale stays here until somebody moves it. That has now
-happened once, to the entry above this file's own count, which is why the sentence is
-written without a number in it. The command at the top is what a reader runs to find out
-whether the two still agree.
+Something reads it now, and this section said nothing did. That was true and the reason
+given for it was about the suite: the finding list comes from an API call, and every test
+in this repository runs with the machine offline, which is the rule `CONTRIBUTING.md`
+holds the suite to. It is not true of the audit itself. The run that produces the findings
+already holds them, as the SARIF it uploads, so the comparison is a file against a file
+and reaches nothing.
 
-The reason there is no check is worth naming rather than leaving as an omission. The
-finding list comes from an API call, and every test in this repository runs with the
-machine offline, which is the rule `CONTRIBUTING.md` holds the suite to. A check that
-reads this record would have to reach the network from the suite or take the finding
-list on trust from a file beside it, and neither is worth what it buys.
+`.github/scripts/refuse-an-undisposed-finding.sh` makes it, in the audit's own job after
+both uploads, and it refuses three things: a finding this run reported with no heading
+here, a heading here for a finding this run did not report, and a heading whose score is
+not the score the run gave. Each was proved by breaking it against the fixture pair in
+`.github/fixtures/scorecard-dispositions/`, and the fixture is used rather than this page
+because proving it on the real record means making the real record wrong for a moment.
+
+Three things it does not do, and they are what a reader of this page still carries.
+
+It has no opinion about the reasoning. Whether a disposition is right, or still applies,
+is not a comparison any run makes, and a heading whose paragraph has gone stale under a
+score that has not moved passes it.
+
+It runs where the audit runs, which is a push to `master`, the weekly schedule and a
+change to the ruleset. There is no pull request trigger, so a change that adds a finding
+is refused after it lands rather than before, and the notice is a red run on the default
+branch.
+
+It reads the document that run produced rather than the code-scanning tab. The command at
+the top is still the route for a reader, and the two are different populations: one is
+what a single run said, the other is what the dashboard holds open across runs.
