@@ -87,8 +87,18 @@ for framework in $supported; do
   # A floor above the pin is a manifest promising a server newer than the
   # package this tree compiles against, which is the promise being raised
   # without the build following it. Nothing else in the tree would notice.
-  lowest=$(printf '%s\n%s\n' "$floor" "$pin" | sort -V | head -n 1)
-  if [ "$lowest" != "$floor" ]; then
+  #
+  # A release candidate is older than the release it is a candidate for, and
+  # `sort -V` does not read it that way: it puts 12.0.0 before 12.0.0-rc4, so
+  # the ordering on its own calls the candidate the newer of the two. The line
+  # a pin like that belongs to is the one with no released server behind it
+  # yet, which is exactly the line whose manifest is still owed, so the case is
+  # the next one somebody meets rather than a hypothetical. The suffix is taken
+  # off before the ordering, and where the two releases are equal the side
+  # still carrying a suffix is the older one.
+  pin_release=${pin%%-*}
+  lowest=$(printf '%s\n%s\n' "$floor" "$pin_release" | sort -V | head -n 1)
+  if [ "$lowest" != "$floor" ] || { [ "$pin_release" = "$floor" ] && [ "$pin_release" != "$pin" ]; }; then
     echo "$manifest promises servers from $target_abi upward and $framework compiles against $pin, which is older than the promise." >&2
     exit 1
   fi
