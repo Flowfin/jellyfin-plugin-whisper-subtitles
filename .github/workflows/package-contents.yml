@@ -99,6 +99,26 @@ jobs:
 
           echo "checked $count manifest entry/entries against the build"
 
+      # The bill of materials, and it is written off the directory above rather
+      # than off the project file. A generator pointed at the project describes
+      # the restore graph, which here is a set of packages the server supplies
+      # and the operator never receives, because both package references exclude
+      # their runtime assets. That document would name components nobody installs
+      # and leave out the one file they do.
+      - name: What an operator receives, described from what the build produced
+        run: .github/scripts/write-bill-of-materials.sh package-out build.yaml bill-of-materials.json
+
+      - name: And the description is of this package and not of another one
+        run: .github/scripts/refuse-a-bill-that-is-not-the-build.sh bill-of-materials.json package-out build.yaml
+
+      - name: Keep the bill beside the build it describes
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: bill-of-materials-${{ matrix.framework }}
+          path: bill-of-materials.json
+          if-no-files-found: error
+          retention-days: 30
+
   refuses:
     name: And it refuses a build that carries all three
     runs-on: ubuntu-latest
@@ -147,3 +167,113 @@ jobs:
           mkdir right-package
           cp .github/fixtures/shipped-weight/Jellyfin.Plugin.WhisperSubtitles.dll right-package/
           .github/scripts/refuse-shipped-weight.sh right-package Jellyfin.Plugin.WhisperSubtitles.dll
+
+  bill-refuses:
+    name: And the bill is refused when it is not this package
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # A package written here rather than kept in the tree, and two files rather
+      # than one. The manifest this repository ships names a single artifact, and
+      # a set of one cannot tell a bill that dropped a component from a bill that
+      # describes nothing at all. Its bytes are chosen here so every hash below is
+      # computed rather than committed, which is what a text fixture under this
+      # tree's own `.gitattributes` rule could not promise on both platforms.
+      - name: A package, and the bill the generator writes for it
+        run: |
+          set -eu
+          mkdir package
+          printf 'the assembly\n' > package/First.dll
+          printf 'the other one\n' > package/Second.dll
+          cat > manifest.yaml <<'MANIFEST'
+          ---
+          name: "A Package"
+          version: "1.2.3.4"
+          artifacts:
+          - "First.dll"
+          - "Second.dll"
+          category: "General"
+          MANIFEST
+          .github/scripts/write-bill-of-materials.sh package manifest.yaml bill.json
+          cat bill.json
+
+      # The neighbour first. Without it every leg below passes for a reader that
+      # refuses everything, which would be red on the real build too.
+      - name: The bill it wrote is accepted
+        run: .github/scripts/refuse-a-bill-that-is-not-the-build.sh bill.json package manifest.yaml
+
+      # This is the document the reader exists for: well formed, plausible, and
+      # about the restore graph rather than about the package. A generator
+      # pointed at the project file writes one component per package in that
+      # graph, and not one of them is a file an operator receives.
+      - name: A component the package does not contain is refused
+        run: |
+          set -eu
+          jq '.components += [{"type":"library","name":"Jellyfin.Controller","version":"10.11.11"}]' bill.json > from-the-graph.json
+          if output=$(.github/scripts/refuse-a-bill-that-is-not-the-build.sh from-the-graph.json package manifest.yaml 2>&1); then
+            echo "$output"
+            echo "The reader accepted a bill naming a component this package does not contain." >&2
+            exit 1
+          fi
+          echo "$output"
+          echo "$output" | grep -q 'describes Jellyfin.Controller, which this package does not contain'
+
+      - name: A shipped file the bill leaves out is refused
+        run: |
+          set -eu
+          jq 'del(.components[] | select(.name == "Second.dll"))' bill.json > incomplete.json
+          if output=$(.github/scripts/refuse-a-bill-that-is-not-the-build.sh incomplete.json package manifest.yaml 2>&1); then
+            echo "$output"
+            echo "The reader accepted a bill that left out a file the package contains." >&2
+            exit 1
+          fi
+          echo "$output"
+          echo "$output" | grep -q 'the package contains Second.dll and the bill does not describe it'
+
+      # The arm that separates a document read off the bytes from one that named
+      # the right files without opening them.
+      - name: A hash that is not the built bytes is refused
+        run: |
+          set -eu
+          jq '(.components[] | select(.name == "First.dll") | .hashes[0].content) = "0000000000000000000000000000000000000000000000000000000000000000"' bill.json > wrong-hash.json
+          if output=$(.github/scripts/refuse-a-bill-that-is-not-the-build.sh wrong-hash.json package manifest.yaml 2>&1); then
+            echo "$output"
+            echo "The reader accepted a bill giving a hash that is not the hash of the built file." >&2
+            exit 1
+          fi
+          echo "$output"
+          echo "$output" | grep -q 'the bill gives First.dll as 0000'
+
+      - name: A document that describes no package at all is refused
+        run: |
+          set -eu
+          jq '.components = []' bill.json > empty.json
+          if output=$(.github/scripts/refuse-a-bill-that-is-not-the-build.sh empty.json package manifest.yaml 2>&1); then
+            echo "$output"
+            echo "The reader accepted a document naming no component." >&2
+            exit 1
+          fi
+          echo "$output"
+          echo "$output" | grep -q 'names no component, so it describes no package'
+
+      # The generator's own refusal, which is the case where the manifest and the
+      # build disagree before any document exists to read.
+      - name: A manifest naming a file the build did not produce is refused
+        run: |
+          set -eu
+          rm package/Second.dll
+          if output=$(.github/scripts/write-bill-of-materials.sh package manifest.yaml never-written.json 2>&1); then
+            echo "$output"
+            echo "The generator described a package that was never built." >&2
+            exit 1
+          fi
+          echo "$output"
+          echo "$output" | grep -q 'ships Second.dll and there is no such file'
+          test ! -f never-written.json
