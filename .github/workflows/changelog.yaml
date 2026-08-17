@@ -30,25 +30,41 @@ jobs:
   #   issues.addLabels against that pull request, which is pull-requests:write and
   #   covers the read above.
   #
-  # None of this is measured here and it cannot be. The called workflow guards its
-  # job with `if: github.repository == inputs.repository-name`, the value passed
-  # below still names the template rather than this repository, and every run on
-  # this repository therefore concludes skipped:
+  # None of this is measured here and it cannot be. The set below is read off the
+  # called workflow rather than off a run, because until this change no run
+  # reached the steps that need it. The called workflow guards its one job with
+  #
+  #   gh api repos/jellyfin/jellyfin-meta-plugins/contents/.github/workflows/changelog.yaml?ref=eb99033a7ff644881b014bc0b4169916c854a68b \
+  #     --jq .content | base64 -d | sed -n '24p'
+  #       if: ${{ github.repository == inputs.repository-name }}
+  #
+  # and the value handed to it named the template, so every run here concluded
+  # skipped:
   #
   #   gh api repos/Flowfin/jellyfin-plugin-whisper-subtitles/actions/workflows/327974210/runs?per_page=3 \
   #     --jq '.workflow_runs[] | "\(.id) \(.conclusion)"'
-  #   31266421270 skipped
-  #   31266047493 skipped
-  #   31255808900 skipped
+  #   32014084351 skipped
+  #   32012714539 skipped
+  #   31991997484 skipped
   #
-  # That guard is #3 and not this change. Until it is repaired, the set below is
-  # read off the called workflow rather than off a run.
+  # The value below is this repository, so the guard admits the job. What that
+  # buys is a draft release whose notes come from the merged pull requests rather
+  # than from somebody writing them at release time, which is the half of #59 that
+  # asks for a changelog the history produces. It is also the first run of a job
+  # that pushes a branch and opens a pull request on merge to master, and nothing
+  # here has watched it do that yet.
+  #
+  # A value that drifts back to another repository costs nothing at any gate: the
+  # guard skips, a skipped job is green, and the only thing that would say so is
+  # somebody looking for a release draft that never appeared. That is what
+  # ChangelogWorkflowTests refuses, against the manifest rather than against a
+  # second copy of the name written here.
   call:
     permissions:
       contents: write # the draft release, and the prepare-<version> branch push
       pull-requests: write # create, update and label the release-prep pull request
     uses: jellyfin/jellyfin-meta-plugins/.github/workflows/changelog.yaml@eb99033a7ff644881b014bc0b4169916c854a68b # master, 2026-07-29
     with:
-      repository-name: jellyfin/jellyfin-plugin-template
+      repository-name: Flowfin/jellyfin-plugin-whisper-subtitles
     secrets:
       token: ${{ secrets.GITHUB_TOKEN }}
