@@ -1,0 +1,14 @@
+---
+# A manifest whose floor is the release the line it describes only has a
+# candidate of. The shape of the second manifest this tree still owes, written
+# on the day somebody adds it: the 12.0 line compiles against 12.0.0-rc4, and a
+# promise of 12.0.0.0 says a server exists that the build has never seen.
+#
+# It is separate from manifest-promising-more-than-the-build.yaml because the
+# comparison reads the two differently. That one names a number above the pin
+# and is caught by ordering alone. This one names a number the pin is a
+# candidate for, where the ordering says the pin is the newer of the two.
+name: "Whisper Subtitles"
+guid: "30ed66e0-32fd-46a6-8a56-5cd95d8df10f"
+version: "1.0.0.0"
+targetAbi: "12.0.0.0"

@@ -200,5 +200,15 @@ jobs:
             'no floor was derived'
           refuses .github/fixtures/abi-floor/manifest-promising-more-than-the-build.yaml \
             'older than the promise'
+          # The candidate is named in the pattern rather than only the sentence,
+          # because the sentence is the one above's too and a leg that cannot
+          # tell the two apart proves the ordering branch twice.
+          #
+          # This one stops refusing on the day the 12.0 line has a released
+          # server to pin, and it turns this step red at that moment rather
+          # than quietly. That is the moment the second manifest this tree owes
+          # becomes writable, so the red is the notice and not a false alarm.
+          refuses .github/fixtures/abi-floor/manifest-promising-a-release-the-build-only-has-a-candidate-of.yaml \
+            'compiles against 12.0.0-rc4, which is older than the promise'
           refuses .github/fixtures/abi-floor/no-manifest-here.yaml \
             'There is no manifest'
