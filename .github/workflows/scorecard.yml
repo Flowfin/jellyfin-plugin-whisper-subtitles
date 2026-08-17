@@ -100,3 +100,104 @@ jobs:
         with:
           sarif_file: results.sarif
           category: scorecard
+
+      # Last, and deliberately after both uploads. What this refuses is a record
+      # rather than a build, so a failure here must never cost the publish or the
+      # dashboard entry the steps above exist for.
+      #
+      # docs/scorecard-dispositions.md said in its own closing section that
+      # nothing compared it against a run, and gave the reason: the finding list
+      # comes from an API call and every test in this repository runs with the
+      # machine offline. That is true of the suite and it is not true here. This
+      # job already holds the findings, as the file it just uploaded, so the
+      # comparison is a file against a file and reaches nothing.
+      - name: Every finding it reported was decided about
+        run: .github/scripts/refuse-an-undisposed-finding.sh results.sarif docs/scorecard-dispositions.md
+
+  refuses:
+    name: And a finding nobody decided about is refused
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # The neighbour first. Without it every leg below passes for a check that
+      # refuses everything, which would be red on the real record too.
+      - name: The fixture pair agrees and is accepted
+        run: |
+          set -eu
+          cd .github/fixtures/scorecard-dispositions
+          ../../scripts/refuse-an-undisposed-finding.sh results.sarif dispositions.md
+
+      # The direction this exists for, and the one that has already happened: a
+      # seventh finding arrived on its own with a change that was about something
+      # else, and nothing said so.
+      - name: A finding with no disposition is refused
+        run: |
+          set -eu
+          cd .github/fixtures/scorecard-dispositions
+          sed '/^## Fuzzing, score 0$/s/.*/## Fuzzing/' dispositions.md > no-entry.md
+          if output=$(../../scripts/refuse-an-undisposed-finding.sh results.sarif no-entry.md 2>&1); then
+            echo "$output"
+            echo "The check passed a run reporting a finding the page does not decide about." >&2
+            exit 1
+          fi
+          echo "$output"
+          echo "$output" | grep -q 'the audit reports Fuzzing and no-entry.md records no disposition for it'
+
+      - name: A disposition for a finding the run did not report is refused
+        run: |
+          set -eu
+          cd .github/fixtures/scorecard-dispositions
+          { cat dispositions.md; printf '\n## Signed-Releases, score 0\n\nAccepted for the fixture.\n'; } > stale-entry.md
+          if output=$(../../scripts/refuse-an-undisposed-finding.sh results.sarif stale-entry.md 2>&1); then
+            echo "$output"
+            echo "The check passed a page recording a finding this run did not report." >&2
+            exit 1
+          fi
+          echo "$output"
+          echo "$output" | grep -q 'stale-entry.md records Signed-Releases and this run of the audit did not report it'
+
+      # The score, because the reasoning under a heading is written against a
+      # number, and a page whose numbers have moved is one nobody can compare.
+      - name: A score the page records wrongly is refused
+        run: |
+          set -eu
+          cd .github/fixtures/scorecard-dispositions
+          sed 's/^## Branch-Protection, score 3$/## Branch-Protection, score 8/' dispositions.md > wrong-score.md
+          if output=$(../../scripts/refuse-an-undisposed-finding.sh results.sarif wrong-score.md 2>&1); then
+            echo "$output"
+            echo "The check passed a page recording a score the run did not report." >&2
+            exit 1
+          fi
+          echo "$output"
+          echo "$output" | grep -q 'the audit scores Branch-Protection at 3 and wrong-score.md records it at 8'
+
+      - name: A run reporting nothing is refused rather than read as a clean one
+        run: |
+          set -eu
+          cd .github/fixtures/scorecard-dispositions
+          jq '.runs = [.runs[] | .results = []]' results.sarif > nothing.sarif
+          if output=$(../../scripts/refuse-an-undisposed-finding.sh nothing.sarif dispositions.md 2>&1); then
+            echo "$output"
+            echo "The check read a run reporting no finding as a run with nothing to decide about." >&2
+            exit 1
+          fi
+          echo "$output"
+          echo "$output" | grep -q 'reports no finding, so this run compared nothing'
+
+      # A rule the run declares and does not report is not a finding. Reading the
+      # rule list as the finding list would refuse the real page for every check
+      # that passed.
+      - name: A declared rule that is not a result is not read as a finding
+        run: |
+          set -eu
+          cd .github/fixtures/scorecard-dispositions
+          output=$(../../scripts/refuse-an-undisposed-finding.sh results.sarif dispositions.md)
+          echo "$output"
+          echo "$output" | grep -qv 'Token-Permissions'

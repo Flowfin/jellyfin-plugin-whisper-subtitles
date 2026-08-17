@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json.schemastore.org/sarif-2.1.0.json",
+  "version": "2.1.0",
+  "runs": [
+    {
+      "tool": { "driver": { "name": "Scorecard", "rules": [
+        { "id": "BranchProtectionID", "name": "Branch-Protection" }
+      ] } },
+      "results": [
+        { "ruleId": "BranchProtectionID", "message": { "text": "score is 3: branch protection is not maximal on development and all release branches:\nWarn: ..." } }
+      ]
+    },
+    {
+      "tool": { "driver": { "name": "Scorecard", "rules": [
+        { "id": "FuzzingID", "name": "Fuzzing" },
+        { "id": "TokenPermissionsID", "name": "Token-Permissions" }
+      ] } },
+      "results": [
+        { "ruleId": "FuzzingID", "message": { "text": "score is 0: project is not fuzzed:\nWarn: ..." } }
+      ]
+    }
+  ]
+}
