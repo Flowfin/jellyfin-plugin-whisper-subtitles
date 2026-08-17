@@ -1,0 +1,26 @@
+# What this plugin will not do
+
+One entry, and it is the list of what this plugin writes rather than a single
+claim. Two of its three kinds say which of the two states they are in and the
+first does not, so the entry passes the leg that asks the question once per
+heading on a marker belonging to a different kind. Recorded in #57 so the leg
+about issues is not the one that trips.
+
+## What it writes, and where
+
+Three kinds of thing, and no fourth.
+
+The subtitle file, next to the media file or in the item's metadata folder,
+following the library's own setting for where the server saves subtitles. #25.
+
+Temporary audio, extracted from the item so a backend has something to work
+from, in a directory this plugin owns. Collecting what a dead process orphaned
+is decided and not yet built. #11 and #21.
+
+Its own configuration, where the server puts plugin data. Held today, in the
+sense that the server writes that file and nothing in this plugin reaches the
+location. #42.
+
+## When this list is checked against the code
+
+The closing section, which is about the list rather than a limit in it.

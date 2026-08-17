@@ -175,10 +175,15 @@ That is #81, and the page it belongs on is #36.
 Three kinds of thing, and no fourth.
 
 The subtitle file, next to the media file or in the item's metadata folder,
-following the library's own setting for where the server saves subtitles. Which
-one applies when the library expresses no preference is open in #8; #25 holds
-the writing itself, and #27 holds the rule that a file becomes visible only once
-it is complete.
+following the library's own setting for where the server saves subtitles. Where
+it goes is held today: `SubtitleDestinationTests` refuses a destination that
+ignores that setting or that leaves those two folders, and
+`AtomicSubtitleFileTests` holds that nothing carries the final name until every
+byte is written. That a run writes one at all is decided and not yet built,
+because nothing joins the pipeline into the task a server would start. Which one
+applies when the library expresses no preference is open in #8; #25 holds the
+writing itself, #27 holds the visibility rule, and #183 is where the joining is
+recorded.
 
 Temporary audio, extracted from the item so a backend has something to work
 from, in a directory this plugin owns. It is deleted on every exit path, and

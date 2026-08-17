@@ -26,3 +26,17 @@ present tense and in the one section carrying no state marker at all, while
 nothing called the sweep. It was found by reading the page against the tree by
 hand. `an-entry-in-neither-state.md.fixture` is that shape, and the leg it trips
 is the one that would have found it.
+
+`a-kind-with-no-state-of-its-own.md.fixture` is the same accident one grain
+finer, and it is the shape the fixture above cannot hold. Its entry is a list
+rather than a single claim, it carries both spellings of a state, and one of the
+three kinds inside it says nothing about which state it is in. So the leg that
+asks the question once per heading passes it. That is how a claim about a record
+of what the plugin produced stood in the present tense until 2026-08-16, and how
+the subtitle file stood in neither state until the leg this fixture proves
+landed. Both were found by a person and neither by a check.
+
+It is the one fixture here that carries its own neighbour rather than leaning on
+`clean.md.fixture`: the leg that refuses it also asserts that the other two kinds
+in the same entry are accepted, because a reader that answered "no state" for
+every kind would refuse this fixture for the wrong reason and pass.
