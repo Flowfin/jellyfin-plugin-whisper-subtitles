@@ -209,8 +209,8 @@ differently and say which one moved.
 
 ## What a pull request has to carry
 
-Two things, and both are read by a check rather than by a person, so neither is a
-matter of taste.
+Three things, and each is read by a check rather than by a person, so none of
+them is a matter of taste.
 
 The body names an issue. Every change here starts as one, and the number is what
 connects a diff to the argument for it.
@@ -220,7 +220,12 @@ and it is worth saying plainly: the commits already on the mainline do not do it
 so this is a convention starting now rather than one being enforced backwards. The
 check walks only the commits a pull request adds.
 
-`Pull request hygiene` decides those two, and `.github/workflows/pr-hygiene.yml`
+A change that moves the version in `build.yaml` moves its changelog with it.
+Those are two fields of one file, so the paths a change touches cannot tell a
+bump that said what the release carries from one that said nothing, and the
+check reads the manifest at both ends of the range instead.
+
+`Pull request hygiene` decides those three, and `.github/workflows/pr-hygiene.yml`
 is where it runs. What it decides is not all it reports: a second tier annotates a
 large diff and a change to the plugin with no change to the test project, and that
 tier cannot turn a run red however much it objects. A check that fails on a

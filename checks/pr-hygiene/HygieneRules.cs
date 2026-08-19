@@ -35,6 +35,15 @@ internal static class HygieneRules
     public const int LargeDiffLines = 400;
 
     /// <summary>
+    /// The manifest the version and the changelog are both fields of.
+    /// </summary>
+    /// <remarks>
+    /// Named once and quoted into every verdict below, so a reader meeting a red
+    /// check is told which file to open rather than left to find it.
+    /// </remarks>
+    public const string ManifestPath = "build.yaml";
+
+    /// <summary>
     /// Whether a piece of text names an issue in this repository.
     /// </summary>
     /// <remarks>
@@ -78,6 +87,131 @@ internal static class HygieneRules
     }
 
     /// <summary>
+    /// What a manifest gives a field, as the field stands in the file.
+    /// </summary>
+    /// <remarks>
+    /// A reader for two fields of one document rather than a parser. It takes what
+    /// is left of the line the field is declared on together with every line
+    /// indented under it, because the changelog is a block scalar: the line
+    /// declaring it carries a marker and never the text, so a reader stopping at
+    /// the end of that line reports a rewritten changelog as an unchanged one.
+    ///
+    /// Only a declaration at column nought is the document's own field, so a word
+    /// sitting inside the description is not read as one.
+    /// </remarks>
+    /// <param name="manifest">The manifest's text.</param>
+    /// <param name="field">The field to read.</param>
+    /// <returns>The value, or <c>null</c> where the manifest declares no such field.</returns>
+    public static string? ManifestField(string? manifest, string field)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(field);
+
+        if (string.IsNullOrWhiteSpace(manifest))
+        {
+            return null;
+        }
+
+        var lines = manifest.Replace("\r\n", "\n", StringComparison.Ordinal).Split('\n');
+        var declaration = field + ":";
+
+        for (var index = 0; index < lines.Length; index++)
+        {
+            if (!lines[index].StartsWith(declaration, StringComparison.Ordinal))
+            {
+                continue;
+            }
+
+            var value = new List<string> { lines[index][declaration.Length..] };
+
+            for (var below = index + 1; below < lines.Length; below++)
+            {
+                var line = lines[below];
+                if (line.Length > 0 && !char.IsWhiteSpace(line[0]))
+                {
+                    break;
+                }
+
+                value.Add(line);
+            }
+
+            return string.Join('\n', value).Trim();
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// Whether a change that moved the manifest's version moved its changelog with it.
+    /// </summary>
+    /// <remarks>
+    /// The changed paths cannot decide this one. The version and the changelog are
+    /// two fields of one file, so the manifest is among the paths of a bump whether
+    /// or not the changelog moved, and it is among them for a change to the
+    /// overview as well. What separates those cases is the file itself at each end
+    /// of the range, which is why this rule takes text rather than names.
+    ///
+    /// It reads what a bump left behind rather than who made it, so it holds the
+    /// same way for a number written by hand and for one written by a release
+    /// preparation that rewrites both fields in a single commit.
+    /// </remarks>
+    /// <param name="baseManifest">The manifest as it stands at the base of the range.</param>
+    /// <param name="headManifest">The manifest as it stands at the head of the range.</param>
+    /// <returns>What the rule decided.</returns>
+    public static Verdict VersionBumpCarriesTheChangelog(string? baseManifest, string? headManifest)
+    {
+        const string Rule = "version-bump-carries-the-changelog";
+
+        var before = ManifestField(baseManifest, "version");
+        var after = ManifestField(headManifest, "version");
+
+        if (before is null || after is null)
+        {
+            // A rule that read nothing and a rule that found nothing wrong look
+            // identical from outside, so this refuses rather than passing quietly.
+            return new Verdict(
+                Rule,
+                false,
+                string.Create(
+                    CultureInfo.InvariantCulture,
+                    $"no version could be read from {ManifestPath} at one end of the range, so nothing was compared"));
+        }
+
+        if (string.Equals(before, after, StringComparison.Ordinal))
+        {
+            return new Verdict(
+                Rule,
+                true,
+                string.Create(CultureInfo.InvariantCulture, $"the version in {ManifestPath} did not move"));
+        }
+
+        var changelogBefore = ManifestField(baseManifest, "changelog");
+        var changelogAfter = ManifestField(headManifest, "changelog");
+
+        if (changelogBefore is null || changelogAfter is null)
+        {
+            return new Verdict(
+                Rule,
+                false,
+                string.Create(
+                    CultureInfo.InvariantCulture,
+                    $"the version moved from {before} to {after} and {ManifestPath} declares no changelog at one end of the range"));
+        }
+
+        var moved = !string.Equals(changelogBefore, changelogAfter, StringComparison.Ordinal);
+
+        return new Verdict(
+            Rule,
+            moved,
+            moved
+                ? string.Create(
+                    CultureInfo.InvariantCulture,
+                    $"the version moved from {before} to {after} and the changelog moved with it")
+                : string.Create(
+                    CultureInfo.InvariantCulture,
+                    $"the version moved from {before} to {after} and the changelog in {ManifestPath} did not; say what the release carries before the number claims it"));
+    }
+
+    /// <summary>
     /// Whether a change touches the plugin without touching the test project.
     /// </summary>
     /// <remarks>
@@ -114,8 +248,14 @@ internal static class HygieneRules
     /// </summary>
     /// <param name="body">The pull request's body.</param>
     /// <param name="commitSubjects">The subject line of every non-merge commit in the range.</param>
+    /// <param name="baseManifest">The manifest as it stands at the base of the range.</param>
+    /// <param name="headManifest">The manifest as it stands at the head of the range.</param>
     /// <returns>One verdict per rule, in the order they are reported.</returns>
-    public static IReadOnlyList<Verdict> FailingTier(string? body, IEnumerable<string> commitSubjects)
+    public static IReadOnlyList<Verdict> FailingTier(
+        string? body,
+        IEnumerable<string> commitSubjects,
+        string? baseManifest,
+        string? headManifest)
     {
         ArgumentNullException.ThrowIfNull(commitSubjects);
 
@@ -136,7 +276,8 @@ internal static class HygieneRules
                     ? "every commit subject names an issue"
                     : string.Create(
                         CultureInfo.InvariantCulture,
-                        $"{unreferenced.Count} commit subject(s) name no issue: {string.Join(" | ", unreferenced)}"))
+                        $"{unreferenced.Count} commit subject(s) name no issue: {string.Join(" | ", unreferenced)}")),
+            VersionBumpCarriesTheChangelog(baseManifest, headManifest)
         ];
     }
 

@@ -21,6 +21,33 @@ namespace Jellyfin.Plugin.WhisperSubtitles.Tests;
 /// </remarks>
 public sealed class PullRequestHygieneTests
 {
+    /// <summary>
+    /// The manifest cut to the fields the version rule reads, with a declaration
+    /// between them, so a value is followed by the next field the way it is in the
+    /// file. The lines are joined here rather than written as one literal, because
+    /// what this fixture is about is where a value ends, and a clone that checked
+    /// the source out with the other line ending would be testing something else.
+    /// </summary>
+    private static readonly string Manifest = string.Join(
+        '\n',
+        "---",
+        "name: \"Whisper Subtitles\"",
+        "version: \"1.0.0.0\"",
+        "targetAbi: \"10.11.0.0\"",
+        "changelog: >",
+        "  what the release carries");
+
+    /// <summary>
+    /// The same manifest with the version moved on and no changelog field at all.
+    /// </summary>
+    private static readonly string ManifestWithNoChangelog = string.Join(
+        '\n',
+        "---",
+        "name: \"Whisper Subtitles\"",
+        "version: \"1.1.0.0\"",
+        "targetAbi: \"10.11.0.0\"",
+        "category: \"General\"");
+
     [Fact]
     public void A_body_that_names_an_issue_passes_and_the_same_body_without_one_does_not()
     {
@@ -85,11 +112,15 @@ public sealed class PullRequestHygieneTests
     [Fact]
     public void A_range_where_every_subject_carries_a_reference_satisfies_the_tier()
     {
-        var verdicts = HygieneRules.FailingTier("Closes #80.", ["Add the hygiene gate (#80)"]);
+        var verdicts = HygieneRules.FailingTier(
+            "Closes #80.",
+            ["Add the hygiene gate (#80)"],
+            Manifest,
+            Manifest);
 
         Assert.All(verdicts, verdict => Assert.True(verdict.Held, verdict.Detail));
         Assert.Equal(
-            new[] { "body-names-an-issue", "commit-subjects-name-an-issue" },
+            new[] { "body-names-an-issue", "commit-subjects-name-an-issue", "version-bump-carries-the-changelog" },
             verdicts.Select(verdict => verdict.Rule).ToArray());
     }
 
@@ -98,11 +129,77 @@ public sealed class PullRequestHygieneTests
     {
         // A verdict with no detail is a red check that sends its reader to the
         // source of the check to find out what it wanted.
-        var held = HygieneRules.FailingTier("Closes #80.", ["Add the hygiene gate (#80)"]);
-        var broken = HygieneRules.FailingTier("nothing", ["Add the hygiene gate"]);
+        var held = HygieneRules.FailingTier("Closes #80.", ["Add the hygiene gate (#80)"], Manifest, Manifest);
+        var broken = HygieneRules.FailingTier("nothing", ["Add the hygiene gate"], Manifest, Bumped(Manifest));
 
         Assert.All(held.Concat(broken), verdict => Assert.False(string.IsNullOrWhiteSpace(verdict.Detail)));
         Assert.Contains("Add the hygiene gate", broken.Single(v => v.Rule == "commit-subjects-name-an-issue").Detail, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void A_version_bump_that_leaves_the_changelog_alone_is_refused_and_the_same_bump_carrying_one_is_not()
+    {
+        // One change apart, so the only thing between the two verdicts is the field
+        // this rule exists for.
+        var silent = HygieneRules.VersionBumpCarriesTheChangelog(Manifest, Bumped(Manifest));
+        var spoken = HygieneRules.VersionBumpCarriesTheChangelog(Manifest, Rewritten(Bumped(Manifest)));
+
+        Assert.False(silent.Held);
+        Assert.Contains("1.0.0.0", silent.Detail, StringComparison.Ordinal);
+        Assert.Contains("1.1.0.0", silent.Detail, StringComparison.Ordinal);
+        Assert.True(spoken.Held, spoken.Detail);
+    }
+
+    [Fact]
+    public void A_change_that_leaves_the_version_where_it_was_is_not_asked_about_the_changelog()
+    {
+        // Most pull requests here touch neither field, and a rule asking them for a
+        // changelog would be the judgement call this tier may not make. A changelog
+        // reworded on its own is the same case from the other side.
+        Assert.True(HygieneRules.VersionBumpCarriesTheChangelog(Manifest, Manifest).Held);
+        Assert.True(HygieneRules.VersionBumpCarriesTheChangelog(Manifest, Rewritten(Manifest)).Held);
+    }
+
+    [Fact]
+    public void The_reader_takes_the_text_under_a_block_scalar_and_not_only_the_line_that_opens_it()
+    {
+        // The one-character mistake this rule invites. The line declaring the
+        // changelog carries a marker and never the text, so it is identical on both
+        // sides of every bump, and a reader stopping at the end of it would refuse
+        // a bump that rewrote the changelog underneath.
+        var opened = HygieneRules.ManifestField(Manifest, "changelog");
+
+        Assert.NotNull(opened);
+        Assert.Contains("what the release carries", opened, StringComparison.Ordinal);
+        Assert.NotEqual(opened, HygieneRules.ManifestField(Rewritten(Manifest), "changelog"));
+    }
+
+    [Fact]
+    public void A_value_stops_at_the_next_declaration_rather_than_running_into_it()
+    {
+        Assert.Equal("\"1.0.0.0\"", HygieneRules.ManifestField(Manifest, "version"));
+        Assert.Equal("\"10.11.0.0\"", HygieneRules.ManifestField(Manifest, "targetAbi"));
+        Assert.Null(HygieneRules.ManifestField(Manifest, "imageUrl"));
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("name: \"Whisper Subtitles\"\n")]
+    public void A_manifest_that_could_not_be_read_is_refused_rather_than_passed(string? headManifest)
+    {
+        // A rule handed nothing and a rule that found nothing wrong are the same
+        // green tick, and only one of them means the pull request is fine.
+        var verdict = HygieneRules.VersionBumpCarriesTheChangelog(Manifest, headManifest);
+
+        Assert.False(verdict.Held);
+        Assert.Contains("build.yaml", verdict.Detail, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void A_bump_that_took_the_changelog_field_away_with_it_is_refused()
+    {
+        Assert.False(HygieneRules.VersionBumpCarriesTheChangelog(Manifest, ManifestWithNoChangelog).Held);
     }
 
     [Fact]
@@ -158,6 +255,13 @@ public sealed class PullRequestHygieneTests
         Assert.All(noted, verdict => Assert.False(string.IsNullOrWhiteSpace(verdict.Detail)));
     }
 
+    private static string Bumped(string manifest) =>
+        manifest.Replace("\"1.0.0.0\"", "\"1.1.0.0\"", StringComparison.Ordinal);
+
+    private static string Rewritten(string manifest) =>
+        manifest.Replace("what the release carries", "the first release", StringComparison.Ordinal);
+
     private static Verdict FailingRule(string rule, string body) =>
-        HygieneRules.FailingTier(body, ["Add the hygiene gate (#80)"]).Single(verdict => verdict.Rule == rule);
+        HygieneRules.FailingTier(body, ["Add the hygiene gate (#80)"], Manifest, Manifest)
+            .Single(verdict => verdict.Rule == rule);
 }
