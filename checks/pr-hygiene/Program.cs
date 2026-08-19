@@ -31,6 +31,13 @@ internal static class Program
         var paths = LinesOf(Environment.GetEnvironmentVariable("PR_CHANGED_PATHS_FILE"));
         var changedLines = NumberIn(Environment.GetEnvironmentVariable("PR_CHANGED_LINES"));
 
+        // The manifest at both ends of the range, because the version and the
+        // changelog are two fields of one file and the changed paths cannot tell
+        // them apart. The rule refuses a pair it could not read, so a run that was
+        // handed nothing here does not read as one that found nothing wrong.
+        var baseManifest = TextOf(Environment.GetEnvironmentVariable("PR_BASE_MANIFEST_FILE"));
+        var headManifest = TextOf(Environment.GetEnvironmentVariable("PR_HEAD_MANIFEST_FILE"));
+
         if (subjects.Length == 0)
         {
             // A range that walked no commits is not a clean pull request, it is a
@@ -39,7 +46,7 @@ internal static class Program
             return 1;
         }
 
-        var failing = HygieneRules.FailingTier(body, subjects);
+        var failing = HygieneRules.FailingTier(body, subjects, baseManifest, headManifest);
         var advisory = HygieneRules.AdvisoryTier(paths, changedLines);
 
         Console.WriteLine("Rules that decide:");
@@ -90,6 +97,16 @@ internal static class Program
             .Select(line => line.Trim())
             .Where(line => line.Length > 0)
             .ToArray();
+    }
+
+    private static string? TextOf(string? path)
+    {
+        if (string.IsNullOrWhiteSpace(path) || !File.Exists(path))
+        {
+            return null;
+        }
+
+        return File.ReadAllText(path);
     }
 
     private static int NumberIn(string? value) =>

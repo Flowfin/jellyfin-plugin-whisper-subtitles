@@ -97,6 +97,12 @@ jobs:
             exit 1
           fi
           git diff --name-only "$BASE_SHA".."$HEAD_SHA" > paths.txt
+          # The manifest at both ends of the range. The version and the changelog
+          # are two fields of one file, so the changed paths cannot separate them
+          # and the rule reads the file itself. A sha where the manifest could not
+          # be read leaves an empty file, which the rule refuses rather than passes.
+          git show "$BASE_SHA:build.yaml" > base-manifest.yaml || :
+          git show "$HEAD_SHA:build.yaml" > head-manifest.yaml || :
           changed=$(git diff --numstat "$BASE_SHA".."$HEAD_SHA" \
                     | awk '$1 ~ /^[0-9]+$/ && $2 ~ /^[0-9]+$/ { total += $1 + $2 } END { print total + 0 }')
           echo "PR_CHANGED_LINES=${changed}" >> "$GITHUB_ENV"
@@ -107,6 +113,8 @@ jobs:
           PR_BODY: ${{ github.event.pull_request.body }}
           PR_COMMIT_SUBJECTS_FILE: subjects.txt
           PR_CHANGED_PATHS_FILE: paths.txt
+          PR_BASE_MANIFEST_FILE: base-manifest.yaml
+          PR_HEAD_MANIFEST_FILE: head-manifest.yaml
           # The tier that decides is skipped for a fork, and the run still reports
           # what every rule found, so a maintainer reading a first contribution
           # sees the same output without a red check attached to it.
