@@ -8,42 +8,82 @@ What makes it worth running anyway is that every finding it reports ends somewhe
 Fixed, or accepted with the reason written down. A score with no disposition behind it
 is a badge, and a badge is the thing this repository is trying not to have.
 
-The findings are read rather than remembered:
+The findings are read rather than remembered, and they are read out of one run rather
+than off the dashboard. The audit uploads the document it produced and then compares this
+page against that same document in the same job, so what a run reported is the population
+this page is organised by:
 
 ```
-gh api "repos/Flowfin/jellyfin-plugin-whisper-subtitles/code-scanning/alerts?tool_name=scorecard&state=open&per_page=100" \
-  --jq '.[] | "\(.rule.description) \(.rule.security_severity_level)"'
-Pinned-Dependencies medium
-CII-Best-Practices low
-Maintained high
-Code-Review high
-Security-Policy medium
-Fuzzing medium
-Branch-Protection high
+gh run download 32309502320 -n 'SARIF file' -D .
+jq -r '([.runs[].tool.driver.rules[] | {key: .id, value: .name}] | from_entries) as $names
+  | [.runs[].results[] | $names[.ruleId]] | sort[]' results.sarif
+Branch-Protection
+CII-Best-Practices
+Code-Review
+Fuzzing
+Maintained
+Pinned-Dependencies
 ```
 
-Seven, and they are the seven below, taken worst first here rather than in the order the
-API answers in. The audit now runs on each push to `master` rather than on the weekly
-schedule alone, so the list is re-read rather than dating from one run:
+Six, and they are the six below, taken worst first here rather than in the order the
+document lists them. A run keeps that file for five days, so a reader after that reads
+the same six off the accounting the comparison prints, which every run of the audit
+carries whether it passes or fails.
+
+The audit runs on each push to `master` rather than on the weekly schedule alone, so the
+list is re-read rather than dating from one run:
 
 ```
 gh run list --workflow scorecard.yml --limit 20 --json event,headBranch,conclusion,headSha \
   --jq '.[] | "\(.event) \(.headBranch) \(.conclusion) \(.headSha[0:7])"'
-push master success 9014814
-push master success 94fbe65
-push master success 4a7eebc
-push master success d8a8fb9
-push master success 617e3a9
-push master success 6234f7f
-push master success b6b43c1
-push master success 88456c7
-schedule master success f14ff3c
+push master failure a26e997
+push master success 1209d79
+push master success 634d14a
+push master success c1f4794
+push master success c7ad7f8
+push master success 3c622c4
+push master success 6812d39
+schedule master success 02e1731
+push master success 02e1731
 ```
 
-Six of the seven were the whole list when this record was written. The seventh arrived
-on its own, with a change that was about something else, and nothing said so. That is
-the closing section of this page happening rather than being predicted, and the entry
-for it says which change produced it.
+The set moves in both directions and neither direction announces itself. One entry below
+arrived on its own with a change that was about something else. One entry that used to be
+here has stopped being reported, and the failure at the top of that list is where it was
+noticed: the comparison refused this page for still carrying a heading the run no longer
+had a finding for. What left, and why, is at the end of this page rather than deleted
+along with the heading.
+
+## The tab is a different population and answers differently
+
+The route a reader reaches for first is the code-scanning tab, and it does not return the
+six above:
+
+```
+gh api "repos/Flowfin/jellyfin-plugin-whisper-subtitles/code-scanning/alerts?tool_name=scorecard&state=open&per_page=100" \
+  --jq '.[] | "\(.rule.description) \(.rule.security_severity_level)"'
+Maintained high
+```
+
+That is not the audit having gone quiet. An alert leaves the open list when somebody
+dismisses it or when a run stops reporting what it was about, and both have happened
+here:
+
+```
+gh api "repos/Flowfin/jellyfin-plugin-whisper-subtitles/code-scanning/alerts?tool_name=scorecard&per_page=100" \
+  --jq '.[] | "\(.rule.description) \(.state)"' | sort
+Branch-Protection dismissed
+CII-Best-Practices dismissed
+Code-Review dismissed
+Fuzzing dismissed
+Maintained open
+Pinned-Dependencies dismissed
+Security-Policy fixed
+```
+
+So a disposition here and a dismissal there are two records of one finding kept in two
+places, and only the first of them is compared against a run. Every heading below carries
+the score the run gave it, never the state the tab shows.
 
 ## Branch-Protection, score 3
 
@@ -62,50 +102,55 @@ gh api "repos/Flowfin/jellyfin-plugin-whisper-subtitles/rulesets/20467991" \
 ```
 
 `#54` is where the gate is tightened and where each of these five is either taken or
-refused with a reason. One of them has a prerequisite in the tree rather than in the
-settings: codeowners review cannot be required while there is no codeowners file, and
-that file is `#85`.
+refused with a reason. One of them used to have a prerequisite in the tree rather than in
+the settings, and no longer has it. Codeowners review cannot be required without a
+codeowners file, and that file is here:
+
+```
+git log --oneline --diff-filter=A -- .github/CODEOWNERS
+20b1bb7 Add the templates and the codeowners file, with a guard on the form (#85)
+```
+
+So all five warnings are settings now and none of them is waiting on anything in this
+tree. Whether each one is taken is still `#54` and is not decided here.
 
 The half of this check that is already answered is worth separating from the half that
 is not. The ruleset has no bypass actors, so what it does require, it requires of
 everybody.
 
-## Security-Policy, score 9
-
-Reported as a security policy file detected, with one warning that it carries one or no
-descriptive hint of disclosure, vulnerability or timelines.
-
-Recorded rather than fixed, and the reason is that the file scoring nine is not in this
-repository:
-
-```
-git ls-files | grep -i security ; echo "exit=$?"
-exit=1
-
-gh api repos/Flowfin/.github/contents --jq '.[].name'
-.github
-SECURITY.md
-profile
-```
-
-The policy the check found is the organisation's, inherited by every repository under
-it. That is a real policy and a reporter following it reaches somewhere, so this is not
-a hole. What it is not is an answer this repository gave, and `#85` is where the
-question of a policy of its own is held. Reading the nine as this repository having
-answered is the specific mistake this record exists to prevent.
-
 ## Code-Review, score 0
 
-Reported as nought of fourteen approved changesets.
+Reported as nought of sixteen approved changesets. The denominator is the number of
+changesets the check sampled, so it moves as pull requests land, and it was fourteen when
+this entry was written:
+
+```
+jq -r '([.runs[].tool.driver.rules[] | {key: .id, value: .name}] | from_entries) as $names
+  | .runs[].results[] | select($names[.ruleId] == "Code-Review") | .message.text' results.sarif
+score is 0: Found 0/16 approved changesets -- score normalized to 0
+```
 
 Accepted, and it is the same setting as Branch-Protection rather than a second thing.
 The check counts approving reviews on the pull requests it sampled and found none, and
 whether an approving review becomes a condition of merge is the ruleset above, which is
 `#54`. Nothing in the tree moves this number.
 
-Left as a finding rather than dismissed. A repository whose changes carry no approving
-review is a fact about that repository, and the disposition for it is that the decision
-is open and named, not that the finding is wrong.
+A repository whose changes carry no approving review is a fact about that repository, and
+the disposition for it is that the decision is open and named, not that the finding is
+wrong.
+
+This entry used to close by saying the finding was left rather than dismissed. That was a
+statement about the tab, and it is not the state there:
+
+```
+gh api "repos/Flowfin/jellyfin-plugin-whisper-subtitles/code-scanning/alerts?tool_name=scorecard&per_page=100" \
+  --jq '.[] | select(.rule.description == "Code-Review") | "\(.state) \(.dismissed_reason)"'
+dismissed won't fix
+```
+
+The dismissal reads it as unsatisfiable rather than as wrong, which is the same substance
+as the paragraph above, so the sentence is corrected and the disposition is not changed.
+The run still reports the finding, which is why this heading stays.
 
 ## Maintained, score 0
 
@@ -224,6 +269,48 @@ Accepted, and not pursued. The badge is a separate self-certification programme 
 project applies to and answers a questionnaire for, and no part of this repository's
 gate depends on it. Nothing in the tree raises this score.
 
+## What stopped being reported, and why
+
+`Security-Policy` had a heading here at score 9. It recorded that the file the check found
+was the organisation's rather than this repository's, and that reading the nine as an
+answer this repository had given was the specific mistake the entry existed to prevent.
+
+That is no longer the position, because this repository answered:
+
+```
+git log --oneline --diff-filter=A -- SECURITY.md
+dc57a5a Add a security policy that says what a vulnerability is in this repository (#209)
+```
+
+The audit reports no finding under that rule now. The rule is still one the run declares,
+which is what separates a check that had nothing to warn about from a check that was
+never asked:
+
+```
+jq -r '[.runs[].tool.driver.rules[].name] | any(. == "Security-Policy")' results.sarif
+true
+jq -r '([.runs[].tool.driver.rules[] | {key: .id, value: .name}] | from_entries) as $names
+  | [.runs[].results[] | $names[.ruleId]] | any(. == "Security-Policy")' results.sarif
+false
+```
+
+What that does not say is which score it carries now. A rule with no result is a rule this
+run raised nothing under, and this document does not separate that from a check the tool
+could not judge, so no number is claimed here. The tab is the one that treats it as
+answered, and it closed its alert on the run that first read the new file:
+
+```
+gh api "repos/Flowfin/jellyfin-plugin-whisper-subtitles/code-scanning/alerts?tool_name=scorecard&per_page=100" \
+  --jq '.[] | select(.rule.description == "Security-Policy") | "\(.state) \(.fixed_at)"'
+fixed 2026-08-19T22:36:17Z
+```
+
+The heading had to go, because a heading for a finding the run does not report is one of
+the three things the comparison refuses, and it refused this page for exactly that. What
+the heading held was the reasoning, which the comparison has no opinion about and which
+deleting the heading alone would have thrown away, so it is written out here instead.
+`#85` is where the rest of what that policy was part of is held.
+
 ## What reads this, and what it does not read
 
 Something reads it now, and this section said nothing did. That was true and the reason
@@ -251,6 +338,7 @@ change to the ruleset. There is no pull request trigger, so a change that adds a
 is refused after it lands rather than before, and the notice is a red run on the default
 branch.
 
-It reads the document that run produced rather than the code-scanning tab. The command at
-the top is still the route for a reader, and the two are different populations: one is
-what a single run said, the other is what the dashboard holds open across runs.
+It reads the document that run produced rather than the code-scanning tab. Those are two
+different populations, and the section near the top of this page measures how far apart
+they are today: one is what a single run said, the other is what the tab holds open across
+runs.
