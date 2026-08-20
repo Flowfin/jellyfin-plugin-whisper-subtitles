@@ -139,7 +139,8 @@ the right person to receive it.
 package this plugin never calls is an ordinary issue rather than an advisory.
 Dependabot and secret scanning are already on here.
 
-**The README describing less than the tree does.** It says two greps print
-nothing, one for the scheduled task and one for network types, and both print
-today: the task and the remote backend have since been written. That is a stale
-document and worth an issue, but reading it is not a vulnerability.
+**A document here describing less than the tree does.** The README said two
+greps printed nothing, one for the scheduled task and one for network types,
+while both printed. That one is repaired and something reads it now, but the
+class is not closed: a page that understates what this plugin holds is a stale
+document worth an issue, and reading it is not a vulnerability.

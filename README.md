@@ -27,16 +27,19 @@ There is no release, and nothing here is installable on a server yet.
 Both print nothing.
 
 What exists is the backend interface and the selection between backends, a local
-backend that drives a whisper.cpp compatible tool as a child process, the SubRip
-writer, item selection, the record of what was attempted, and audio extraction.
-What is missing between those and a subtitle appearing in a library is the
-scheduled task that would run them, in #17, and the composition that hands each
-piece its collaborators, in #71. Nothing in the tree implements a server task
-today:
+backend that drives a whisper.cpp compatible tool as a child process, a remote
+backend that posts audio to an endpoint, the SubRip writer, item selection, the
+record of what was attempted, audio extraction, the composition root the server
+builds the task out of, and the scheduled task itself:
 
     $ git grep -l IScheduledTask -- '*.cs'
+    Jellyfin.Plugin.WhisperSubtitles.Tests/SubtitleGenerationTaskTests.cs
+    Jellyfin.Plugin.WhisperSubtitles/Scheduling/SubtitleGenerationTask.cs
 
-That prints nothing too.
+What is missing is the run that joins them. The task selects a backend, keeps the
+reason it gave and finishes, and it reaches no part of the pipeline the rest of
+this plugin holds. #183 is where that joining is held and carries the search
+behind this paragraph.
 
 So everything below describes a plugin that is being built rather than one that
 can be installed and used now. Where a sentence is about something the tree
@@ -163,13 +166,17 @@ a third party is lawful depends on who owns the recording, who is speaking on it
 and where everyone involved is. That judgement is the operator's, and neither
 this repository nor the license makes it for them.
 
-The remote backend, once it exists, sends audio off the machine to whatever
-endpoint the operator configured. It is the only thing here that would do so, and
-nothing in the tree opens a network connection today:
+The remote backend sends audio off the machine to whatever endpoint the operator
+configured, and it is the only part of this plugin that names a network type at
+all. Two files do, and both of them are that backend:
 
-    $ git grep -n 'HttpClient\|WebRequest\|Socket' -- '*.cs'
+    $ git grep -ln 'HttpClient\|WebRequest\|Socket' -- 'Jellyfin.Plugin.WhisperSubtitles/*'
+    Jellyfin.Plugin.WhisperSubtitles/Backends/Remote/RemoteHttpHandler.cs
+    Jellyfin.Plugin.WhisperSubtitles/Backends/Remote/RemoteWhisperBackend.cs
 
-That prints nothing. No telemetry is collected and none is planned.
+What this plugin cannot tell an operator about audio it sent away is in
+`docs/limits.md` rather than promised here. No telemetry is collected and none is
+planned.
 
 The license disclaims warranty and liability. That disclaimer is in `LICENSE` and
 is neither repeated nor softened here.
