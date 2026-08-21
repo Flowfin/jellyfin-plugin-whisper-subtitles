@@ -31,25 +31,27 @@ the same six off the accounting the comparison prints, which every run of the au
 carries whether it passes or fails.
 
 The audit runs on each push to `master` rather than on the weekly schedule alone, so the
-list is re-read rather than dating from one run:
+list is re-read rather than dating from one run. What it runs on is declared in the tree
+rather than inferred from a history:
+
+```
+git grep -nE '^  (branch_protection_rule|schedule|push):' -- .github/workflows/scorecard.yml
+.github/workflows/scorecard.yml:30:  branch_protection_rule:
+.github/workflows/scorecard.yml:32:  schedule:
+.github/workflows/scorecard.yml:34:  push:
+```
+
+What those triggers have produced is a window that moves with every push, so the command
+is handed over and its output is not frozen here:
 
 ```
 gh run list --workflow scorecard.yml --limit 20 --json event,headBranch,conclusion,headSha \
   --jq '.[] | "\(.event) \(.headBranch) \(.conclusion) \(.headSha[0:7])"'
-push master failure a26e997
-push master success 1209d79
-push master success 634d14a
-push master success c1f4794
-push master success c7ad7f8
-push master success 3c622c4
-push master success 6812d39
-schedule master success 02e1731
-push master success 02e1731
 ```
 
 The set moves in both directions and neither direction announces itself. One entry below
 arrived on its own with a change that was about something else. One entry that used to be
-here has stopped being reported, and the failure at the top of that list is where it was
+here has stopped being reported, and the run that failed on `a26e997` is where it was
 noticed: the comparison refused this page for still carrying a heading the run no longer
 had a finding for. What left, and why, is at the end of this page rather than deleted
 along with the heading.
@@ -98,8 +100,14 @@ request carries:
 ```
 gh api "repos/Flowfin/jellyfin-plugin-whisper-subtitles/rulesets/20467991" \
   --jq '{bypass: .bypass_actors, required: [.rules[] | select(.type == "required_status_checks") | .parameters.required_status_checks[].context]}'
-{"bypass":[],"required":["call / build","call / test","Reject Trojan Source Unicode"]}
 ```
+
+The command is handed over and its output is not pasted, because it was pasted and it
+stopped reproducing. The frozen line named three required contexts and the ruleset names
+four. The fourth is read and recorded on `#49`, which is the issue that compares that set
+and owes a re-derivation of it. Nothing here re-runs a command against a repository
+setting, so a paste of one ages without saying so, and this disposition does not rest on
+which contexts are in the set. It rests on the set being a setting.
 
 `#54` is where the gate is tightened and where each of these five is either taken or
 refused with a reason. One of them used to have a prerequisite in the tree rather than in
@@ -198,13 +206,21 @@ the score rather than for the coverage. Not done, and the reason is that one.
 ## Pinned-Dependencies, score 9
 
 Reported against one line, with the warning that the NuGet command is not pinned by
-hash:
+hash. Read out of the run's own document, which is the population this page is organised
+by:
 
 ```
-gh api "repos/Flowfin/jellyfin-plugin-whisper-subtitles/code-scanning/alerts?tool_name=scorecard&state=open&per_page=100" \
-  --jq '.[] | select(.rule.description == "Pinned-Dependencies") | "\(.created_at) \(.most_recent_instance.location.path):\(.most_recent_instance.location.start_line) \(.most_recent_instance.message.text | split("\n")[0])"'
-2026-08-11T22:33:49Z .github/workflows/scan-codeql.yaml:97 score is 9: nugetCommand not pinned by hash
+jq -r '([.runs[].tool.driver.rules[] | {key: .id, value: .name}] | from_entries) as $names
+  | .runs[].results[] | select($names[.ruleId] == "Pinned-Dependencies")
+  | "\(.locations[0].physicalLocation.artifactLocation.uri):\(.locations[0].physicalLocation.region.startLine) \(.message.text | split("\n")[0])"' results.sarif
+.github/workflows/scan-codeql.yaml:97 score is 9: nugetCommand not pinned by hash
 ```
+
+This entry used to read the same thing off the code-scanning tab, filtered to open
+alerts. That command returns nothing now, because the alert there was dismissed, and a
+reader running it meets an empty result under a heading claiming a finding. The tab is
+the other population the second section of this page separates, and it was never the one
+this heading is organised by.
 
 Owed rather than accepted, and this is the one entry on this page that names work
 instead of a reason for leaving something alone. The actions this repository calls are
