@@ -1,0 +1,12 @@
+---
+# One manifest describes one server line, and this tree builds two. The pair
+# below is the 10.11 line, which is the one with a released server behind it.
+#
+# A second manifest for the 12.0 line cannot be written today. It would promise
+# servers from 12.0.0.0 upward, and net10.0 compiles against 12.0.0-rc4, so the
+# promise would name a released server this tree has never built against.
+name: "Whisper Subtitles"
+guid: "30ed66e0-32fd-46a6-8a56-5cd95d8df10f"
+version: "1.0.0.0"
+targetAbi: "10.11.0.0"
+framework: "net9.0"

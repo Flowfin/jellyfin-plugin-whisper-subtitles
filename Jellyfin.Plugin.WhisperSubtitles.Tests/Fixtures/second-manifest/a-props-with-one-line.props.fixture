@@ -1,0 +1,12 @@
+<Project>
+
+    <PropertyGroup>
+        <SupportedServerLines>net9.0</SupportedServerLines>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'$(TargetFramework)' == 'net9.0'">
+        <JellyfinServerLine>10.11</JellyfinServerLine>
+        <JellyfinPackageVersion>10.11.11</JellyfinPackageVersion>
+    </PropertyGroup>
+
+</Project>
