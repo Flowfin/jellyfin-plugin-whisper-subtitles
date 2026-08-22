@@ -86,10 +86,15 @@ a model file the operator placed themselves, and reads what it prints. It
 downloads nothing, ships nothing, and never goes looking for an executable it was
 not given.
 
-A remote endpoint speaking the OpenAI audio transcription API is decided and not
-yet built, in #13. Audio leaves the machine when that is used, which is something
-an operator has to be told before they switch it on rather than afterwards, and
-saying so in the interface is #81.
+A remote endpoint speaking the OpenAI audio transcription API is in the tree, in
+`Jellyfin.Plugin.WhisperSubtitles/Backends/Remote/RemoteWhisperBackend.cs`, and
+the composition root offers it under a name an operator can select. Audio leaves
+the machine when that is used, which is something an operator has to be told
+before they switch it on rather than afterwards, and saying so in the interface
+is #81 and is not built. No audio leaves the machine from this plugin today,
+because nothing joins a backend to a transcription, which is #183. What does
+reach the configured URL is the readiness probe, which sends one GET and no
+audio.
 
 No backend configured at all is a supported state rather than an error. A server
 with the plugin installed and nothing set answers that it is not configured and
@@ -119,8 +124,10 @@ cancellation.
 
 ## From an install to a first subtitle
 
-This is the path as it is being built. None of it can be walked today, because
-the task that would run it does not exist.
+This is the path as it is being built and none of it can be walked today. The
+task exists, and the search pasted above this section is where the page says so.
+What is missing is the run: the task selects a backend, keeps the reason it gave
+and finishes, reaching no part of the pipeline. That joining is #183.
 
 1. Install the plugin from a repository listing, which is #61, or from a release
    archive, which is #60.
