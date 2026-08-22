@@ -1,0 +1,23 @@
+# What this plugin will not do
+
+One entry, and it is the list of what survives the plugin being removed rather
+than a single claim. Two of its three kinds say which of the two states they are
+in and the one about the configuration does not, so the entry passes the leg
+that asks the question once per heading on a marker belonging to a different
+kind. Recorded in #57 so the leg about issues is not the one that trips.
+
+## What removing the plugin does not delete
+
+Removing the plugin removes its configuration and its records, because those are
+plugin data and the server removes plugin data.
+
+Temporary audio is already gone for a run that ended, and what a process that
+died mid-run left behind is collected by nothing, which is decided and not yet
+built. #11 and #21.
+
+Generated subtitle files stay on disk, and this plugin has no removal path that
+would take one away. Held today. #43.
+
+## When this list is checked against the code
+
+The closing section, which is about the list rather than a limit in it.

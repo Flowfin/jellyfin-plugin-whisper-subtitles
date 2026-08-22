@@ -64,9 +64,15 @@ public class WriteLocationsTests
     private const string ListHeading = "## " + ListTitle;
 
     /// <summary>
+    /// The section saying what survives the plugin being removed, as the reader
+    /// beside this one splits a heading from its title.
+    /// </summary>
+    internal const string UninstallTitle = "What removing the plugin does not delete";
+
+    /// <summary>
     /// The section saying what survives the plugin being removed.
     /// </summary>
-    private const string UninstallHeading = "## What removing the plugin does not delete";
+    private const string UninstallHeading = "## " + UninstallTitle;
 
     private const string Dot = ".";
 
@@ -137,6 +143,22 @@ public class WriteLocationsTests
     /// </remarks>
     internal static IReadOnlyList<string> KindsAsTheListNamesThem =>
         _kinds.Select(kind => kind.OnTheList).ToArray();
+
+    /// <summary>
+    /// How the uninstall section names each kind.
+    /// </summary>
+    /// <remarks>
+    /// The same reason as its neighbour above, one section further down. That
+    /// section carried a single marker at its end covering three kinds in one
+    /// sentence, so two of them stood in the present tense saying things this tree
+    /// does not do: that removal takes away a record nothing writes, and that
+    /// temporary audio never survives a run when what a dead process orphaned is
+    /// collected by nothing. Both were the accident the list section had twice
+    /// already, and this hands the vocabulary over so the same leg can ask the same
+    /// question here.
+    /// </remarks>
+    internal static IReadOnlyList<string> KindsAsTheWayOutNamesThem =>
+        _kinds.Select(kind => kind.OnTheWayOut).ToArray();
 
     public static TheoryData<string> EveryPluginSourceFile =>
         new(PluginSourceFiles().Select(Path.GetFileName).ToArray()!);

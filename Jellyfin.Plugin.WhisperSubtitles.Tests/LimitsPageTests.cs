@@ -26,7 +26,9 @@ namespace Jellyfin.Plugin.WhisperSubtitles.Tests;
 /// by reading every marker against the tree by hand. This is that reading, run by
 /// the suite instead.
 ///
-/// Five legs, and each one is a different accident:
+/// The legs are not counted here, because a count in a remark drifts against the
+/// class it describes and this one has already moved twice. Each is a different
+/// accident:
 ///
 /// An entry in neither state is the shape above. An entry naming no issue is the
 /// page's own opening promise broken, that a reader who disagrees can argue with
@@ -36,16 +38,26 @@ namespace Jellyfin.Plugin.WhisperSubtitles.Tests;
 /// assembly does not run is the same accident one step quieter, because a renamed
 /// test class still leaves the page reading as though the coverage were somewhere.
 ///
-/// The fifth is the state question asked at a finer grain than a heading, and it
-/// exists because the first leg is answered once per section. One entry on this page
-/// is a list rather than a single claim: it names three kinds of thing this plugin
-/// puts on a disk, one paragraph each. A section carrying a marker for one of them
-/// satisfies the first leg for all three, so a kind stating an unbuilt thing in the
-/// present tense passes on a neighbour's marker. That has happened twice, both times
-/// found by a person reading the page against the tree, and the second correction
-/// said in its own words that no leg makes this comparison. This is that leg. The
-/// kinds are read from <see cref="WriteLocationsTests"/>, which already resolves them
-/// against the page, rather than being listed again here.
+/// The last two are the state question asked at a finer grain than a heading, and
+/// they exist because the first leg is answered once per section. TWO entries on
+/// this page are lists rather than single claims, and they name the same three
+/// kinds: what this plugin puts on a disk, and what removing it does and does not
+/// take away. A section carrying a marker for one kind satisfies the first leg for
+/// all three, so a kind stating an unbuilt thing in the present tense passes on a
+/// neighbour's marker.
+///
+/// That has now happened four times and a person found every one of them. Twice in
+/// the list of what is written, which the first of these two legs closed. Twice in
+/// the uninstall section afterwards, in the same sentence: it said removal takes
+/// away a record of what the plugin produced, when nothing writes one, and that
+/// temporary audio never survives a run, when what a process that died mid-run left
+/// behind is collected by nothing. Both had already been corrected one section up
+/// and neither was visible here, because that section's only marker sat at its end
+/// and was about a third kind.
+///
+/// The kinds are read from <see cref="WriteLocationsTests"/> for both, which already
+/// resolves each phrase against its own section, rather than being listed again
+/// here.
 ///
 /// WHAT THIS DOES NOT DO, and none of it is an oversight.
 ///
@@ -129,6 +141,9 @@ public class LimitsPageTests
 
     public static TheoryData<string> EveryKindTheWriteListNames =>
         new(WriteLocationsTests.KindsAsTheListNamesThem.ToArray());
+
+    public static TheoryData<string> EveryKindTheWayOutNames =>
+        new(WriteLocationsTests.KindsAsTheWayOutNamesThem.ToArray());
 
     [Fact]
     public void The_reader_finds_the_entries_and_stops_before_the_section_that_is_about_them()
@@ -225,6 +240,39 @@ public class LimitsPageTests
             .ToList();
 
         Assert.Equal(["The subtitle file"], unstated);
+    }
+
+    [Theory]
+    [MemberData(nameof(EveryKindTheWayOutNames))]
+    public void Every_kind_the_way_out_names_carries_a_state_of_its_own(string phrase)
+    {
+        var paragraph = ParagraphNaming(Entry(WriteLocationsTests.UninstallTitle).Body, phrase);
+
+        Assert.True(
+            _state.IsMatch(paragraph),
+            $"the kind the uninstall entry speaks of as \"{phrase}\" says neither that it is held today nor that it is decided and not yet built, and the entry around it passes the state leg on a marker belonging to a different kind");
+    }
+
+    [Fact]
+    public void The_reader_refuses_a_kind_on_the_way_out_that_leans_on_a_neighbours_state()
+    {
+        // The same accident as the leg above it, in the section that had it last.
+        // The fixture's uninstall entry carries a state and an issue, so the leg
+        // that asks the question once per heading passes it, and the kind that says
+        // what happens to the configuration says nothing about which state that is.
+        var entry = Entries(Fixture("a-way-out-kind-with-no-state-of-its-own"))
+            .Single(section => section.Title.Equals(WriteLocationsTests.UninstallTitle, StringComparison.Ordinal));
+        var kinds = WriteLocationsTests.KindsAsTheWayOutNamesThem;
+
+        Assert.True(
+            _state.IsMatch(entry.Body) && _issue.IsMatch(entry.Body),
+            "the fixture has to trip this leg and no other");
+
+        var unstated = kinds
+            .Where(phrase => !_state.IsMatch(ParagraphNaming(entry.Body, phrase)))
+            .ToList();
+
+        Assert.Equal(["the server removes plugin data"], unstated);
     }
 
     [Fact]
@@ -371,7 +419,7 @@ public class LimitsPageTests
 
         Assert.True(
             naming.Count == 1,
-            $"{naming.Count} paragraphs of the write list name the kind introduced with \"{phrase}\", and a state can only be asked of one");
+            $"{naming.Count} paragraphs of this entry name the kind written as \"{phrase}\", and a state can only be asked of one");
 
         return naming[0];
     }
