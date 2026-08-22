@@ -87,6 +87,13 @@ So a disposition here and a dismissal there are two records of one finding kept 
 places, and only the first of them is compared against a run. Every heading below carries
 the score the run gave it, never the state the tab shows.
 
+TWO RECORDS OF ONE FINDING CAN ALSO DISAGREE, AND ONE PAIR DOES. Being a different
+population is a difference of extent, which is what the commands above measure. The
+`Fuzzing` entry below and the dismissal beside it are not different in extent: they make
+opposite statements about this repository, and that entry says which of the two the tree
+holds. Nothing here reconciles them, because a dismissal is written on the tab and
+changing one is not a change to this tree.
+
 ## Branch-Protection, score 3
 
 Five warnings against `master`: stale review dismissal is disabled, the branch does not
@@ -202,6 +209,37 @@ that owns all of it.
 So the score is correct about the integrations it recognises and wrong as a statement
 about this repository, and raising it would mean adopting one of those integrations for
 the score rather than for the coverage. Not done, and the reason is that one.
+
+THE DISMISSAL BESIDE THIS ENTRY SAYS THE OPPOSITE, AND IT IS THE HALF THAT IS WRONG. The
+alert for this finding was dismissed with a sentence saying there is no untrusted input
+surface here that a fuzzer would reach. Read it rather than taking this paragraph for it:
+
+```
+gh api "repos/Flowfin/jellyfin-plugin-whisper-subtitles/code-scanning/alerts?tool_name=scorecard&per_page=100" \
+  --jq '.[] | select(.rule.description == "Fuzzing") | .dismissed_comment'
+```
+
+This repository names the input it does not control in a document of its own,
+`docs/untrusted-input.md`, and the harness above reaches two of those surfaces: the reader
+that parses what a local tool printed, and the reader that parses what a remote endpoint
+answered. Both are targets rather than an intention:
+
+```
+git grep -nE 'WhisperOutputReader|TranscriptionResponseReader' -- fuzz/
+fuzz/WhisperSubtitles.Fuzz/FuzzTargets.cs:66:        var reader = new WhisperOutputReader();
+fuzz/WhisperSubtitles.Fuzz/FuzzTargets.cs:101:        var read = TranscriptionResponseReader.TryRead(
+fuzz/WhisperSubtitles.Fuzz/SegmentProperties.cs:39:        TimeSpan.FromSeconds(TranscriptionResponseReader.SecondsCeiling);
+```
+
+The other half of that sentence, that onboarding an external service needs maintainers who
+can be paged, is untouched by any of this and is the part the disposition rests on.
+
+WHAT IS RECORDED RATHER THAN REPAIRED, AND WHY. The dismissal is text on the tab, nothing
+in this tree writes it, and the reasoning it gives for itself lives somewhere this
+document does not reach. So the disagreement is written down here, where the record this
+repository keeps is, and rewording the other one is a decision about somebody else's
+record of their own reasoning. `#53` is where that is held. The disagreement has been read
+twice on that issue and this is the first time it is in the repository.
 
 ## Pinned-Dependencies, score 9
 
