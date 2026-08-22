@@ -1,7 +1,20 @@
 ---
 # One manifest describes one server line, and this tree builds two. The pair
 # below is the 10.11 line, which is the one with a released server behind it.
-# A second manifest for the 12.0 line is part of packaging, in #51.
+#
+# A second manifest for the 12.0 line is owned by #51, and it cannot be written
+# today. It would promise servers from 12.0.0.0 upward, and net10.0 compiles
+# against 12.0.0-rc4, so the promise would name a released server that no build
+# here has ever seen. .github/scripts/read-abi-floor.sh refuses that shape,
+# against a fixture that is the manifest which would have been written rather
+# than one invented for the guard. The sentence this paragraph replaced named
+# the owner and stopped there, which reads as packaging work waiting for
+# somebody in this repository.
+#
+# What ends the wait is the 12.0 pin in Directory.Build.props becoming a
+# release. SecondServerLineManifestTests reads that pin rather than trusting
+# this paragraph, so the day the pin stops being a candidate is the day this
+# explanation goes red instead of quietly going stale.
 name: "Whisper Subtitles"
 guid: "30ed66e0-32fd-46a6-8a56-5cd95d8df10f"
 imageUrl: "https://raw.githubusercontent.com/Flowfin/jellyfin-plugin-whisper-subtitles/master/img/logo.png"
