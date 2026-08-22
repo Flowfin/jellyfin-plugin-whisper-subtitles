@@ -16,9 +16,11 @@ is somewhere other than this plugin's settings. Where that is so, the entry says
 it.
 
 Some of what this page tells an operator to look at is not built yet. The reason
-type and the backends are in the tree; the scheduled task that reports a run is
-#17, the configuration page that shows a readiness report is #15, and the run
-summary that lists outcomes is #39. What holds today is the vocabulary and the
+type, the backends, the readiness probe and the scheduled task are in the tree.
+What is not is the run the task performs, which is #183 and is what the counts
+and the per item reasons below would come out of; the configuration page that
+would show a readiness report, which is #36, and which the readiness clause of
+#15 waits on; and the run summary that lists outcomes, which is #39. What holds today is the vocabulary and the
 correspondence, which the test asserts. The rest is what the reasons will be
 read against, and it is written here so that each reason arrives with its action
 rather than acquiring one afterwards.
@@ -310,8 +312,17 @@ model that was configured. The reason name from the list above, spelled as the
 run spelled it. And the log lines around the failure, which carry the message
 the backend gave.
 
-Never attach a configured key. No backend in the tree takes one yet; the remote
-backend that will is #13, and the rule it carries is that the key reaches no log
-line, no error message and no page. #73 checks that rule once for the whole
-plugin rather than at each logger. So a key in what you are about to send came
-from somewhere other than this plugin, and it is still a key.
+Never attach a configured key. A backend in this tree takes one and sends it as a
+bearer header, in
+`Jellyfin.Plugin.WhisperSubtitles/Backends/Remote/RemoteWhisperBackend.cs`, so a
+key in what you are about to send may be the one you configured here rather than
+somebody else's.
+
+The rule that key carries is that it reaches no log line, no error message and no
+page. What holds today is the backend half: `RemoteWhisperBackendTests` asserts
+the key reaches no message that backend produces on any failure path, including
+a refusal that echoes the key back. Checking the rule once for the whole plugin
+rather than at each logger is #73, and it is not built, because nothing in this
+plugin logs yet. So the half a reporter is relying on is the half that is
+asserted, and the half that would cover a logger nobody has written is the half
+that is owed.
