@@ -210,18 +210,33 @@ it, which is why the record above says so itself. #42.
 
 ## What removing the plugin does not delete
 
-Removing the plugin removes its configuration and its records, because those are
-plugin data and the server removes plugin data. Temporary audio is already gone,
-because it never survives a run.
+Three kinds of thing on the way out, the same three the list above names, and
+each is filed here rather than under one marker at the end of the section.
+
+Removing the plugin removes its configuration, because that is plugin data and
+the server removes plugin data. Held today, in the same sense the list above
+uses the words: the server owns that file and nothing in this plugin reaches the
+location. What does not go with it is a record of what the plugin produced,
+because nothing writes one, and that half is decided and not yet built. #42
+closed without such a record and #43 is where the absence is recorded.
+
+Temporary audio is already gone for a run that ended. It is deleted on every
+exit path this plugin takes and `AudioExtractorTests` holds that for a clean
+run, for a non-zero exit and for a cancellation, so that half is held today.
+What a process that died mid-run left behind is a different case and it is not
+gone: `TemporaryAudioSweep` is what would collect it, nothing calls it, and that
+half is decided and not yet built. #11 and #21.
 
 Generated subtitle files stay on disk. They are in the operator's library, and
 deleting a viewer's subtitles as a side effect of uninstalling a plugin would be
-wrong. An operator who does want them gone gets a surface that lists what it
-would remove before removing it, and that never removes a file it did not write
-or one that has been edited since.
-
-Decided, not yet built. Recorded in #42, with the deliberate removal surface in
-#43.
+wrong. Nothing here watches a server remove a plugin, so what is held today is
+the narrower thing a checkout can answer for: this plugin has no removal path at
+all, and `WriteLocationsTests` refuses a source of it that deletes something no
+kind above answers for. An operator who does want them gone gets a surface that
+lists what it would remove before removing it, and that never removes a file it
+did not write or one that has been edited since. That surface is decided and not
+yet built, in #43, and what it would match a file against is the record that is
+absent two paragraphs above.
 
 ## When this list is checked against the code
 

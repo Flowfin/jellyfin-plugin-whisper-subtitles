@@ -40,3 +40,20 @@ It is the one fixture here that carries its own neighbour rather than leaning on
 `clean.md.fixture`: the leg that refuses it also asserts that the other two kinds
 in the same entry are accepted, because a reader that answered "no state" for
 every kind would refuse this fixture for the wrong reason and pass.
+
+`a-way-out-kind-with-no-state-of-its-own.md.fixture` is that same accident in the
+other section that lists kinds, the one saying what removing the plugin does not
+delete. That section carried a single marker at its end covering three kinds in
+one sentence until 2026-08-22, and two of the three were stating unbuilt things
+in the present tense underneath it: that removal takes away a record of what the
+plugin produced, when nothing writes one, and that temporary audio never
+survives a run, when what a process that died mid-run left behind is collected
+by nothing. Both had already been repaired one section up and neither was
+visible here, because the leg that asks the question once per heading was
+answered by the marker at the end.
+
+The proof that the leg bites is the page itself rather than only this fixture:
+with the uninstall section put back to the one `origin/master` carried, all
+three of its kinds are refused and every other leg stays green, which is the
+whole of what the per-heading question could not see. This fixture carries its
+own neighbour for the same reason the one above it does.
