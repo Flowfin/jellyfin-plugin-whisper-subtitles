@@ -1,8 +1,17 @@
 name: unicode-guard
 
 on:
-  # Every branch and every PR: the guard is a cheap read-only scan and must cover
-  # any future release branch too, not just main (one code line since #954).
+  # Every branch and every pull request. The guard is a cheap read-only scan, so
+  # covering a branch costs close to nothing, and the default branch here is
+  # master: a branch this repository grows later is scanned on the day it exists
+  # rather than when somebody remembers to add it. What the push half costs is
+  # measured on #49, where the required name this job carries is read resolving
+  # to two check runs on a branch that has a pull request open.
+  #
+  # This explained itself by another repository's default branch and by an issue
+  # number that resolves nowhere here, until #215. The reference is not written
+  # back: a search cannot be asked to be silent about a string the repair put
+  # there.
   push:
     branches: ["**"]
   pull_request:
