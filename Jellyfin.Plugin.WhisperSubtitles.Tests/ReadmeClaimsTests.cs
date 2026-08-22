@@ -56,6 +56,54 @@ public class ReadmeClaimsTests
     private const string PluginProject = "Jellyfin.Plugin.WhisperSubtitles";
 
     /// <summary>
+    /// The type behind the remote backend paragraph, and the file the paragraph has
+    /// to name so a reader can go and look.
+    /// </summary>
+    /// <remarks>
+    /// Written whole rather than assembled, unlike the two searches above. Those
+    /// walk the whole tree and would otherwise return this file; these two are
+    /// scoped to the plugin project and to one source under it, and this file is in
+    /// neither.
+    /// </remarks>
+    private const string RemoteBackendType = "class RemoteWhisperBackend";
+
+    /// <summary>
+    /// The file the remote backend lives in, as the paragraph has to write it.
+    /// </summary>
+    private const string RemoteBackendFile =
+        "Jellyfin.Plugin.WhisperSubtitles/Backends/Remote/RemoteWhisperBackend.cs";
+
+    /// <summary>
+    /// The words that pick the remote backend's paragraph out of the page.
+    /// </summary>
+    private const string RemoteBackendSubject = "OpenAI audio transcription API";
+
+    /// <summary>
+    /// The source holding the scheduled task, which is where the joining #183 owes
+    /// would appear.
+    /// </summary>
+    private const string TaskSource = "Scheduling/SubtitleGenerationTask.cs";
+
+    /// <summary>
+    /// The heading whose opening paragraph says what can be walked today.
+    /// </summary>
+    private const string InstallPathHeading = "## From an install to a first subtitle";
+
+    /// <summary>
+    /// The issue that holds the joining, named so a reader meets it where the
+    /// absence is stated rather than having to search for it.
+    /// </summary>
+    private const string JoiningIssue = "#183";
+
+    /// <summary>
+    /// The character a line is split on, named rather than escaped so this file
+    /// does not carry one inside a literal. Every line is trimmed afterwards, so a
+    /// clone that put carriage returns back parses the page the same way, which is
+    /// the case `TroubleshootingPageTests` states at length for its own page.
+    /// </summary>
+    private const char LineFeed = (char)10;
+
+    /// <summary>
     /// The network types the page's second search names, each assembled for the same
     /// reason as the one above.
     /// </summary>
@@ -64,6 +112,32 @@ public class ReadmeClaimsTests
         "Http" + "Client",
         "Web" + "Request",
         "Sock" + "et",
+    ];
+
+    /// <summary>
+    /// The words the page uses to say a thing is not here. Read against the two
+    /// paragraphs below rather than against the page, because the same words are
+    /// correct wherever they describe something that really is absent.
+    /// </summary>
+    private static readonly string[] Absences =
+    [
+        "does not exist",
+        "does not yet exist",
+        "is not there",
+        "not yet built",
+    ];
+
+    /// <summary>
+    /// The parts of the pipeline a joined run reaches, which is the list #183 uses
+    /// to say the task reaches none of them.
+    /// </summary>
+    private static readonly string[] PipelineTypes =
+    [
+        "ItemSelection",
+        "AudioExtractor",
+        "BoundedRun",
+        "SubtitlePublisher",
+        "TranscriptionRequest",
     ];
 
     /// <summary>
@@ -104,6 +178,97 @@ public class ReadmeClaimsTests
             $"README.md pastes {Show(pasted)} under \"{NetworkCommand}\" and the plugin answers {Show(found)}. A file that reaches a network without the page listing it and a file the page lists that does not are both this, and the two lists say which.");
     }
 
+    /// <summary>
+    /// The page filed the remote backend as decided and not yet built for two weeks
+    /// after it landed, under a closed issue, and this reads that paragraph against
+    /// the plugin project instead.
+    /// </summary>
+    /// <remarks>
+    /// It is the safer of the two directions a state marker can be wrong in, and it
+    /// still costs something. A backend filed as unbuilt is one a reader stops
+    /// looking for, and the disclosure #81 asks for is then read as a plan rather
+    /// than as something owed about code an operator can already select.
+    ///
+    /// WHAT THIS DOES NOT DO. It reads one direction. A page that goes on saying the
+    /// backend is here after the type is deleted would need the type gone to be
+    /// exercised, which is a build failure rather than a red test, so that arm is
+    /// stated and not proved. It has no opinion about the rest of the paragraph:
+    /// sentences filed correctly around a false one pass. And it asks the question of
+    /// a paragraph rather than of a sentence, which is the hole `docs/limits.md` and
+    /// its checks already carry one grain further down.
+    /// </remarks>
+    [Fact]
+    public void The_page_files_the_remote_backend_in_the_state_the_tree_holds_it_in()
+    {
+        var paragraph = ParagraphSaying(RemoteBackendSubject);
+        var inTree = SourcesNaming(PluginProjectPath(), [RemoteBackendType]);
+
+        Assert.NotEmpty(inTree);
+
+        foreach (var denial in Absences)
+        {
+            Assert.False(
+                paragraph.Contains(denial, StringComparison.Ordinal),
+                $"README.md says \"{denial}\" of the remote backend while the plugin project holds it, in {Show(inTree)}. A backend filed as unbuilt is one a reader stops looking for, and the disclosure #81 asks for is about code that is here rather than about a plan.");
+        }
+
+        Assert.True(
+            paragraph.Contains(RemoteBackendFile, StringComparison.Ordinal),
+            $"README.md says the remote backend is here and does not say where. A reader is asked to take it on trust instead of being sent to the file: {paragraph}");
+    }
+
+    /// <summary>
+    /// The page pasted a search listing the scheduled task and then opened a later
+    /// section by saying the task does not exist. This refuses the second while the
+    /// first is true.
+    /// </summary>
+    /// <remarks>
+    /// This is the dangerous direction rather than the safe one. The two sentences
+    /// are ninety lines apart, both read as statements about the same tree, and the
+    /// one a reader meets when they are deciding whether to install is the wrong one.
+    /// The paste above it is already compared against the tree, so the page was
+    /// disagreeing with a claim this suite holds.
+    ///
+    /// The second arm is the other half of the same sentence. What is missing is the
+    /// run, so while the task source reaches no part of the pipeline the paragraph
+    /// has to name the issue that holds the joining. An absence stated with nothing
+    /// beside it is one a reader cannot follow up.
+    ///
+    /// WHAT THIS DOES NOT DO. It reads the opening paragraph of one section and no
+    /// other, so the same denial written further down passes. It matches the words a
+    /// denial is written in rather than the meaning, so a sentence saying the same
+    /// thing in other words passes and a rewording of the repaired sentence turns
+    /// this red instead. And the arm that would fire once the run exists, a page
+    /// still saying none of it can be walked, is not this: what lifts here is only
+    /// the requirement to name the issue.
+    /// </remarks>
+    [Fact]
+    public void The_install_path_does_not_deny_a_task_the_page_has_already_listed()
+    {
+        var paragraph = OpeningParagraphOf(InstallPathHeading);
+        var task = SourcesNaming(RepositoryRoot(), [TaskType]);
+
+        Assert.NotEmpty(task);
+
+        foreach (var denial in Absences)
+        {
+            Assert.False(
+                paragraph.Contains(denial, StringComparison.Ordinal),
+                $"README.md opens \"{InstallPathHeading}\" by saying \"{denial}\" while the page's own search lists {Show(task)}. The page is disagreeing with the paste it prints ninety lines above.");
+        }
+
+        var joined = SourcesNaming(PluginProjectPath(), PipelineTypes)
+            .Where(path => path.EndsWith(TaskSource, StringComparison.Ordinal))
+            .ToList();
+
+        if (joined.Count == 0)
+        {
+            Assert.True(
+                paragraph.Contains(JoiningIssue, StringComparison.Ordinal),
+                $"README.md says the path cannot be walked and names nothing holding the joining, while {TaskSource} reaches none of {string.Join(", ", PipelineTypes)}. An absence with no issue beside it is one a reader cannot follow up: {paragraph}");
+        }
+    }
+
     [Fact]
     public void The_page_and_the_search_it_quotes_are_about_the_same_files()
     {
@@ -116,6 +281,83 @@ public class ReadmeClaimsTests
             Directory.Exists(Path.Combine(RepositoryRoot(), PluginProject)),
             $"the network search is scoped to {PluginProject} and there is no such directory to walk");
     }
+
+    /// <summary>
+    /// The paragraph of the page containing a given phrase.
+    /// </summary>
+    /// <remarks>
+    /// A paragraph rather than a sentence, because the state a thing is filed in and
+    /// the reason for it are written in neighbouring sentences and a reader takes
+    /// them together. A second claim inside one paragraph is covered by whatever the
+    /// paragraph says about the first, which is a hole this shares with the state
+    /// markers on `docs/limits.md` and does not close.
+    /// </remarks>
+    /// <param name="phrase">A phrase only the wanted paragraph carries.</param>
+    /// <returns>The paragraph, with its line breaks turned into spaces.</returns>
+    private static string ParagraphSaying(string phrase)
+    {
+        var paragraphs = Blocks()
+            .Where(block => block.Contains(phrase, StringComparison.Ordinal))
+            .ToList();
+
+        Assert.True(
+            paragraphs.Count == 1,
+            $"README.md has {paragraphs.Count} paragraphs saying \"{phrase}\" and this reads one. A phrase that stopped being unique leaves whichever paragraph it picked unread.");
+
+        return Flatten(paragraphs[0]);
+    }
+
+    /// <summary>
+    /// The first paragraph under a heading.
+    /// </summary>
+    /// <param name="heading">The heading line, as the page writes it.</param>
+    /// <returns>The paragraph, with its line breaks turned into spaces.</returns>
+    private static string OpeningParagraphOf(string heading)
+    {
+        var blocks = Blocks();
+        var at = blocks.FindIndex(block => block.Trim().Equals(heading, StringComparison.Ordinal));
+
+        Assert.True(
+            at >= 0,
+            $"README.md no longer carries the heading \"{heading}\", so the paragraph under it is held by nothing.");
+        Assert.True(at + 1 < blocks.Count, $"\"{heading}\" is the last thing on the page and has no paragraph under it.");
+
+        return Flatten(blocks[at + 1]);
+    }
+
+    /// <summary>
+    /// The page split into blank-line separated blocks, with the line endings a
+    /// checkout may have put back taken off first, for the reason the class remarks
+    /// give for the same normalisation above.
+    /// </summary>
+    /// <returns>The blocks, in the order the page writes them.</returns>
+    private static List<string> Blocks() =>
+        [.. Lines().Aggregate(
+            new List<string> { string.Empty },
+            (blocks, line) =>
+            {
+                if (line.Length == 0)
+                {
+                    blocks.Add(string.Empty);
+                }
+                else
+                {
+                    blocks[^1] = blocks[^1].Length == 0 ? line : blocks[^1] + " " + line;
+                }
+
+                return blocks;
+            })];
+
+    /// <summary>
+    /// The page as lines, with any carriage return removed.
+    /// </summary>
+    /// <returns>Every line of the page.</returns>
+    private static IEnumerable<string> Lines() =>
+        Page().Split(LineFeed).Select(line => line.Trim());
+
+    private static string Flatten(string block) => block.Trim();
+
+    private static string PluginProjectPath() => Path.Combine(RepositoryRoot(), PluginProject);
 
     /// <summary>
     /// The lines pasted immediately under a command on the page, trimmed, in the
