@@ -13,10 +13,16 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # No `name:` on this job: the "Protect main" ruleset's required status check
-  # matches the literal check-run name, which defaults to the job id
-  # ("dependency-review") when no `name:` is set. Overriding it here would
-  # rename the check run and silently break the required-status-check gate.
+  # No `name:` on this job, so the check run carries the job id
+  # ("dependency-review") as its name. That name is the context a ruleset has to
+  # name in order to require this check, and the "gate" ruleset does not name it
+  # today. Requiring it is the first thing #53 asks for and #54 is where the
+  # tightening is made, so the name is left alone because that decision is
+  # written against it, not because anything would break now.
+  #
+  # This comment named another repository's ruleset until #53. That repository is
+  # the one #49 measures this gate against, its ruleset does require this check
+  # under this name, and the sentence read as though this repository's did too.
   dependency-review:
     runs-on: ubuntu-latest
     timeout-minutes: 10
