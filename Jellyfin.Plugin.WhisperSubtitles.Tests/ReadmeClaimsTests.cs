@@ -9,7 +9,7 @@ namespace Jellyfin.Plugin.WhisperSubtitles.Tests;
 
 /// <summary>
 /// The README separates what this tree holds from what it does not by handing the
-/// reader a command and pasting what that command prints. Two of those pastes are
+/// reader a command and pasting what that command prints. Three of those pastes are
 /// read here against the checkout they are about.
 /// </summary>
 /// <remarks>
@@ -28,18 +28,20 @@ namespace Jellyfin.Plugin.WhisperSubtitles.Tests;
 /// once: a file that appeared and is not listed, and a file that is listed and has
 /// gone.
 ///
-/// WHAT THIS DOES NOT DO. It reads two pastes and not every claim on the page. The
+/// WHAT THIS DOES NOT DO. It reads three pastes and not every claim on the page. The
 /// release and tag readings above them are about a server this suite may not reach,
 /// which is the rule the whole suite is held to, so they stay a reader's job. And it
 /// says nothing about whether the prose around a paste is right; a paragraph that
 /// lists the correct files under a sentence drawing the wrong conclusion from them
 /// passes here.
 ///
-/// The search terms are assembled from parts rather than written whole, which looks
-/// fussy and is not. A test naming the token it searches for is a file containing
-/// that token, and the first of these two searches walks the whole tree, so a literal
-/// here would put this file into its own result set and make the page wrong for
-/// having been checked. `DeterminismTests` splits a literal for the same reason.
+/// The search terms of the two whole-tree searches are assembled from parts rather
+/// than written whole, which looks fussy and is not. A test naming the token it
+/// searches for is a file containing that token, and the first of those two walks
+/// the whole tree, so a literal here would put this file into its own result set and
+/// make the page wrong for having been checked. `DeterminismTests` splits a literal
+/// for the same reason. The third search reads one named file and this is not it, so
+/// its tokens are written whole.
 /// </remarks>
 public class ReadmeClaimsTests
 {
@@ -104,6 +106,12 @@ public class ReadmeClaimsTests
     private const char LineFeed = (char)10;
 
     /// <summary>
+    /// The file the two server line pins are written in, which the page's third
+    /// paste is a reading of.
+    /// </summary>
+    private const string PinFile = "Directory.Build.props";
+
+    /// <summary>
     /// The network types the page's second search names, each assembled for the same
     /// reason as the one above.
     /// </summary>
@@ -141,6 +149,21 @@ public class ReadmeClaimsTests
     ];
 
     /// <summary>
+    /// The properties that third paste searches for.
+    /// </summary>
+    /// <remarks>
+    /// Written whole rather than assembled. That search is scoped to one file and
+    /// this one is not it, so a literal here cannot put this file into the result
+    /// set the way the two whole-tree searches above would.
+    /// </remarks>
+    private static readonly string[] PinProperties =
+    [
+        "SupportedServerLines",
+        "JellyfinServerLine",
+        "JellyfinPackageVersion",
+    ];
+
+    /// <summary>
     /// The first search, quoted as the page quotes it. Built from the same constant
     /// the walk below uses, so a command repointed on the page stops being found
     /// here rather than being found and answered from somewhere else.
@@ -152,6 +175,12 @@ public class ReadmeClaimsTests
     /// </summary>
     private static string NetworkCommand =>
         "$ git grep -ln '" + string.Join("\\|", NetworkTypes) + "' -- '" + PluginProject + "/*'";
+
+    /// <summary>
+    /// The third search, built the same way.
+    /// </summary>
+    private static string PinCommand =>
+        "$ grep '" + string.Join("\\|", PinProperties) + "' " + PinFile;
 
     [Fact]
     public void The_task_search_prints_what_the_readme_pastes_under_it()
@@ -176,6 +205,44 @@ public class ReadmeClaimsTests
         Assert.True(
             pasted.SequenceEqual(found, StringComparer.Ordinal),
             $"README.md pastes {Show(pasted)} under \"{NetworkCommand}\" and the plugin answers {Show(found)}. A file that reaches a network without the page listing it and a file the page lists that does not are both this, and the two lists say which.");
+    }
+
+    /// <summary>
+    /// The page's third paste is a reading of the file the two server line pins are
+    /// written in, and this reads it against that file rather than trusting it.
+    /// </summary>
+    /// <remarks>
+    /// IT HAD ALREADY GONE STALE, WHICH IS WHY IT IS HERE. The paste was true when it
+    /// was written and stopped being true five days later, when a change to the pin
+    /// file moved every line the paste quoted a number for. A second change moved
+    /// them again a week after that. Neither had a reason to open a page at the root,
+    /// which is the shape the remarks on this class already describe for the two
+    /// pastes above; this is the one it left unread.
+    ///
+    /// THE NUMBERS WENT WITH THE REPAIR AND THAT IS PART OF IT. A paste carrying line
+    /// numbers goes stale on any edit anywhere above the lines it quotes, so the
+    /// command drops them and the page quotes the matching lines alone. That leaves
+    /// this comparing what the file says rather than where it says it, which is what
+    /// the paragraph around it is about, and it removes the direction that drifts
+    /// without anything having changed about the pins.
+    ///
+    /// WHAT THIS DOES NOT DO. It compares the matching lines and has no opinion about
+    /// the prose beside them: a paste that reproduces exactly, under a sentence
+    /// drawing the wrong conclusion from it, passes here. It reads the pin file and
+    /// not the build, so a pin the page and the file agree on that no build ever used
+    /// is not this test's subject.
+    /// </remarks>
+    [Fact]
+    public void The_server_line_search_prints_what_the_readme_pastes_under_it()
+    {
+        var found = LinesNaming(PinFile, PinProperties);
+        var pasted = PastedUnder(PinCommand);
+
+        Assert.NotEmpty(found);
+
+        Assert.True(
+            pasted.SequenceEqual(found, StringComparer.Ordinal),
+            $"README.md pastes {Show(pasted)} under \"{PinCommand}\" and {PinFile} answers {Show(found)}. A pin raised in the file and not on the page, and a pin the page carries that the file does not, are both this.");
     }
 
     /// <summary>
@@ -428,6 +495,31 @@ public class ReadmeClaimsTests
             .Select(file => file.Relative)
             .Order(StringComparer.Ordinal)
             .ToList();
+    }
+
+    /// <summary>
+    /// The lines of one file at the repository root that name any of the given
+    /// tokens, trimmed, in the order the file writes them.
+    /// </summary>
+    /// <remarks>
+    /// Trimmed on both sides, because the page indents a paste under the command it
+    /// pastes and the reader of that paste trims it the same way. What survives the
+    /// trim is the text of the line, which is what the paragraph is about.
+    /// </remarks>
+    /// <param name="name">The file, relative to the repository root.</param>
+    /// <param name="tokens">The tokens a line has to name one of.</param>
+    /// <returns>Each matching line, trimmed.</returns>
+    private static List<string> LinesNaming(string name, IReadOnlyList<string> tokens)
+    {
+        var path = Path.Combine(RepositoryRoot(), name);
+
+        Assert.True(File.Exists(path), $"the page reads {name} and there is no such file to read");
+
+        return [.. File.ReadAllText(path)
+            .Replace("\r\n", "\n", StringComparison.Ordinal)
+            .Split(LineFeed)
+            .Where(line => tokens.Any(token => line.Contains(token, StringComparison.Ordinal)))
+            .Select(line => line.Trim())];
     }
 
     private static string Show(IEnumerable<string> paths)
