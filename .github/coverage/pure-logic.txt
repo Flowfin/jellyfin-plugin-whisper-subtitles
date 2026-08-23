@@ -18,16 +18,18 @@
 # line-floor: 95
 # branch-floor: 91
 #
-# Where the numbers come from. The suite over this set stands at 98.39% of lines
-# and 95.22% of branches, which the workflow reports for each supported line by
+# Where the numbers come from. The suite over this set stands at 98.44% of lines
+# and 95.26% of branches, which the workflow reports for each supported line by
 #
 #     dotnet test -c Release -f <line> --nologo --collect:"XPlat Code Coverage"
 #     .github/scripts/refuse-uncovered-logic.sh <report> .github/coverage/pure-logic.txt Jellyfin.Plugin.WhisperSubtitles
 #
-# and both lines report the same figures.
+# The two figures above were read on net10.0, on a machine that has no net9.0
+# runtime, so what the other line reports is what its own job in the coverage
+# workflow prints rather than something restated here.
 #
 # The floor sits below that rather than at it, and the gap is the disclosure:
-# 21 of the 623 lines and 9 of the 230 branches in this set can be lost without
+# 22 of the 643 lines and 9 of the 232 branches in this set can be lost without
 # this check saying anything. It is set there because two files carry branches
 # no test reaches yet, and a floor pinned to today's figure would make finishing
 # those a precondition for every unrelated change. The number moves up when they
@@ -77,6 +79,7 @@ Audio/FfmpegArguments.cs
 Backends/BackendSelector.cs
 Backends/CostEstimate.cs
 Backends/Local/WhisperOutputReader.cs
+Calibration/ThroughputFactor.cs
 Configuration/ConfigurationValidation.cs
 Output/SegmentFormatter.cs
 Output/SubRipWriter.cs
