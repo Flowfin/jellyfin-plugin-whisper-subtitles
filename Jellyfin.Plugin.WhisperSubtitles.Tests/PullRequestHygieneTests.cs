@@ -120,7 +120,13 @@ public sealed class PullRequestHygieneTests
 
         Assert.All(verdicts, verdict => Assert.True(verdict.Held, verdict.Detail));
         Assert.Equal(
-            new[] { "body-names-an-issue", "commit-subjects-name-an-issue", "version-bump-carries-the-changelog" },
+            new[]
+            {
+                "body-names-an-issue",
+                "commit-subjects-name-an-issue",
+                "no-disclaimer-the-tracker-reads-as-a-closing-instruction",
+                "version-bump-carries-the-changelog"
+            },
             verdicts.Select(verdict => verdict.Rule).ToArray());
     }
 
@@ -253,6 +259,74 @@ public sealed class PullRequestHygieneTests
             noted.Select(verdict => verdict.Rule).ToArray());
         Assert.All(noted, verdict => Assert.False(verdict.Held));
         Assert.All(noted, verdict => Assert.False(string.IsNullOrWhiteSpace(verdict.Detail)));
+    }
+
+    [Fact]
+    public void A_disclaimer_the_tracker_reads_as_a_closing_instruction_is_refused()
+    {
+        // The sentence that closed #64 while the paragraph around it said the
+        // done-condition was unmet, and the wording it was repaired to. One word
+        // apart at the point that matters, so nothing else separates the verdicts.
+        const string Rule = "no-disclaimer-the-tracker-reads-as-a-closing-instruction";
+
+        var disclaimed = FailingRule(Rule, "**This does not close #64, and it is the smaller half of it.** (#80)");
+        var repaired = FailingRule(Rule, "**#64 stays open on this, and this is the smaller half of it.** (#80)");
+
+        Assert.False(disclaimed.Held, disclaimed.Detail);
+        Assert.True(repaired.Held, repaired.Detail);
+    }
+
+    [Fact]
+    public void A_body_that_really_closes_an_issue_is_not_refused()
+    {
+        // The other direction, and the one that decides whether this rule is
+        // something people route around. A change that finishes an issue says so in
+        // the words the tracker acts on, and this may not stand in the way of it.
+        Assert.Empty(HygieneRules.DisclaimersThatClose("Closes #80."));
+        Assert.Empty(HygieneRules.DisclaimersThatClose("Nothing else is left to do here. Closes #80."));
+    }
+
+    [Theory]
+    [InlineData("does not close #64")]
+    [InlineData("will never fix #64")]
+    [InlineData("this does not yet resolve #64")]
+    public void Every_shape_the_look_back_reaches_is_refused(string body) =>
+        Assert.Single(HygieneRules.DisclaimersThatClose(body));
+
+    [Fact]
+    public void A_negation_further_back_than_the_look_back_is_not_seen()
+    {
+        // The bound the rule states about itself, measured here rather than left as
+        // a sentence in a comment. Widening it would refuse a legitimate closing
+        // sentence whose paragraph carries a negation a few words earlier, which is
+        // the second case below and has to stay accepted.
+        Assert.Empty(HygieneRules.DisclaimersThatClose("this is not a change that closes #64"));
+        Assert.Empty(HygieneRules.DisclaimersThatClose("no part of this closes #64"));
+        Assert.Empty(HygieneRules.DisclaimersThatClose("Nothing about the estimate moved here. Closes #80."));
+    }
+
+    [Fact]
+    public void A_closing_keyword_with_no_reference_behind_it_is_not_a_subject()
+    {
+        // The tracker's own condition is that the reference follows the keyword, so
+        // a sentence saying a change closes nothing is not something it acts on and
+        // is not something this may refuse.
+        Assert.Empty(HygieneRules.DisclaimersThatClose("this does not close anything, and #64 is where the rest is"));
+        Assert.Empty(HygieneRules.DisclaimersThatClose("this does not close the door on #64"));
+    }
+
+    [Fact]
+    public void The_rule_names_the_sentence_it_found()
+    {
+        // A red check that says only that something is wrong sends its reader to the
+        // source of the check. This one has to hand back the words to search for.
+        var found = HygieneRules.DisclaimersThatClose("The suite is green. This does not close #64, and the rest waits on #63.");
+
+        Assert.Equal(["not close #64"], found);
+        Assert.Contains(
+            "not close #64",
+            FailingRule("no-disclaimer-the-tracker-reads-as-a-closing-instruction", "This does not close #64. (#80)").Detail,
+            StringComparison.Ordinal);
     }
 
     private static string Bumped(string manifest) =>

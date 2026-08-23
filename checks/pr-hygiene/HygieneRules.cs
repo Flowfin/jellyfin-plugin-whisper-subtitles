@@ -44,6 +44,39 @@ internal static class HygieneRules
     public const string ManifestPath = "build.yaml";
 
     /// <summary>
+    /// How many words back from a closing keyword a negation is looked for.
+    /// </summary>
+    /// <remarks>
+    /// Three, which reaches the shapes that actually cost something here: "does not
+    /// close", "will not close", "this does not yet close". Widening it buys the next
+    /// shape at the price of refusing a legitimate closing sentence whose paragraph
+    /// happens to carry a negation a few words earlier, and a rule that refuses honest
+    /// work is one people learn to route around. The bound is measured by a leg of the
+    /// suite rather than left as a claim here.
+    /// </remarks>
+    private const int NegationLookBack = 3;
+
+    /// <summary>
+    /// The words the tracker reads as closing an issue when a reference follows them.
+    /// </summary>
+    /// <remarks>
+    /// Every spelling the tracker documents, in one place, so a rule below walks them
+    /// rather than a sentence here listing some of them.
+    /// </remarks>
+    private static readonly string[] _closingKeywords =
+    [
+        "close", "closes", "closed",
+        "fix", "fixes", "fixed",
+        "resolve", "resolves", "resolved"
+    ];
+
+    /// <summary>
+    /// The words that turn such a sentence into a disclaimer, and that the tracker
+    /// does not read.
+    /// </summary>
+    private static readonly string[] _negations = ["not", "never", "no", "neither", "nor", "without"];
+
+    /// <summary>
     /// Whether a piece of text names an issue in this repository.
     /// </summary>
     /// <remarks>
@@ -139,6 +172,87 @@ internal static class HygieneRules
 
         return null;
     }
+
+    /// <summary>
+    /// The disclaimers in a pull request body that the tracker will read as closing
+    /// instructions.
+    /// </summary>
+    /// <remarks>
+    /// THE FAILURE IS SILENT AND IT LOOKS LIKE PROGRESS. The template asks, under what
+    /// a change does not cover, for a clause of an issue that it leaves open, and the
+    /// natural sentence for that puts a negation in front of a closing keyword and an
+    /// issue reference behind it. The tracker reads the keyword and the reference and
+    /// not the negation, so merging closes an issue whose done-condition the same
+    /// paragraph says is unmet, and the issue is then read as completed by every count
+    /// taken afterwards.
+    ///
+    /// It punishes the right behaviour rather than the wrong one. A body that says
+    /// nothing about what it leaves open cannot trip the tracker this way; only one
+    /// that discloses honestly can.
+    ///
+    /// WHAT IT READS. Words, in order, with anything that is not a letter, a digit or
+    /// a hash treated as a separator. A keyword counts only where the very next word
+    /// is an issue reference, which is the tracker's own condition, so a sentence
+    /// saying a change closes nothing at all is not a subject here. A negation counts
+    /// where it is within three words before the keyword.
+    ///
+    /// WHAT IT CANNOT SEE. A negation further back than that, which is stated at the
+    /// figure above and held by a leg of the suite. It also reads no markup, so a
+    /// disclaimer inside a code fence or a quotation is read as prose; that refuses
+    /// something the tracker would have acted on anyway, because the tracker reads
+    /// those the same way.
+    /// </remarks>
+    /// <param name="body">The pull request's body.</param>
+    /// <returns>Each disclaimer found, as the keyword and the reference it names.</returns>
+    public static IReadOnlyList<string> DisclaimersThatClose(string? body)
+    {
+        if (string.IsNullOrWhiteSpace(body))
+        {
+            return [];
+        }
+
+        var words = body
+            .Split(
+                body.Where(character => !char.IsLetterOrDigit(character) && character != '#').Distinct().ToArray(),
+                StringSplitOptions.RemoveEmptyEntries)
+            .ToArray();
+
+        var found = new List<string>();
+
+        for (var index = 0; index < words.Length - 1; index++)
+        {
+            if (!_closingKeywords.Contains(words[index], StringComparer.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
+            if (!IsAReference(words[index + 1]))
+            {
+                continue;
+            }
+
+            var from = Math.Max(0, index - NegationLookBack);
+
+            for (var back = from; back < index; back++)
+            {
+                if (!_negations.Contains(words[back], StringComparer.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                found.Add(string.Join(' ', words[back..(index + 2)]));
+                break;
+            }
+        }
+
+        return found;
+    }
+
+    /// <summary>
+    /// Whether one word is an issue reference on its own.
+    /// </summary>
+    private static bool IsAReference(string word) =>
+        word.Length > 1 && word[0] == '#' && char.IsAsciiDigit(word[1]);
 
     /// <summary>
     /// Whether a change that moved the manifest's version moved its changelog with it.
@@ -277,8 +391,26 @@ internal static class HygieneRules
                     : string.Create(
                         CultureInfo.InvariantCulture,
                         $"{unreferenced.Count} commit subject(s) name no issue: {string.Join(" | ", unreferenced)}")),
+            DisclaimerVerdict(body),
             VersionBumpCarriesTheChangelog(baseManifest, headManifest)
         ];
+    }
+
+    /// <summary>
+    /// What the disclaimer rule decided about one body.
+    /// </summary>
+    private static Verdict DisclaimerVerdict(string? body)
+    {
+        var disclaimers = DisclaimersThatClose(body);
+
+        return new Verdict(
+            "no-disclaimer-the-tracker-reads-as-a-closing-instruction",
+            disclaimers.Count == 0,
+            disclaimers.Count == 0
+                ? "no sentence in the body would close an issue it says this change leaves open"
+                : string.Create(
+                    CultureInfo.InvariantCulture,
+                    $"{disclaimers.Count} sentence(s) the tracker will read as closing an issue this body says is not closed: {string.Join(" | ", disclaimers)}; say it without the keyword, for example that the issue stays open on this"));
     }
 
     /// <summary>
