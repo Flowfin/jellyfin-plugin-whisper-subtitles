@@ -52,12 +52,12 @@ whether this is the plugin you want.
 
 Two server lines, and the pin for each is written in one place:
 
-    $ grep -n 'SupportedServerLines\|JellyfinServerLine\|JellyfinPackageVersion' Directory.Build.props
-    12:        <SupportedServerLines>net9.0;net10.0</SupportedServerLines>
-    16:        <JellyfinServerLine>10.11</JellyfinServerLine>
-    17:        <JellyfinPackageVersion>10.11.11</JellyfinPackageVersion>
-    21:        <JellyfinServerLine>12.0</JellyfinServerLine>
-    22:        <JellyfinPackageVersion>12.0.0-rc4</JellyfinPackageVersion>
+    $ grep 'SupportedServerLines\|JellyfinServerLine\|JellyfinPackageVersion' Directory.Build.props
+            <SupportedServerLines>net9.0;net10.0</SupportedServerLines>
+            <JellyfinServerLine>10.11</JellyfinServerLine>
+            <JellyfinPackageVersion>10.11.11</JellyfinPackageVersion>
+            <JellyfinServerLine>12.0</JellyfinServerLine>
+            <JellyfinPackageVersion>12.0.0-rc4</JellyfinPackageVersion>
 
 The 10.11 line is .NET 9 and the 12.0 line is .NET 10. One source tree serves
 both, and one invocation of the build produces an assembly for each:
