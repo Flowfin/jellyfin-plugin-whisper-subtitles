@@ -1,0 +1,35 @@
+using System.IO;
+using System.Net.Http;
+using System.Threading;
+using System.Threading.Tasks;
+
+namespace Jellyfin.Plugin.WhisperSubtitles.Backends.Remote;
+
+/// <summary>
+/// The near miss. This sends the extracted audio to an endpoint an operator
+/// configured, which is what the remote backend does, and it claims no path on this
+/// server. A rule coarse enough to call this a route claim would be refusing the file
+/// the whole remote backend lives in.
+/// </summary>
+public sealed class SendsAudioToSomebodyElsesEndpoint
+{
+    private readonly HttpClient _client;
+
+    public SendsAudioToSomebodyElsesEndpoint(HttpClient client) => _client = client;
+
+    public async Task<string> TranscribeAsync(string audioFilePath, CancellationToken cancellationToken)
+    {
+        using var body = new MultipartFormDataContent();
+        using var audio = new StreamContent(File.OpenRead(audioFilePath));
+
+        body.Add(audio, "file", Path.GetFileName(audioFilePath));
+
+        using var response = await _client
+            .PostAsync(new System.Uri("audio/transcriptions", System.UriKind.Relative), body, cancellationToken)
+            .ConfigureAwait(false);
+
+        response.EnsureSuccessStatusCode();
+
+        return await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+    }
+}
