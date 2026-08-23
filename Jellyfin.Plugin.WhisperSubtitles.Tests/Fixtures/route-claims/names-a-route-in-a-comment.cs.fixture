@@ -1,0 +1,23 @@
+using MediaBrowser.Controller.Plugins;
+
+namespace Jellyfin.Plugin.WhisperSubtitles;
+
+/// <summary>
+/// The composition root, which registers services and nothing else.
+/// </summary>
+/// <remarks>
+/// Worth writing down where somebody adding a surface will read it: this plugin has
+/// no [ApiController] and registers no [HttpGet], so the server answers no path on
+/// its behalf and there is nothing here for a sibling plugin to claim second. The
+/// scheduled task is the only entry point.
+///
+/// A reader who wants that explained rather than only recorded should not have to
+/// delete it to keep a scanner green, which is what this fixture is here to prove.
+/// </remarks>
+public sealed class RegistersServicesAndExplainsItself : IPluginServiceRegistrator
+{
+    public void RegisterServices(IServiceCollection services, IServerApplicationHost applicationHost)
+    {
+        services.AddSingleton<Something>();
+    }
+}
