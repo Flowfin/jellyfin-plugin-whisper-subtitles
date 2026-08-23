@@ -10,6 +10,18 @@
             <div class="content-primary">
                 <form id="WhisperSubtitlesConfigForm">
                     <div class="selectContainer">
+                        <label class="selectLabel" for="Backend">Backend that transcribes</label>
+                        <select is="emby-select" id="Backend" class="emby-select">
+                            <option value="">Not chosen yet, and nothing runs</option>
+                        </select>
+                        <div class="fieldDescription">
+                            Naming a backend here is the whole of what this field does
+                            today. What each one needs to run is not on this page yet, so
+                            a run reports which setting is missing and transcribes
+                            nothing.
+                        </div>
+                    </div>
+                    <div class="selectContainer">
                         <label class="selectLabel" for="TargetLanguage">Language to produce</label>
                         <select is="emby-select" id="TargetLanguage" class="emby-select">
                             <option value="">Not chosen yet, and nothing runs</option>
@@ -43,8 +55,56 @@
                 pluginUniqueId: '30ed66e0-32fd-46a6-8a56-5cd95d8df10f',
                 followsTheDefault: '',
                 detect: 'detect',
+                noBackendChosen: '',
+                backends: [
+                    { name: 'None', label: 'None, and nothing is transcribed' },
+                    { name: 'Local', label: 'Local, a Whisper program on this machine' },
+                    { name: 'Remote', label: 'Remote, an endpoint you run elsewhere' }
+                ],
                 languages: ['deu', 'eng', 'fra', 'ita', 'jpn', 'nld', 'por', 'rus', 'spa'],
                 libraries: []
+            };
+
+            WhisperSubtitlesConfig.backendValue = function (stored) {
+                var wanted = (stored || WhisperSubtitlesConfig.noBackendChosen).trim();
+                var found = wanted;
+
+                WhisperSubtitlesConfig.backends.forEach(function (backend) {
+                    if (backend.name.toLowerCase() === wanted.toLowerCase()) {
+                        found = backend.name;
+                    }
+                });
+
+                return found;
+            };
+
+            WhisperSubtitlesConfig.fillBackends = function (select, stored) {
+                var options = ['<option value="' + WhisperSubtitlesConfig.noBackendChosen + '">Not chosen yet, and nothing runs</option>'];
+                var offered = false;
+
+                WhisperSubtitlesConfig.backends.forEach(function (backend) {
+                    options.push('<option value="' + backend.name + '">' + backend.label + '</option>');
+
+                    if (backend.name === stored) {
+                        offered = true;
+                    }
+                });
+
+                select.innerHTML = options.join('');
+
+                if (stored !== WhisperSubtitlesConfig.noBackendChosen && !offered) {
+                    // The stored name stays on the page instead of being replaced by
+                    // the first option. A select that cannot show what is stored shows
+                    // blank, and the next save writes that blank over the name the
+                    // operator mistyped, which is the one thing that says what to
+                    // repair. Built through the DOM rather than by joining it into the
+                    // markup above, because this is the one value here that came out of
+                    // a file somebody edited.
+                    var unknown = document.createElement('option');
+                    unknown.value = stored;
+                    unknown.textContent = stored + ', which is not a backend this plugin has';
+                    select.appendChild(unknown);
+                }
             };
 
             WhisperSubtitlesConfig.fillLanguages = function (select, includeFollow) {
@@ -124,6 +184,11 @@
                     WhisperSubtitlesConfig.libraries = libraries || [];
 
                     return ApiClient.getPluginConfiguration(WhisperSubtitlesConfig.pluginUniqueId).then(function (config) {
+                        var backend = document.querySelector('#Backend');
+                        var chosen = WhisperSubtitlesConfig.backendValue(config.Backend);
+                        WhisperSubtitlesConfig.fillBackends(backend, chosen);
+                        backend.value = chosen;
+
                         var target = document.querySelector('#TargetLanguage');
                         WhisperSubtitlesConfig.fillLanguages(target, false);
                         target.value = config.TargetLanguage || WhisperSubtitlesConfig.followsTheDefault;
@@ -143,6 +208,7 @@
                 .addEventListener('submit', function(e) {
                 Dashboard.showLoadingMsg();
                 ApiClient.getPluginConfiguration(WhisperSubtitlesConfig.pluginUniqueId).then(function (config) {
+                    config.Backend = document.querySelector('#Backend').value;
                     config.TargetLanguage = document.querySelector('#TargetLanguage').value;
                     config.LibraryTargets = WhisperSubtitlesConfig.collectLibraries();
 
