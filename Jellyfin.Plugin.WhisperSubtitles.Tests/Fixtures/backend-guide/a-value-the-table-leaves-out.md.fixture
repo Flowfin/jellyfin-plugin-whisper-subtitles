@@ -1,0 +1,16 @@
+# Choosing a backend and a model
+
+A guide written before the remote backend existed and never revisited. Every
+value it offers is real, so a reader comparing in one direction only accepts it,
+and an operator reads a plugin that cannot reach an endpoint.
+
+## What you set the backend to
+
+| Setting value | What it transcribes with | What the operator supplies |
+| --- | --- | --- |
+| `None` | Nothing. | Nothing. |
+| `Local` | A whisper.cpp compatible command line tool. | The tool, and a model file. |
+
+## What the tree holds today
+
+No run of this plugin has ever produced a subtitle.

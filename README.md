@@ -194,6 +194,8 @@ is neither repeated nor softened here.
 
 ## Documentation
 
+- `docs/choosing-a-backend.md`, which backend and which model to choose, what
+  each one needs and costs, and what the plugin cannot yet be followed to.
 - `docs/limits.md`, what this plugin will not do, and which decision each limit
   came from.
 - `docs/troubleshooting.md`, every failure reason it reports and what an operator
