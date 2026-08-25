@@ -286,10 +286,16 @@ public sealed class LocalWhisperBackend : ITranscriptionBackend
     /// Builds the argument vector, one element per argument.
     /// </summary>
     /// <remarks>
-    /// The flags are whisper.cpp's: the model, the audio file and the language.
-    /// Nothing asks the tool to write a file, because the transcript is read from
-    /// its standard output and a file the plugin did not ask for is a file
-    /// somebody has to clean up.
+    /// The flags are whisper.cpp's: the model, the thread count, the audio file
+    /// and the language. Nothing asks the tool to write a file, because the
+    /// transcript is read from its standard output and a file the plugin did not
+    /// ask for is a file somebody has to clean up.
+    ///
+    /// The thread count is passed on every run rather than only when it differs
+    /// from something. There is no value of this flag that means "whatever you
+    /// would have done": omitting it selects whisper.cpp's own default, which is a
+    /// number chosen without seeing this machine, so a run that left it out would
+    /// be a run whose budget nothing here decided.
     /// </remarks>
     private ProcessInvocation BuildInvocation(TranscriptionRequest request)
     {
@@ -297,6 +303,8 @@ public sealed class LocalWhisperBackend : ITranscriptionBackend
         {
             "-m",
             _options.ModelPath!,
+            "-t",
+            _options.ThreadCount.ToString(CultureInfo.InvariantCulture),
             "-l",
             request.Language!,
             "-f",

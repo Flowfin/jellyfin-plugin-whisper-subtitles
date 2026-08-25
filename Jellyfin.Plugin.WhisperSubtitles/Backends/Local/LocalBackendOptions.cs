@@ -1,9 +1,11 @@
 using System;
+using Jellyfin.Plugin.WhisperSubtitles.Scheduling;
 
 namespace Jellyfin.Plugin.WhisperSubtitles.Backends.Local;
 
 /// <summary>
-/// The two paths the local backend needs, and nothing else.
+/// The two paths the local backend needs, and how much of the machine it may use
+/// while it runs.
 /// </summary>
 /// <remarks>
 /// A type of its own rather than the plugin configuration, so the backend can be
@@ -69,13 +71,52 @@ public sealed class LocalBackendOptions
     /// <param name="modelPath">The model file to hand it.</param>
     /// <param name="probeTimeout">How long the readiness probe may spend looking.</param>
     public LocalBackendOptions(string? executablePath, string? modelPath, TimeSpan probeTimeout)
+        : this(executablePath, modelPath, probeTimeout, Scheduling.ThreadCount.DefaultFor(Environment.ProcessorCount))
+    {
+    }
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="LocalBackendOptions"/> class
+    /// with a thread count somebody chose.
+    /// </summary>
+    /// <param name="executablePath">The whisper.cpp compatible command line tool.</param>
+    /// <param name="modelPath">The model file to hand it.</param>
+    /// <param name="probeTimeout">How long the readiness probe may spend looking.</param>
+    /// <param name="threadCount">How many threads the tool may use on one item.</param>
+    /// <remarks>
+    /// The thread count arrives already decided. Whether the number an operator
+    /// typed is one this machine may be asked for is
+    /// <see cref="Scheduling.ThreadCount.Choose"/>'s question, and answering it here would put
+    /// the same rule in two places and let the two disagree.
+    /// </remarks>
+    public LocalBackendOptions(string? executablePath, string? modelPath, TimeSpan probeTimeout, int threadCount)
     {
         ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(probeTimeout, TimeSpan.Zero);
+        ArgumentOutOfRangeException.ThrowIfLessThan(threadCount, 1);
 
         ExecutablePath = executablePath;
         ModelPath = modelPath;
         ProbeTimeout = probeTimeout;
+        ThreadCount = threadCount;
     }
+
+    /// <summary>
+    /// Gets how many threads the tool may use on one item.
+    /// </summary>
+    /// <remarks>
+    /// Always a decided number rather than an absence meaning "let the tool
+    /// choose". Saying nothing is not the neutral option: it selects the tool's
+    /// own default, which is a budget somebody else chose without seeing this
+    /// machine. What that default is and the command behind it are on
+    /// docs/choosing-a-backend.md rather than asserted here. Where nobody has
+    /// chosen, the number is
+    /// <see cref="Scheduling.ThreadCount.DefaultFor"/> of the processors this server reports.
+    ///
+    /// Where an operator types one is #36, and the configuration property it
+    /// would be read from is #22 along with the four limits beside it. What this
+    /// property fixes is that a number reaching the tool is one somebody can name.
+    /// </remarks>
+    public int ThreadCount { get; }
 
     /// <summary>
     /// Gets how long the readiness probe may spend looking.

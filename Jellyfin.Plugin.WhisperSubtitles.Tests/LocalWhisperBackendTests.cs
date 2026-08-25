@@ -1,11 +1,13 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Jellyfin.Plugin.WhisperSubtitles.Attempts;
 using Jellyfin.Plugin.WhisperSubtitles.Backends;
 using Jellyfin.Plugin.WhisperSubtitles.Backends.Local;
+using Jellyfin.Plugin.WhisperSubtitles.Scheduling;
 using Xunit;
 
 namespace Jellyfin.Plugin.WhisperSubtitles.Tests;
@@ -21,6 +23,17 @@ public class LocalWhisperBackendTests
     private const string Tool = "/opt/whisper/whisper-cli";
     private const string Model = "/var/lib/models/ggml-base.bin";
     private const string Audio = "/tmp/extracted audio.wav";
+
+    /// <summary>
+    /// The thread count these tests configure the backend with.
+    /// </summary>
+    /// <remarks>
+    /// A number somebody chose rather than this machine's default, so the
+    /// argument vector below is the same on every machine the suite runs on. Three
+    /// is neither the default of any plausible processor count nor a number the
+    /// backend could have arrived at on its own.
+    /// </remarks>
+    private const int Threads = 3;
 
     private static readonly string[] _threeCues =
     {
@@ -62,8 +75,69 @@ public class LocalWhisperBackendTests
         var invocation = Assert.IsType<ProcessInvocation>(runner.Invocation);
 
         Assert.Equal(Tool, invocation.ExecutablePath);
-        Assert.Equal(new[] { "-m", Model, "-l", "de", "-f", Audio }, invocation.Arguments);
+        Assert.Equal(new[] { "-m", Model, "-t", "3", "-l", "de", "-f", Audio }, invocation.Arguments);
         Assert.Contains(Audio, invocation.Arguments);
+    }
+
+    [Fact]
+    public async Task The_thread_count_the_tool_is_given_is_the_one_the_options_carry()
+    {
+        // The leg above pins the whole vector against one configuration, so a
+        // backend that ignored its options and wrote a constant would pass it. This
+        // one runs the same backend twice under two budgets and compares what
+        // reached the tool.
+        var quiet = await ThreadsHandedToTheTool(1);
+        var whole = await ThreadsHandedToTheTool(8);
+
+        Assert.Equal("1", quiet);
+        Assert.Equal("8", whole);
+    }
+
+    [Fact]
+    public void A_backend_nobody_gave_a_budget_still_leaves_the_machine_something()
+    {
+        // The two-path constructor is what the server's own registration uses, so
+        // the number it settles on is the number a fresh install runs under. It is
+        // the machine's default rather than the tool's own, which is a number
+        // chosen without seeing this machine.
+        var options = new LocalBackendOptions(Tool, Model);
+
+        Assert.Equal(ThreadCount.DefaultFor(Environment.ProcessorCount), options.ThreadCount);
+        Assert.True(options.ThreadCount >= 1);
+    }
+
+    [Fact]
+    public void A_thread_count_that_is_not_a_number_of_threads_never_reaches_a_backend()
+    {
+        Assert.Throws<ArgumentOutOfRangeException>(
+            () => new LocalBackendOptions(Tool, Model, LocalBackendOptions.DefaultProbeTimeout, 0));
+    }
+
+    /// <summary>
+    /// Runs one transcription under a stated thread count and returns the value
+    /// that reached the tool.
+    /// </summary>
+    /// <param name="threads">The budget the backend is built with.</param>
+    /// <returns>The argument following the thread flag.</returns>
+    private static async Task<string> ThreadsHandedToTheTool(int threads)
+    {
+        var runner = ScriptedProcessRunner.Starting(ScriptedProcess.Printing(_threeCues));
+
+        await new LocalWhisperBackend(
+            runner,
+            Files(),
+            new LocalBackendOptions(Tool, Model, LocalBackendOptions.DefaultProbeTimeout, threads)).TranscribeAsync(
+            Request("de"),
+            new RecordingProgress(),
+            CancellationToken.None).ConfigureAwait(false);
+
+        var arguments = Assert.IsType<ProcessInvocation>(runner.Invocation).Arguments;
+        var flag = arguments.ToList().IndexOf("-t");
+
+        Assert.True(flag >= 0, "the tool was handed no thread count at all");
+        Assert.True(flag + 1 < arguments.Count, "the thread flag reached the tool with nothing after it");
+
+        return arguments[flag + 1];
     }
 
     [Fact]
@@ -225,7 +299,8 @@ public class LocalWhisperBackendTests
         Assert.True(longer.Longest >= longer.Shortest);
     }
 
-    private static LocalBackendOptions Configured() => new(Tool, Model);
+    private static LocalBackendOptions Configured() =>
+        new(Tool, Model, LocalBackendOptions.DefaultProbeTimeout, Threads);
 
     private static TranscriptionRequest Request(string? language) => new(Audio, language);
 
