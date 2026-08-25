@@ -1,0 +1,23 @@
+# Choosing a backend and a model
+
+The near miss. The table under the heading the reader is pointed at is correct.
+The one further down is a comparison somebody added later, in the same shape,
+naming a backend this plugin does not have.
+
+## What you set the backend to
+
+| Setting value | What it transcribes with | What the operator supplies |
+| --- | --- | --- |
+| `None` | Nothing. | Nothing. |
+| `Local` | A whisper.cpp compatible command line tool. | The tool, and a model file. |
+| `Remote` | An HTTP endpoint. | A base URL, and a key if the endpoint wants one. |
+
+## What other people run
+
+| Project | What it is | Whether this plugin speaks to it |
+| --- | --- | --- |
+| `Whisperx` | A separate project with its own command line. | No. |
+
+## What the tree holds today
+
+No run of this plugin has ever produced a subtitle.

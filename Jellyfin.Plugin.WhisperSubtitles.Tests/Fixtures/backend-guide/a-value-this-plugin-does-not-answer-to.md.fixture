@@ -1,0 +1,18 @@
+# Choosing a backend and a model
+
+A guide that offers a fourth backend. It is the direction that costs an operator
+their evening: the name is real nowhere in the code, and this page is the only
+place that said it was.
+
+## What you set the backend to
+
+| Setting value | What it transcribes with | What the operator supplies |
+| --- | --- | --- |
+| `None` | Nothing. | Nothing. |
+| `Local` | A whisper.cpp compatible command line tool. | The tool, and a model file. |
+| `Remote` | An HTTP endpoint. | A base URL, and a key if the endpoint wants one. |
+| `Whisperx` | Nothing this plugin has. | Nothing that would help. |
+
+## What the tree holds today
+
+No run of this plugin has ever produced a subtitle.
