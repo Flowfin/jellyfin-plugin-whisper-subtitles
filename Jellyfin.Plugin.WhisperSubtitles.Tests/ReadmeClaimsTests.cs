@@ -98,6 +98,18 @@ public class ReadmeClaimsTests
     private const string JoiningIssue = "#183";
 
     /// <summary>
+    /// The page an operator chooses a backend on, named on the page so a reader
+    /// can go and look rather than take the claim on trust.
+    /// </summary>
+    private const string ConfigurationPageFile =
+        "Jellyfin.Plugin.WhisperSubtitles/Configuration/configPage.html";
+
+    /// <summary>
+    /// The words the install path filed that page under while it was still to come.
+    /// </summary>
+    private const string PageFiledAsStillToCome = "The page is #36";
+
+    /// <summary>
     /// The character a line is split on, named rather than escaped so this file
     /// does not carry one inside a literal. Every line is trimmed afterwards, so a
     /// clone that put carriage returns back parses the page the same way, which is
@@ -334,6 +346,45 @@ public class ReadmeClaimsTests
                 paragraph.Contains(JoiningIssue, StringComparison.Ordinal),
                 $"README.md says the path cannot be walked and names nothing holding the joining, while {TaskSource} reaches none of {string.Join(", ", PipelineTypes)}. An absence with no issue beside it is one a reader cannot follow up: {paragraph}");
         }
+    }
+
+    /// <summary>
+    /// The page said what this tree holds and left the configuration page out of
+    /// it, then told an operator to open that page and filed it as an issue.
+    /// </summary>
+    /// <remarks>
+    /// This is the direction that costs the reader something. A thing filed as
+    /// still to come is one they stop looking for, and here it is the surface the
+    /// step they are reading asks them to use. It also makes what #15 and #81 owe
+    /// read as plans for a page that has not arrived, when the page is there and
+    /// what is missing is what it shows.
+    ///
+    /// Both arms are needed because the two sites fail differently. The list is an
+    /// omission, which no wording rule catches; the step is a claim, and it is
+    /// matched by the words it was written in.
+    ///
+    /// WHAT THIS DOES NOT DO. The tree side is the line the page saves the setting
+    /// with, so nothing here boots a server or opens a dashboard. It matches the
+    /// step's old sentence rather than its meaning, so the same claim in other
+    /// words passes and a rewording of the repaired sentence turns this red
+    /// instead. And it asks that the list name the file, never that what it says
+    /// about it is true.
+    /// </remarks>
+    [Fact]
+    public void The_page_does_not_file_the_configuration_page_as_something_still_to_come()
+    {
+        ConfigurationPageSource.RefuseUnlessAnOperatorChoosesTheBackendOnIt();
+
+        var holdings = ParagraphSaying("What exists is");
+        var step = ParagraphSaying("Open the plugin's page in the dashboard");
+
+        Assert.True(
+            holdings.Contains(ConfigurationPageFile, StringComparison.Ordinal),
+            $"README.md lists what this tree holds and does not name {ConfigurationPageFile}, which this plugin registers and an operator chooses a backend on: {holdings}");
+
+        Assert.False(
+            step.Contains(PageFiledAsStillToCome, StringComparison.Ordinal),
+            $"README.md tells an operator to open the plugin's page and then says \"{PageFiledAsStillToCome}\", which files the page they were just sent to as something still to come: {step}");
     }
 
     [Fact]

@@ -30,7 +30,9 @@ What exists is the backend interface and the selection between backends, a local
 backend that drives a whisper.cpp compatible tool as a child process, a remote
 backend that posts audio to an endpoint, the SubRip writer, item selection, the
 record of what was attempted, audio extraction, the composition root the server
-builds the task out of, and the scheduled task itself:
+builds the task out of, the configuration page an operator chooses a backend on,
+in `Jellyfin.Plugin.WhisperSubtitles/Configuration/configPage.html`, and the
+scheduled task itself:
 
     $ git grep -l IScheduledTask -- '*.cs'
     Jellyfin.Plugin.WhisperSubtitles.Tests/SubtitleGenerationTaskTests.cs
@@ -131,10 +133,12 @@ and finishes, reaching no part of the pipeline. That joining is #183.
 
 1. Install the plugin from a repository listing, which is #61, or from a release
    archive, which is #60.
-2. Open the plugin's page in the dashboard and choose a backend. For the local
-   tool that is the path to the executable and the path to a model file you
-   placed yourself. The page is #36, and the readiness probe that says whether
-   the choice works before a run starts is #15.
+2. Open the plugin's page in the dashboard and choose a backend. The page is in
+   the tree and the choice of backend is on it. What is not on it is what each
+   backend needs to run, which for the local tool is the path to the executable
+   and the path to a model file you placed yourself, held in #36; and the answer
+   the readiness probe gives, which says whether the choice works before a run
+   starts, held in #15.
 3. Set the target language per library, in #30, or leave it to detection, in #31.
 4. Run the scheduled task by hand from the dashboard, in #17. It ships with no
    trigger, so nothing starts on its own on a server whose operator did not ask
