@@ -58,6 +58,18 @@ public class TroubleshootingPageTests
     private const string JoiningIssue = "#183";
 
     /// <summary>
+    /// The issue that holds the configuration page, which is therefore not the
+    /// issue an absence about a readiness report belongs to.
+    /// </summary>
+    private const string ConfigurationPageIssue = "#36";
+
+    /// <summary>
+    /// The issue that holds the readiness report on that page, which is the
+    /// absence a reader of this page is actually meeting.
+    /// </summary>
+    private const string ReadinessReportIssue = "#15";
+
+    /// <summary>
     /// One line ending, and the space two lines of one paragraph are joined with.
     /// Named rather than escaped so this file carries no line ending inside a
     /// literal, which is the same care the comment below takes for the same page.
@@ -231,6 +243,44 @@ public class TroubleshootingPageTests
         Assert.True(
             paragraph.Contains(JoiningIssue, StringComparison.Ordinal),
             $"docs/troubleshooting.md says the run is missing and names nothing holding it, so a reader cannot follow it up: {paragraph}");
+    }
+
+    /// <summary>
+    /// The paragraph listing what is not built yet named the configuration page,
+    /// which this plugin registers and an operator chooses a backend on.
+    /// </summary>
+    /// <remarks>
+    /// This is the same accident one line down from the one above, arriving the
+    /// day the page landed. The entry for BackendNotReady sends an operator to the
+    /// configuration page to read what the backend says about itself, and the
+    /// paragraph at the top told them that page is not built. A reader who
+    /// believes it does not open the page, and the page is where the choice they
+    /// are being asked about is made.
+    ///
+    /// What is genuinely absent is narrower and it is this page's own subject: the
+    /// page shows no readiness report, which is the clause #15 is open on.
+    ///
+    /// WHAT THIS DOES NOT DO. The tree side is the line the page saves the setting
+    /// with, so it reads whether a choice can be made rather than whether an
+    /// operator can reach the page in a dashboard, which nothing here boots. It
+    /// reads one paragraph, and it judges a number rather than a sentence: a
+    /// paragraph naming the right issues around a claim that is wrong for another
+    /// reason passes.
+    /// </remarks>
+    [Fact]
+    public void The_paragraph_about_what_is_missing_names_the_readiness_report_and_not_the_page()
+    {
+        var paragraph = ParagraphSaying("is not built yet");
+
+        ConfigurationPageSource.RefuseUnlessAnOperatorChoosesTheBackendOnIt();
+
+        Assert.False(
+            paragraph.Contains(ConfigurationPageIssue, StringComparison.Ordinal),
+            $"docs/troubleshooting.md lists what is not built and names {ConfigurationPageIssue}, which landed the page this plugin registers and an operator chooses a backend on. The absence is the readiness report on it: {paragraph}");
+
+        Assert.True(
+            paragraph.Contains(ReadinessReportIssue, StringComparison.Ordinal),
+            $"docs/troubleshooting.md says the readiness report is missing and names nothing holding it, so a reader cannot follow it up: {paragraph}");
     }
 
     /// <summary>
