@@ -37,10 +37,13 @@ namespace Jellyfin.Plugin.WhisperSubtitles.Calibration;
 /// decide an estimate about a library of long ones.
 ///
 /// What this deliberately does not carry is the settings it was measured under.
-/// A factor measured at one thread count is not evidence about another, so the
-/// key a stored factor lives under, and the invalidation that throws it away when
-/// the model or the thread count changes, are the rest of #38 and are not here.
-/// There is no thread count in this plugin to key on yet.
+/// A factor measured at one thread count is not evidence about another, so the key
+/// a stored factor lives under is <see cref="CalibrationKey"/> and the invalidation
+/// that throws it away when the model or the thread count changes is
+/// <see cref="CalibrationLedger"/>. The separation is kept rather than merged: this
+/// type is arithmetic over durations and is right about the items it was folded
+/// from whatever anybody does with it, and everything that can make it a lie is
+/// about the circumstances.
 /// </remarks>
 public sealed class ThroughputFactor
 {
