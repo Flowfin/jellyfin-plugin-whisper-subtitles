@@ -164,6 +164,45 @@ public class MachineMadeMarkerTests
     }
 
     [Fact]
+    public void The_header_is_the_same_bytes_whichever_format_wrote_the_body()
+    {
+        // The type says the header is the same three lines whichever format is
+        // being written, and until this the claim was only ever exercised against
+        // SubRip, because SubRip was the only writer this suite had. A writer whose
+        // output could not be mistaken for a subtitle is what separates a header
+        // that is format independent from one that merely agrees with SubRip.
+        var provenance = new SubtitleProvenance("local-whisper", "ggml-base.en.bin");
+        var header = MarkedSubtitleFile.Header(provenance);
+
+        var stub = new StubFormatWriter([0xDE, 0xAD, 0xBE, 0xEF]);
+
+        var composedWithStub = MarkedSubtitleFile.Compose(stub, _segments, provenance);
+        var composedWithSubRip = MarkedSubtitleFile.Compose(new SubRipWriter(), _segments, provenance);
+
+        Assert.Equal(header, composedWithStub[..header.Length]);
+        Assert.Equal(header, composedWithSubRip[..header.Length]);
+
+        Assert.Equal(stub.Body, composedWithStub[header.Length..]);
+        Assert.Equal(new SubRipWriter().Write(_segments), composedWithSubRip[header.Length..]);
+    }
+
+    [Fact]
+    public void Every_cue_reaches_the_writer_and_nothing_is_formatted_past_it()
+    {
+        // The other half of the same seam. A composer that formatted a cue itself,
+        // or dropped one on the way, is invisible to a test that hands over the real
+        // writer and reads the bytes back, because the real writer would have
+        // produced those bytes anyway.
+        var stub = new StubFormatWriter();
+
+        MarkedSubtitleFile.Compose(stub, _segments, new SubtitleProvenance("local-whisper", "ggml-base.en.bin"));
+
+        var asked = Assert.Single(stub.Asked);
+
+        Assert.Equal(_segments, asked);
+    }
+
+    [Fact]
     public void No_header_line_can_be_read_as_a_cue_index_or_a_timing()
     {
         var provenance = new SubtitleProvenance("openai-remote", "large-v3");
