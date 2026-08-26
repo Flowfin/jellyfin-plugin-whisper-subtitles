@@ -158,8 +158,10 @@ arrival of a pipeline, which would leave this page reading as a walkthrough of
 something that works, and the sentence disappearing while nothing runs, which
 would leave the same impression more quietly. The join is #183.
 
-Three things this page would otherwise tell an operator to do follow from that
-and are absent for the same reason.
+Three things this page would otherwise tell an operator to do follow from that.
+Two are absent for the same reason. The third has arrived as far as a field on a
+page and no further, which is a state worth naming rather than filing under
+either.
 
 **Where the tool path, the model path, the URL and the key are typed.** Nowhere
 yet. The configuration holds four properties and none of them is a backend's own
@@ -179,12 +181,27 @@ calibration to run. The arithmetic that folds measured items into a factor exist
 and is held by a suite; nothing has measured anything, because measuring needs a
 run over an item. That is #38, and the estimate it would feed is #37.
 
-**Which setting to lower first when a run interferes with playback.** There is
-nothing to lower. Two limits are decided and neither is a setting yet, so what
-follows is what a run already does to your machine rather than what you can ask
-it to do.
+**Which setting to lower first when a run interferes with playback.** Both limits
+are settings now and neither reaches a transcription yet, which are two different
+sentences and both of them matter. You can type either number on the
+configuration page, and the page says in its own words that nothing carries it to
+a backend, because nothing performs a run over an item. So what follows is what a
+run would do to your machine on the defaults, and lowering a number today changes
+what the file says rather than what a server does.
 
-How many items run at once is a constant, at the conservative end:
+The two fields on the page:
+
+    git grep -n 'public int ItemsAtOnce\|public int ThreadsPerItem' -- Jellyfin.Plugin.WhisperSubtitles/Configuration/PluginConfiguration.cs
+    Jellyfin.Plugin.WhisperSubtitles/Configuration/PluginConfiguration.cs:79:    public int ItemsAtOnce { get; set; } = ConfigurationValidation.LetTheMachineDecide;
+    Jellyfin.Plugin.WhisperSubtitles/Configuration/PluginConfiguration.cs:97:    public int ThreadsPerItem { get; set; } = ConfigurationValidation.LetTheMachineDecide;
+
+Zero on either means nobody has chosen and the machine decides. A number above
+one per processor is refused rather than quietly reduced, and what is in force
+stays the default, which is the sentence an operator gets instead of a number
+they did not ask for.
+
+How many items run at once, where nobody has chosen, is a constant at the
+conservative end:
 
     git grep -n 'public const int Default' -- Jellyfin.Plugin.WhisperSubtitles/Scheduling/ConcurrencyCap.cs
     Jellyfin.Plugin.WhisperSubtitles/Scheduling/ConcurrencyCap.cs:31:    public const int Default = 1;
@@ -220,10 +237,10 @@ chosen by somebody who never saw your server.
 
 Conservative defaults are the answer question 6 of #8 carries, taken on
 2026-08-24: one item at a time, few threads, and this page telling the raising
-story. The raising is what is still missing. A configuration property for either
-number, a field on the page to type it into, a process priority, a per-item time
-limit and a rule that yields to a busy server are #22, and the definition of busy
-that rule turns on is still open in that issue's own body.
+story. Raising them is now something you can do on the page, and it does not yet
+reach a run. What is still missing from #22 is a process priority, a per-item
+time limit and a rule that yields to a busy server, and the definition of busy
+that last rule turns on is still open in that issue's own body.
 
 So this page can be read to a decision about a backend and a model, and it cannot
 be followed to a first generated subtitle. That is what it says rather than

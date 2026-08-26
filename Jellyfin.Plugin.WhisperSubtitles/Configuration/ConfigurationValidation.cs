@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using Jellyfin.Plugin.WhisperSubtitles.Backends;
 using Jellyfin.Plugin.WhisperSubtitles.Detection;
+using Jellyfin.Plugin.WhisperSubtitles.Scheduling;
 using Jellyfin.Plugin.WhisperSubtitles.Selection;
 
 namespace Jellyfin.Plugin.WhisperSubtitles.Configuration;
@@ -57,12 +58,26 @@ public static class ConfigurationValidation
     /// </summary>
     public const string NoBackendChosen = "";
 
+    /// <summary>
+    /// The value a resource limit carries when nobody has chosen one.
+    /// </summary>
+    /// <remarks>
+    /// Zero, and it is outside the range either limit accepts on purpose: no number
+    /// of items and no number of threads is zero, so the sentinel cannot collide
+    /// with a value an operator meant. It is also what an absent element
+    /// deserialises to, which is what makes a file written before these settings
+    /// existed read as nobody having chosen rather than as a zero somebody typed.
+    /// </remarks>
+    public const int LetTheMachineDecide = 0;
+
     private static readonly string[] _validatedFields =
     [
         nameof(PluginConfiguration.SchemaVersion),
         nameof(PluginConfiguration.Backend),
         nameof(PluginConfiguration.TargetLanguage),
         nameof(PluginConfiguration.LibraryTargets),
+        nameof(PluginConfiguration.ItemsAtOnce),
+        nameof(PluginConfiguration.ThreadsPerItem),
     ];
 
     /// <summary>
@@ -77,12 +92,32 @@ public static class ConfigurationValidation
     public static IReadOnlyList<string> ValidatedFields => _validatedFields;
 
     /// <summary>
-    /// Reads a configuration the server has already deserialised.
+    /// Reads a configuration the server has already deserialised, on this machine.
     /// </summary>
     /// <param name="configuration">Whatever came off the disk.</param>
     /// <returns>The settings in force and every value that was refused.</returns>
-    public static ConfigurationLoad Of(PluginConfiguration? configuration)
+    public static ConfigurationLoad Of(PluginConfiguration? configuration) =>
+        Of(configuration, Environment.ProcessorCount);
+
+    /// <summary>
+    /// Reads a configuration the server has already deserialised, against a stated
+    /// number of processors.
+    /// </summary>
+    /// <param name="configuration">Whatever came off the disk.</param>
+    /// <param name="processorCount">Processors the server can see.</param>
+    /// <returns>The settings in force and every value that was refused.</returns>
+    /// <remarks>
+    /// The machine is a parameter rather than something read here, because two of
+    /// the values this decides are bounded BY the machine, and a rule that reads its
+    /// own bound is one no test can put a number to: the assertion would have to
+    /// compute the expected value the same way the code did, which is the code
+    /// agreeing with itself. The overload above is the one the server takes and is
+    /// the only place the machine is asked.
+    /// </remarks>
+    public static ConfigurationLoad Of(PluginConfiguration? configuration, int processorCount)
     {
+        ArgumentOutOfRangeException.ThrowIfLessThan(processorCount, 1);
+
         var complaints = new List<SettingComplaint>();
 
         if (configuration is null)
@@ -92,23 +127,25 @@ public static class ConfigurationValidation
                 "there is no configuration to read.",
                 "Every setting is at its default and nothing is transcribed."));
 
-            return Defaults(complaints);
+            return Defaults(complaints, processorCount);
         }
 
         if (configuration.SchemaVersion > CurrentSchemaVersion)
         {
             complaints.Add(WrittenByANewerRelease(configuration.SchemaVersion));
 
-            return Defaults(complaints);
+            return Defaults(complaints, processorCount);
         }
 
         var version = SchemaVersion(configuration.SchemaVersion, complaints);
         var backend = Backend(configuration.Backend, complaints);
         var target = TargetLanguage(configuration.TargetLanguage, complaints);
         var byLibrary = LibraryTargets(configuration.LibraryTargets, complaints);
+        var items = ItemsAtOnce(configuration.ItemsAtOnce, processorCount, complaints);
+        var threads = ThreadsPerItem(configuration.ThreadsPerItem, processorCount, complaints);
 
         return new ConfigurationLoad(
-            new SettingsInForce(version, backend, target, byLibrary),
+            new SettingsInForce(version, backend, target, byLibrary, items, threads),
             complaints);
     }
 
@@ -147,18 +184,33 @@ public static class ConfigurationValidation
                 CurrentSchemaVersion),
             "Nothing else in the file is read, every setting is at its default, and nothing is transcribed.");
 
-    private static ConfigurationLoad Defaults(List<SettingComplaint> complaints) =>
+    /// <summary>
+    /// The settings a run uses when nothing in the file could be honoured.
+    /// </summary>
+    /// <param name="processorCount">Processors the server can see.</param>
+    /// <returns>Every setting at its documented default.</returns>
+    /// <remarks>
+    /// Published because this is reached from two directions that must not drift
+    /// apart: a file this release stands back from, decided here, and a file that
+    /// would not parse at all, decided in <see cref="ConfigurationFile"/>. Those are
+    /// different complaints about the same outcome, and a second copy of the
+    /// defaults is how the two stop being the same outcome.
+    /// </remarks>
+    public static SettingsInForce DefaultSettings(int processorCount) =>
         new(
-            new SettingsInForce(
-                CurrentSchemaVersion,
-                NoBackendChosen,
-                NoTargetLanguage,
-                new Dictionary<Guid, string>()),
-            complaints);
+            CurrentSchemaVersion,
+            NoBackendChosen,
+            NoTargetLanguage,
+            new Dictionary<Guid, string>(),
+            ConcurrencyCap.Default,
+            ThreadCount.DefaultFor(processorCount));
+
+    private static ConfigurationLoad Defaults(List<SettingComplaint> complaints, int processorCount) =>
+        new(DefaultSettings(processorCount), complaints);
 
     /// <remarks>
     /// Only the low side reaches here. A version above the current one is answered
-    /// in <see cref="Of"/> before any other field is read, so what is left is a
+    /// in <see cref="Of(PluginConfiguration, int)"/> before any other field is read, so what is left is a
     /// number no release ever wrote: an absent element cannot produce it, and
     /// nothing below one is a version at all. That is a malformed field rather than
     /// a file from elsewhere, so it falls back like every other field does.
@@ -307,6 +359,83 @@ public static class ConfigurationValidation
         }
 
         return targets;
+    }
+
+    /// <remarks>
+    /// The rule is <see cref="ConcurrencyCap.Choose"/>'s and is not restated here.
+    /// That type refuses a number rather than reducing it, and this is where the
+    /// refusal meets a file: an operator who typed something the machine cannot
+    /// carry is told the number, the ceiling and the reason, and the run uses the
+    /// default instead of the number they typed. Falling back rather than refusing
+    /// to load is what every field here does, and the reason is the same one:
+    /// a plugin that will not start leaves nobody a page to repair it from.
+    /// </remarks>
+    /// <param name="declared">The number the file carried.</param>
+    /// <param name="processorCount">Processors the server can see.</param>
+    /// <param name="complaints">Where a refused value is recorded.</param>
+    /// <returns>The number of items a run transcribes at once.</returns>
+    private static int ItemsAtOnce(int declared, int processorCount, List<SettingComplaint> complaints)
+    {
+        if (declared == LetTheMachineDecide)
+        {
+            return ConcurrencyCap.Default;
+        }
+
+        var choice = ConcurrencyCap.Choose(declared, processorCount);
+        var refusal = choice.Refusal;
+
+        if (refusal is null)
+        {
+            return choice.Workers;
+        }
+
+        complaints.Add(new SettingComplaint(
+            nameof(PluginConfiguration.ItemsAtOnce),
+            refusal,
+            string.Format(
+                CultureInfo.InvariantCulture,
+                "The run transcribes {0} item at a time.",
+                ConcurrencyCap.Default)));
+
+        return ConcurrencyCap.Default;
+    }
+
+    /// <remarks>
+    /// <see cref="ThreadCount.Choose"/>'s rule, met the same way, with one
+    /// difference worth seeing: what nobody choosing falls back to is a reading of
+    /// the machine rather than a constant, so the sentence an operator gets names
+    /// the number this server arrived at rather than a number written in the source.
+    /// </remarks>
+    /// <param name="declared">The number the file carried.</param>
+    /// <param name="processorCount">Processors the server can see.</param>
+    /// <param name="complaints">Where a refused value is recorded.</param>
+    /// <returns>The number of threads one transcription may use.</returns>
+    private static int ThreadsPerItem(int declared, int processorCount, List<SettingComplaint> complaints)
+    {
+        var whenNobodyChose = ThreadCount.DefaultFor(processorCount);
+
+        if (declared == LetTheMachineDecide)
+        {
+            return whenNobodyChose;
+        }
+
+        var choice = ThreadCount.Choose(declared, processorCount);
+        var refusal = choice.Refusal;
+
+        if (refusal is null)
+        {
+            return choice.Threads;
+        }
+
+        complaints.Add(new SettingComplaint(
+            nameof(PluginConfiguration.ThreadsPerItem),
+            refusal,
+            string.Format(
+                CultureInfo.InvariantCulture,
+                "One transcription runs on {0} threads, which is what this machine decides.",
+                whenNobodyChose)));
+
+        return whenNobodyChose;
     }
 
     private static SettingComplaint Row(int index, string problem, string inForce) =>
