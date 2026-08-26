@@ -111,7 +111,8 @@ cannot, and the version has to be raised.
 
 - Default workflow permissions set to read only.
 - A rule that restricts who may push `*-stable` tags.
-- Which branches the two settings below have to cover.
+- Which branches a release may be cut from, and therefore which branches the tag rule
+  above and the required checks below have to cover.
   The release branches are `master`.
   That list is not decided here. It is `RELEASE_REFS` in
   `.github/workflows/publish.yaml`, which the publish run reads to refuse a tag on a
