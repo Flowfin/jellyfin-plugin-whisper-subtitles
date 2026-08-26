@@ -111,7 +111,13 @@ cannot, and the version has to be raised.
 
 - Default workflow permissions set to read only.
 - A rule that restricts who may push `*-stable` tags.
-- The `ABI floor build` check required on the release branches.
+- The two contexts the ABI floor workflow reports required on the release branches.
+  The `The plugin compiles against the floor its manifest promises` check is the
+  build against the floor. The `And it refuses a symbol the floor does not have`
+  check is the half that refuses a symbol the floor does not carry. A ruleset entry
+  names the context a run reports under rather than the workflow's title, so a name
+  no job carries is a required check that never arrives and a branch that then stops
+  merging.
 - Immutable releases, if the repository wants the guarantee that a published release
   can never be edited or deleted at all. The workflow does not depend on it: the
   refusal to touch an existing release is enforced in the release job. Turning it on

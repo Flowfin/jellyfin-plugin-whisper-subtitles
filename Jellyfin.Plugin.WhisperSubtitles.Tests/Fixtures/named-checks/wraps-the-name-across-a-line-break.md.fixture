@@ -1,0 +1,8 @@
+# A page whose check name is wrapped across a line break
+
+This fixture names no check as far as the reader is concerned, and the name it
+carries is one nothing reports under, so a reader that had been widened to span
+line breaks would refuse it.
+
+- The `And it refuses a symbol the floor does not
+  have at all` check required on the release branches.

@@ -1,0 +1,10 @@
+# A page that composes a name off a job that calls nothing
+
+The `call / build` check is a real composed name and is left here so this fixture
+trips one rule and not two.
+
+The line below is the near miss. `Pull request hygiene` is a job this tree
+declares and it runs steps of its own, so it reports one context and never one
+with a slash in it.
+
+- The `Pull request hygiene / build` check required on the release branches.
