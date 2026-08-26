@@ -24,16 +24,25 @@ public sealed class SettingsInForce
     /// <param name="backend">The backend name selection is given.</param>
     /// <param name="targetLanguage">The language a library gets when it names none.</param>
     /// <param name="targetLanguagesByLibrary">The libraries that ask for something else.</param>
+    /// <param name="itemsAtOnce">How many items the run transcribes at once.</param>
+    /// <param name="threadsPerItem">How many threads one transcription may use.</param>
     public SettingsInForce(
         int schemaVersion,
         string backend,
         string targetLanguage,
-        IReadOnlyDictionary<Guid, string> targetLanguagesByLibrary)
+        IReadOnlyDictionary<Guid, string> targetLanguagesByLibrary,
+        int itemsAtOnce,
+        int threadsPerItem)
     {
+        ArgumentOutOfRangeException.ThrowIfLessThan(itemsAtOnce, 1);
+        ArgumentOutOfRangeException.ThrowIfLessThan(threadsPerItem, 1);
+
         SchemaVersion = schemaVersion;
         Backend = backend;
         TargetLanguage = targetLanguage;
         TargetLanguagesByLibrary = targetLanguagesByLibrary;
+        ItemsAtOnce = itemsAtOnce;
+        ThreadsPerItem = threadsPerItem;
     }
 
     /// <summary>
@@ -64,4 +73,28 @@ public sealed class SettingsInForce
     /// Gets the libraries that ask for something other than the default.
     /// </summary>
     public IReadOnlyDictionary<Guid, string> TargetLanguagesByLibrary { get; }
+
+    /// <summary>
+    /// Gets how many items the run transcribes at once.
+    /// </summary>
+    /// <remarks>
+    /// A number of items rather than the zero the file may carry. The absence of a
+    /// choice is a state of the document and not a state a run can be in, so it is
+    /// resolved once, here, against the machine the run is on; a run reading the
+    /// disk shape would have to decide what zero means every time it looked, and
+    /// the place that forgot would ask for no items at all.
+    ///
+    /// Never below one, refused at construction rather than left to the caller,
+    /// because every value this type can hold is one a run will act on.
+    /// </remarks>
+    public int ItemsAtOnce { get; }
+
+    /// <summary>
+    /// Gets how many threads one transcription may use.
+    /// </summary>
+    /// <remarks>
+    /// Resolved for the reason <see cref="ItemsAtOnce"/> is, and never below one for
+    /// the same reason.
+    /// </remarks>
+    public int ThreadsPerItem { get; }
 }

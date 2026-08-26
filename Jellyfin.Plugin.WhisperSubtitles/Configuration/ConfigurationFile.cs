@@ -74,11 +74,7 @@ public static class ConfigurationFile
 
     private static ConfigurationLoad Unreadable(string reason) =>
         new(
-            new SettingsInForce(
-                ConfigurationValidation.CurrentSchemaVersion,
-                ConfigurationValidation.NoBackendChosen,
-                ConfigurationValidation.NoTargetLanguage,
-                new Dictionary<Guid, string>()),
+            ConfigurationValidation.DefaultSettings(Environment.ProcessorCount),
             [
                 new SettingComplaint(
                     "configuration",

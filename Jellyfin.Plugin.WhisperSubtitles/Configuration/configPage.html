@@ -34,6 +34,34 @@
                             for.
                         </div>
                     </div>
+                    <div class="inputContainer">
+                        <label class="inputLabel inputLabelUnfocused" for="ItemsAtOnce">Items transcribed at once</label>
+                        <input is="emby-input" type="number" id="ItemsAtOnce" min="0" step="1" class="emby-input">
+                        <div class="fieldDescription">
+                            Zero lets this machine decide, which is one item at a time.
+                            A number above one per processor is refused rather than
+                            quietly reduced, and the run keeps the default until you
+                            change it.
+                        </div>
+                    </div>
+                    <div class="inputContainer">
+                        <label class="inputLabel inputLabelUnfocused" for="ThreadsPerItem">Threads one transcription may use</label>
+                        <input is="emby-input" type="number" id="ThreadsPerItem" min="0" step="1" class="emby-input">
+                        <div class="fieldDescription">
+                            Zero lets this machine decide, which is half the processors
+                            it reports, so the server keeps the rest for playback. A
+                            number above one per processor is refused rather than
+                            quietly reduced. These two limits are not checked against
+                            each other: raising both to their ceilings asks for the
+                            whole machine several times over.
+                        </div>
+                    </div>
+                    <div class="fieldDescription">
+                        Neither number reaches a transcription yet. Both are stored
+                        and checked here, and what would carry them to a backend is
+                        the run this plugin does not perform, so changing them today
+                        changes what the file says and nothing a server does.
+                    </div>
                     <div id="WhisperSubtitlesLibraryTargets">
                         <h3 class="checkboxListLabel">Libraries that want something else</h3>
                         <div id="WhisperSubtitlesLibraryTargetRows"></div>
@@ -56,6 +84,7 @@
                 followsTheDefault: '',
                 detect: 'detect',
                 noBackendChosen: '',
+                letTheMachineDecide: 0,
                 backends: [
                     { name: 'None', label: 'None, and nothing is transcribed' },
                     { name: 'Local', label: 'Local, a Whisper program on this machine' },
@@ -162,6 +191,22 @@
                 });
             };
 
+            WhisperSubtitlesConfig.limitValue = function (field, stored) {
+                var held = parseInt(stored, 10);
+
+                field.value = isNaN(held) || held < 0
+                    ? WhisperSubtitlesConfig.letTheMachineDecide
+                    : held;
+            };
+
+            WhisperSubtitlesConfig.limitTyped = function (field) {
+                var typed = parseInt(field.value, 10);
+
+                return isNaN(typed) || typed < 0
+                    ? WhisperSubtitlesConfig.letTheMachineDecide
+                    : typed;
+            };
+
             WhisperSubtitlesConfig.collectLibraries = function () {
                 var collected = [];
 
@@ -193,6 +238,11 @@
                         WhisperSubtitlesConfig.fillLanguages(target, false);
                         target.value = config.TargetLanguage || WhisperSubtitlesConfig.followsTheDefault;
 
+                        WhisperSubtitlesConfig.limitValue(
+                            document.querySelector('#ItemsAtOnce'), config.ItemsAtOnce);
+                        WhisperSubtitlesConfig.limitValue(
+                            document.querySelector('#ThreadsPerItem'), config.ThreadsPerItem);
+
                         WhisperSubtitlesConfig.renderLibraries(config);
                         Dashboard.hideLoadingMsg();
                     });
@@ -211,6 +261,10 @@
                     config.Backend = document.querySelector('#Backend').value;
                     config.TargetLanguage = document.querySelector('#TargetLanguage').value;
                     config.LibraryTargets = WhisperSubtitlesConfig.collectLibraries();
+                    config.ItemsAtOnce = WhisperSubtitlesConfig.limitTyped(
+                        document.querySelector('#ItemsAtOnce'));
+                    config.ThreadsPerItem = WhisperSubtitlesConfig.limitTyped(
+                        document.querySelector('#ThreadsPerItem'));
 
                     ApiClient.updatePluginConfiguration(WhisperSubtitlesConfig.pluginUniqueId, config).then(function (result) {
                         Dashboard.processPluginConfigurationUpdateResult(result);

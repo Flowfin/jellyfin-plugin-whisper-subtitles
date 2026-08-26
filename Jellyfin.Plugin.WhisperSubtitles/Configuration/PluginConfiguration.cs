@@ -58,6 +58,45 @@ public class PluginConfiguration : BasePluginConfiguration
     public string TargetLanguage { get; set; } = string.Empty;
 
     /// <summary>
+    /// Gets or sets how many items a run transcribes at once, or zero for the
+    /// number this machine decides.
+    /// </summary>
+    /// <remarks>
+    /// Zero out of the box, and zero is not a number of items. It is the absence of
+    /// a choice, which is a different fact from any number an operator could type
+    /// and is the only one a file can carry across machines: a configuration copied
+    /// to a server with a different processor count still means "whatever this
+    /// machine can afford" rather than a count somebody else's machine could
+    /// afford. An absent element deserialises to it as well, so a file written
+    /// before this setting existed reads as nobody having chosen rather than as a
+    /// zero somebody typed.
+    ///
+    /// What zero resolves to is <see cref="Scheduling.ConcurrencyCap.Default"/>, and
+    /// a value outside what <see cref="Scheduling.ConcurrencyCap.Choose"/> accepts is
+    /// refused rather than quietly reduced, which is that type's own rule reaching
+    /// the file an operator edits.
+    /// </remarks>
+    public int ItemsAtOnce { get; set; } = ConfigurationValidation.LetTheMachineDecide;
+
+    /// <summary>
+    /// Gets or sets how many threads one transcription may use, or zero for the
+    /// number this machine decides.
+    /// </summary>
+    /// <remarks>
+    /// Zero for the reason <see cref="ItemsAtOnce"/> is zero, and here the reason is
+    /// sharper: what nobody choosing resolves to is
+    /// <see cref="Scheduling.ThreadCount.DefaultFor"/> of the processors this server
+    /// reports, so a number written into the file would be this machine's answer
+    /// frozen at the moment somebody saved the page.
+    ///
+    /// The pair is not checked against each other. An operator who raises both to
+    /// their ceilings has asked for the whole machine several times over, and what
+    /// would refuse that is a rule neither limit carries, because each is a bound on
+    /// its own subject. It is written at the ceilings rather than built.
+    /// </remarks>
+    public int ThreadsPerItem { get; set; } = ConfigurationValidation.LetTheMachineDecide;
+
+    /// <summary>
     /// Gets or sets the libraries that ask for something other than the default.
     /// </summary>
     /// <remarks>
