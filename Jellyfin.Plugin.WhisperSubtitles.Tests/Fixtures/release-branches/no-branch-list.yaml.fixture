@@ -1,0 +1,15 @@
+name: Publish
+
+jobs:
+  metadata:
+    name: Check the tag and build.yaml agree
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check the tag and build.yaml agree
+        env:
+          # The list was renamed and this reader knows nothing about the new name, so the
+          # side it compares the page against is empty rather than wrong.
+          PUBLISHABLE_BRANCHES: "master"
+          EXPECTED_FRAMEWORK: "net9.0"
+        run: |
+          set -euo pipefail

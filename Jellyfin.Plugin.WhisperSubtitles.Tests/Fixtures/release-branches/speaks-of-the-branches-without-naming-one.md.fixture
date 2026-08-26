@@ -1,0 +1,8 @@
+# Releasing
+
+## Repository settings this expects
+
+- The two contexts the ABI floor workflow reports required on the release branches.
+  Which branches those are is not on this page, so a person configuring the gate has to
+  find the list in a workflow file, and a list that grows there leaves this sentence
+  reading exactly as correct as it did before.

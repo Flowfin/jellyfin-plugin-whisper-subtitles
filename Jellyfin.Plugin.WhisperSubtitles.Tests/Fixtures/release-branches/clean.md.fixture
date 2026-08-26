@@ -1,0 +1,8 @@
+# Releasing
+
+## Repository settings this expects
+
+- The gate required on every branch a release may be cut from.
+  The release branches are `master` and `releases/10.11`.
+  That list is not decided on this page: the publish run carries it, and refuses a tag
+  on a commit no release branch contains.
