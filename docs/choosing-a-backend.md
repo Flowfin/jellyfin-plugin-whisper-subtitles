@@ -180,15 +180,50 @@ and is held by a suite; nothing has measured anything, because measuring needs a
 run over an item. That is #38, and the estimate it would feed is #37.
 
 **Which setting to lower first when a run interferes with playback.** There is
-one limit and it is not a setting. It is a constant, at the conservative end:
+nothing to lower. Two limits are decided and neither is a setting yet, so what
+follows is what a run already does to your machine rather than what you can ask
+it to do.
+
+How many items run at once is a constant, at the conservative end:
 
     git grep -n 'public const int Default' -- Jellyfin.Plugin.WhisperSubtitles/Scheduling/ConcurrencyCap.cs
     Jellyfin.Plugin.WhisperSubtitles/Scheduling/ConcurrencyCap.cs:31:    public const int Default = 1;
 
-One item at a time, which is the answer to that question for as long as it is the
-only setting there is. A thread count, a process priority, a per-item time limit
-and a rule that yields to a busy server are #22, and the default budget they
-would ship with is an open question on #8.
+How many threads one of them may use follows the machine rather than a constant,
+and it is below the processors the server reports:
+
+    git grep -n 'public static int DefaultFor' -- Jellyfin.Plugin.WhisperSubtitles/Scheduling/ThreadCount.cs
+    Jellyfin.Plugin.WhisperSubtitles/Scheduling/ThreadCount.cs:52:    public static int DefaultFor(int processorCount)
+
+Half the processors, rounded down, and one on a single-processor machine, where
+there is no value below it. That number reaches the local tool on every run:
+
+    git grep -n '"-t",' -- Jellyfin.Plugin.WhisperSubtitles/Backends/Local/LocalWhisperBackend.cs
+    Jellyfin.Plugin.WhisperSubtitles/Backends/Local/LocalWhisperBackend.cs:306:            "-t",
+
+It is passed on every run rather than only when it differs from something,
+because there is no value of that flag meaning "whatever you would have done".
+Leaving it out picks whisper.cpp's own default, and the transcripts upstream
+pastes into its README show that default not following the machine:
+
+    gh api repos/ggml-org/whisper.cpp/contents/README.md --jq '.content' | base64 -d | grep -oE 'n_threads = [0-9]+ / [0-9]+'
+    n_threads = 4 / 10
+    n_threads = 4 / 8
+    n_threads = 4 / 10
+    n_threads = 4 / 10
+
+Four threads on a ten-processor machine and four on an eight-processor one. Those
+are example runs somebody pasted rather than a reading of the tool's source,
+so it is evidence about those runs; what it is offered against is the claim that
+omitting the flag is not the neutral option. Either way the number would be
+chosen by somebody who never saw your server.
+
+Conservative defaults are the answer question 6 of #8 carries, taken on
+2026-08-24: one item at a time, few threads, and this page telling the raising
+story. The raising is what is still missing. A configuration property for either
+number, a field on the page to type it into, a process priority, a per-item time
+limit and a rule that yields to a busy server are #22, and the definition of busy
+that rule turns on is still open in that issue's own body.
 
 So this page can be read to a decision about a backend and a model, and it cannot
 be followed to a first generated subtitle. That is what it says rather than
