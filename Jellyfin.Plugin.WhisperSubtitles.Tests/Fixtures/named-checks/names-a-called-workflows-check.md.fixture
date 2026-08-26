@@ -1,0 +1,9 @@
+# A page that names a check a called workflow reports
+
+Two of the contexts this repository requires are reported by a job that hands its
+work to a workflow declared in another repository, so the name a run reports
+under is composed of the job here and the job there.
+
+The `call / build` check and the `call / test` check are both of that shape, and
+a reader that knew only about job names declared here would refuse this page for
+naming them correctly.

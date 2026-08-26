@@ -1,0 +1,10 @@
+# A page that names the workflow where the job belongs
+
+The `DCO sign-off` check is named correctly here, so a reader that refused this
+page wholesale would be refusing it for the wrong reason.
+
+The line below is the defect. `ABI floor` is the title of the workflow file and
+`ABI floor build` is not a name anything in this tree carries, so a ruleset entry
+requiring it waits for a run that is never created.
+
+- The `ABI floor build` check required on the release branches.

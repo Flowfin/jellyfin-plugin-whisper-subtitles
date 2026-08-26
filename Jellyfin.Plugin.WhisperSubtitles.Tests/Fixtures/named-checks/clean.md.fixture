@@ -1,0 +1,10 @@
+# A page that names checks this tree reports
+
+Commits carry a `Signed-off-by` line. The `DCO sign-off` check refuses a pull
+request whose commits do not.
+
+Every pull request is also read by the `Pull request hygiene` check, which is a
+job that runs steps of its own rather than one that hands the work elsewhere.
+
+Both names above are job names in `.github/workflows/`, which is what a run
+reports under and what a ruleset entry has to carry.
