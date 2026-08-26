@@ -111,7 +111,17 @@ cannot, and the version has to be raised.
 
 - Default workflow permissions set to read only.
 - A rule that restricts who may push `*-stable` tags.
-- The two contexts the ABI floor workflow reports required on the release branches.
+- Which branches the two settings below have to cover.
+  The release branches are `master`.
+  That list is not decided here. It is `RELEASE_REFS` in
+  `.github/workflows/publish.yaml`, which the publish run reads to refuse a tag on a
+  commit no release branch contains, and a page carrying the phrase instead of the
+  names reads as correct against every list there could ever be. The two are compared,
+  so a branch added there and not named here is a red suite rather than a gate quietly
+  covering less than the release route allows. Whether the gate is required on any of
+  them is a repository setting, read by nothing in this tree, and #54 is where that
+  comparison is owed.
+- The two contexts the ABI floor workflow reports required on those branches.
   The `The plugin compiles against the floor its manifest promises` check is the
   build against the floor. The `And it refuses a symbol the floor does not have`
   check is the half that refuses a symbol the floor does not carry. A ruleset entry

@@ -1,0 +1,8 @@
+# Releasing
+
+## Repository settings this expects
+
+- The gate required on every branch a release may be cut from.
+  The release branches are `master` and `releases/12.0`.
+  The second one was planned and never reached the publish run, so the gate is asked for
+  on a branch no release comes from.

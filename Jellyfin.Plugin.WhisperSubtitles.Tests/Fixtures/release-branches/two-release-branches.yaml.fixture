@@ -1,0 +1,14 @@
+name: Publish
+
+jobs:
+  metadata:
+    name: Check the tag and build.yaml agree
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check the tag and build.yaml agree
+        env:
+          # Space separated list of branches a release may be cut from.
+          RELEASE_REFS: "master releases/10.11"
+          EXPECTED_FRAMEWORK: "net9.0"
+        run: |
+          set -euo pipefail
