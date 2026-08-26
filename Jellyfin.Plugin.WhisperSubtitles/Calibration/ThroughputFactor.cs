@@ -49,12 +49,16 @@ public sealed class ThroughputFactor
 {
     private readonly TimeSpan _audio;
     private readonly TimeSpan _work;
+    private readonly double _fastest;
+    private readonly double _slowest;
 
-    private ThroughputFactor(TimeSpan audio, TimeSpan work, int items)
+    private ThroughputFactor(TimeSpan audio, TimeSpan work, int items, double fastest, double slowest)
     {
         _audio = audio;
         _work = work;
         Items = items;
+        _fastest = fastest;
+        _slowest = slowest;
     }
 
     /// <summary>
@@ -78,6 +82,33 @@ public sealed class ThroughputFactor
     public int Items { get; }
 
     /// <summary>
+    /// Gets the smallest ratio any single measured item came in at.
+    /// </summary>
+    /// <remarks>
+    /// THIS IS SPREAD AND NOT THE ANSWER, and keeping the two apart is what makes
+    /// it safe to hold here. The remarks above argue at length that no single item
+    /// may own the estimate, and nothing about that changes: the estimate is still
+    /// the ratio of everything measured, and this pair is only ever the width
+    /// around it.
+    ///
+    /// It exists because an estimate is asked for as a range, and a range whose
+    /// two ends are the same number is a point estimate wearing a range's
+    /// punctuation. What has actually been observed is the honest width to offer,
+    /// so one measured item gives a range of zero width and says so through
+    /// <see cref="Items"/>, and it widens as a library turns out to be more varied
+    /// than the first item suggested.
+    /// </remarks>
+    public double FastestObserved => _fastest;
+
+    /// <summary>
+    /// Gets the largest ratio any single measured item came in at.
+    /// </summary>
+    /// <remarks>
+    /// The other end of <see cref="FastestObserved"/>, and never below it.
+    /// </remarks>
+    public double SlowestObserved => _slowest;
+
+    /// <summary>
     /// Starts a factor from one completed item.
     /// </summary>
     /// <param name="audioDuration">How long the audio was.</param>
@@ -87,7 +118,9 @@ public sealed class ThroughputFactor
     {
         Refuse(audioDuration, processingTime);
 
-        return new ThroughputFactor(audioDuration, processingTime, 1);
+        var ratio = RatioOf(audioDuration, processingTime);
+
+        return new ThroughputFactor(audioDuration, processingTime, 1, ratio, ratio);
     }
 
     /// <summary>
@@ -104,7 +137,14 @@ public sealed class ThroughputFactor
     {
         Refuse(audioDuration, processingTime);
 
-        return new ThroughputFactor(_audio + audioDuration, _work + processingTime, Items + 1);
+        var ratio = RatioOf(audioDuration, processingTime);
+
+        return new ThroughputFactor(
+            _audio + audioDuration,
+            _work + processingTime,
+            Items + 1,
+            Math.Min(_fastest, ratio),
+            Math.Max(_slowest, ratio));
     }
 
     /// <summary>
@@ -124,11 +164,37 @@ public sealed class ThroughputFactor
     /// this can give, so the property above survives the edge instead of the edge
     /// becoming an exception a caller has to know about.
     /// </remarks>
-    public TimeSpan Expect(TimeSpan mediaDuration)
+    public TimeSpan Expect(TimeSpan mediaDuration) => At(WorkPerSecondOfAudio, mediaDuration);
+
+    /// <summary>
+    /// Says how long this much media would take at the fastest any measured item
+    /// went.
+    /// </summary>
+    /// <param name="mediaDuration">How long the media is.</param>
+    /// <returns>The short end of the range.</returns>
+    /// <remarks>
+    /// Never longer than <see cref="ExpectAtWorst"/>, because the ratio it applies
+    /// is never larger, and never a promise: it is the best that has actually
+    /// happened here and not a floor anything guarantees.
+    /// </remarks>
+    public TimeSpan ExpectAtBest(TimeSpan mediaDuration) => At(_fastest, mediaDuration);
+
+    /// <summary>
+    /// Says how long this much media would take at the slowest any measured item
+    /// went.
+    /// </summary>
+    /// <param name="mediaDuration">How long the media is.</param>
+    /// <returns>The long end of the range.</returns>
+    public TimeSpan ExpectAtWorst(TimeSpan mediaDuration) => At(_slowest, mediaDuration);
+
+    private static double RatioOf(TimeSpan audioDuration, TimeSpan processingTime) =>
+        processingTime.Ticks / (double)audioDuration.Ticks;
+
+    private static TimeSpan At(double ratio, TimeSpan mediaDuration)
     {
         ArgumentOutOfRangeException.ThrowIfLessThan(mediaDuration, TimeSpan.Zero);
 
-        var ticks = mediaDuration.Ticks * WorkPerSecondOfAudio;
+        var ticks = mediaDuration.Ticks * ratio;
 
         return ticks >= long.MaxValue
             ? TimeSpan.MaxValue

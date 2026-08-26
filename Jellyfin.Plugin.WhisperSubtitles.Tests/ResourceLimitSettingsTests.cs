@@ -35,7 +35,16 @@ public class ResourceLimitSettingsTests
     /// The sentence the page states its own standing with, and the whole of what is
     /// machine-read out of it.
     /// </summary>
-    private const string NeitherReachesARun = "Neither number reaches a transcription yet";
+    /// <remarks>
+    /// IT SAID "Neither number reaches a transcription yet" UNTIL THE DRY RUN
+    /// LANDED. The disclosure the page owes moved when the first reader beyond the
+    /// configuration arrived: the numbers are read now, by something that says what
+    /// a run would cost, and a page still saying nothing reads them would be the
+    /// loud direction below arriving for real. What has not moved is that neither
+    /// number reaches a transcription, because nothing performs a run, and the page
+    /// still says that in the same paragraph.
+    /// </remarks>
+    private const string ReadByTheDryRun = "Both numbers are read by the dry run";
 
     [Theory]
     [InlineData(1)]
@@ -220,28 +229,28 @@ public class ResourceLimitSettingsTests
     }
 
     [Fact]
-    public void The_page_says_neither_limit_reaches_a_run_exactly_while_neither_does()
+    public void The_page_says_what_reads_each_limit_exactly_while_something_does()
     {
-        // A field an operator types into is read as a field that does something. It
-        // does not yet: nothing carries either number to a backend, because nothing
-        // performs a run. So the page says so, and the sentence is read rather than
-        // trusted, in both directions.
+        // A field an operator types into is read as a field that does something.
+        // Something reads both now, and it is not a run: the dry run reports what a
+        // run would cost and transcribes nothing. So the page names that reader, and
+        // the sentence is read rather than trusted, in both directions.
         //
-        // The loud direction is a page still saying this while a run reads the
-        // setting, which turns a disclosure into a lie at exactly the change least
-        // likely to remember a page two directories away. The quiet direction is the
-        // sentence being dropped while nothing reads either number, which leaves two
-        // fields looking like controls.
+        // The loud direction is the page naming a reader that has gone, which turns a
+        // disclosure into a lie at exactly the change least likely to remember a page
+        // two directories away. The quiet direction is the sentence being dropped
+        // while something still reads either number, which leaves two fields whose
+        // effect an operator has to find out by experiment.
         var reading = FilesOutsideTheConfigurationThatNameALimit();
-        var says = ConfigurationPageSource.Markup().Contains(NeitherReachesARun, StringComparison.Ordinal);
+        var says = ConfigurationPageSource.Markup().Contains(ReadByTheDryRun, StringComparison.Ordinal);
 
         Assert.True(
-            !says || reading.Count == 0,
-            $"the configuration page says \"{NeitherReachesARun}\" and {reading.Count} file(s) outside Configuration/ now name a limit: {string.Join(", ", reading)}. Two fields an operator types into are described as reaching nothing while something reads them.");
+            !says || reading.Count > 0,
+            $"the configuration page says \"{ReadByTheDryRun}\" and no file outside Configuration/ names either limit, so the page credits a reader this tree does not hold.");
 
         Assert.True(
-            says || reading.Count > 0,
-            $"nothing outside Configuration/ reads either limit and the configuration page no longer says so, so both fields read as controls over a run that does not use them.");
+            says || reading.Count == 0,
+            $"{reading.Count} file(s) outside Configuration/ read a limit: {string.Join(", ", reading)}. The configuration page no longer says what reads them, so two fields an operator types into say nothing about what they change.");
     }
 
     /// <summary>
