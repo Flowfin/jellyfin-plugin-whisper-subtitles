@@ -107,6 +107,13 @@ public class WriteLocationsTests
     /// The writers are named file by file rather than matched by folder, so widening
     /// the permission is something somebody does on purpose and a reviewer sees.
     ///
+    /// The second kind lost <c>TemporaryAudioSweep.cs</c> and gained
+    /// <c>SystemFileRemoval.cs</c> under #71. The sweep held the removal that reaches
+    /// the disk as a private class of its own, so the file that decided WHICH files
+    /// go was also the file that removed them; the removal now lives behind the seam
+    /// the composition root registers, and the sweep names no write. The leg below
+    /// that asks whether every writer still writes is what caught the move.
+    ///
     /// The third kind has no writer here and that is the fact rather than an omission:
     /// the server writes the plugin's configuration and would write its records, and
     /// nothing in this tree reaches that location. The day something here does, the
@@ -124,7 +131,7 @@ public class WriteLocationsTests
             "temporary audio",
             "Temporary audio",
             "Temporary audio is already gone",
-            ["AudioExtractor.cs", "ExtractedAudio.cs", "TemporaryAudioSweep.cs"]),
+            ["AudioExtractor.cs", "ExtractedAudio.cs", "SystemFileRemoval.cs"]),
         new Kind(
             "plugin data",
             "where the server puts plugin data",

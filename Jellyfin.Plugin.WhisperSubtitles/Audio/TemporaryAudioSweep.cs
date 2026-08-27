@@ -40,14 +40,10 @@ public static class TemporaryAudioSweep
     public const string ExtractedAudioPattern = "*.wav";
 
     /// <summary>
-    /// Gets the removal that reaches the disk.
-    /// </summary>
-    public static IFileRemoval SystemRemoval { get; } = new FileSystemRemoval();
-
-    /// <summary>
     /// Removes what a previous run left in the directory this plugin owns.
     /// </summary>
     /// <param name="workingDirectory">The directory this plugin writes its temporary audio into.</param>
+    /// <param name="removal">How a file is removed.</param>
     /// <returns>How much was collected and how much would not go.</returns>
     /// <remarks>
     /// A directory that is not there is not an error. On a first run there is
@@ -58,16 +54,13 @@ public static class TemporaryAudioSweep
     /// that something still holds it open, which the next sweep will find
     /// released, and a run that refused to start because one leftover was locked
     /// would be a worse outcome than the leftover.
+    ///
+    /// The removal is a parameter and has no default. There was a one-argument
+    /// overload closing over a static <see cref="SystemFileRemoval"/> held here,
+    /// and it meant a caller reached the real disk without asking any container
+    /// for it, which is the one thing <see cref="PluginServiceRegistrator"/> is
+    /// for. A caller that wants the real one resolves <see cref="IFileRemoval"/>.
     /// </remarks>
-    public static SweepOutcome Run(string workingDirectory) =>
-        Run(workingDirectory, SystemRemoval);
-
-    /// <summary>
-    /// The same sweep, through a removal a test can hand in.
-    /// </summary>
-    /// <param name="workingDirectory">The directory this plugin writes its temporary audio into.</param>
-    /// <param name="removal">How a file is removed.</param>
-    /// <returns>How much was collected and how much would not go.</returns>
     public static SweepOutcome Run(string workingDirectory, IFileRemoval removal)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(workingDirectory);
@@ -102,10 +95,5 @@ public static class TemporaryAudioSweep
         }
 
         return new SweepOutcome(collected, left);
-    }
-
-    private sealed class FileSystemRemoval : IFileRemoval
-    {
-        public void Delete(string path) => File.Delete(path);
     }
 }

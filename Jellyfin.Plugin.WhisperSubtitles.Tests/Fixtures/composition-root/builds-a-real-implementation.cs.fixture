@@ -1,0 +1,12 @@
+// The shape that has to be refused, and the one this repository really carried:
+// a static holding the real removal, and an overload closing over it, so a caller
+// reaches the disk without asking any container for anything.
+namespace Jellyfin.Plugin.WhisperSubtitles.Audio;
+
+public static class SweepWithADefaultOfItsOwn
+{
+    public static IFileRemoval Removal { get; } = new SystemFileRemoval();
+
+    public static SweepOutcome Run(string workingDirectory) =>
+        TemporaryAudioSweep.Run(workingDirectory, Removal);
+}
