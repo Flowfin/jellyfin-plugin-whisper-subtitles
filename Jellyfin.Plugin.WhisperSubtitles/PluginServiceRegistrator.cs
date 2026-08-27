@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Jellyfin.Plugin.WhisperSubtitles.Audio;
 using Jellyfin.Plugin.WhisperSubtitles.Backends;
 using Jellyfin.Plugin.WhisperSubtitles.Backends.Local;
 using Jellyfin.Plugin.WhisperSubtitles.Backends.Remote;
@@ -23,12 +24,16 @@ namespace Jellyfin.Plugin.WhisperSubtitles;
 /// Only types this plugin owns are registered, which is why the HTTP handler
 /// arrives as <see cref="RemoteHttpHandler"/> rather than under a framework name.
 ///
-/// This is not yet the only place a real implementation is built. The sweep in
-/// <see cref="Audio.TemporaryAudioSweep"/> holds its removal as a static and its
-/// one-argument overload closes over it, so a caller takes the real one without
-/// asking any container for it. Making this the one such place is part of #71,
-/// and it is a decision about the default that sweep's own suite pins rather than
-/// a line to add here.
+/// This is the only place a real implementation behind a seam is built, and
+/// <c>CompositionRootTests</c> refuses the next one built anywhere else. It reads
+/// the implementation types out of a collection this class registered rather than
+/// out of a list, so a seam registered tomorrow is covered without anybody
+/// remembering a line. What it cannot see is stated in its own remarks.
+///
+/// The sweep in <see cref="Audio.TemporaryAudioSweep"/> was the one exception
+/// until #71: it held its removal as a static and its one-argument overload
+/// closed over it, so a caller took the real one without asking any container for
+/// it. That overload is gone and the removal is registered below.
 ///
 /// Nothing is resolved here and nothing throws. The container is not built yet at
 /// this point, and a registrator that throws is caught by the server, logged and
@@ -48,6 +53,7 @@ public sealed class PluginServiceRegistrator : IPluginServiceRegistrator
 
         serviceCollection.AddSingleton<IProcessRunner, SystemProcessRunner>();
         serviceCollection.AddSingleton<IFileFacts, SystemFileFacts>();
+        serviceCollection.AddSingleton<IFileRemoval, SystemFileRemoval>();
         serviceCollection.AddSingleton<RemoteHttpHandler>();
 
         // The two backends that do work need settings, and no setting on the

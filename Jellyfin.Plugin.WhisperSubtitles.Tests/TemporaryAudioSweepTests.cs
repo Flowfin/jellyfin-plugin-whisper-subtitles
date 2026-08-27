@@ -4,6 +4,7 @@ using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using Jellyfin.Plugin.WhisperSubtitles.Audio;
+using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
 namespace Jellyfin.Plugin.WhisperSubtitles.Tests;
@@ -20,6 +21,18 @@ namespace Jellyfin.Plugin.WhisperSubtitles.Tests;
 /// </summary>
 public sealed class TemporaryAudioSweepTests : IDisposable
 {
+    /// <summary>
+    /// The removal that reaches the disk, for the legs whose subject is what is
+    /// left in the directory afterwards.
+    /// </summary>
+    /// <remarks>
+    /// It is named here rather than defaulted by the sweep. The sweep used to
+    /// carry a one-argument overload closing over a static, which meant a caller
+    /// reached the real disk without asking any container for it; that is gone
+    /// under #71 and a caller says which removal it is using.
+    /// </remarks>
+    private static readonly IFileRemoval Real = new SystemFileRemoval();
+
     private readonly string _workingDirectory = Path.Combine(
         Path.GetTempPath(),
         "whisper-subtitles-tests-" + Guid.NewGuid().ToString("N"));
@@ -29,7 +42,7 @@ public sealed class TemporaryAudioSweepTests : IDisposable
     {
         var stale = Leftover("6f1d2c3b4a594e6f8a7b0c1d2e3f4a5b.wav");
 
-        var outcome = TemporaryAudioSweep.Run(_workingDirectory);
+        var outcome = TemporaryAudioSweep.Run(_workingDirectory, Real);
 
         Assert.False(File.Exists(stale));
         Assert.Equal(1, outcome.Collected);
@@ -43,7 +56,7 @@ public sealed class TemporaryAudioSweepTests : IDisposable
         Leftover("b.wav");
         Leftover("c.wav");
 
-        var outcome = TemporaryAudioSweep.Run(_workingDirectory);
+        var outcome = TemporaryAudioSweep.Run(_workingDirectory, Real);
 
         Assert.Equal(3, outcome.Collected);
         Assert.Empty(Directory.EnumerateFiles(_workingDirectory));
@@ -55,7 +68,7 @@ public sealed class TemporaryAudioSweepTests : IDisposable
         // Nothing has been extracted on this server, so the directory has never
         // been created. Refusing to start over that turns an empty disk into a
         // failed run.
-        var outcome = TemporaryAudioSweep.Run(_workingDirectory);
+        var outcome = TemporaryAudioSweep.Run(_workingDirectory, Real);
 
         Assert.Equal(0, outcome.Collected);
         Assert.Equal(0, outcome.Left);
@@ -71,7 +84,7 @@ public sealed class TemporaryAudioSweepTests : IDisposable
         var alsoNot = Leftover("model.bin");
         var audio = Leftover("kept-until-swept.wav");
 
-        var outcome = TemporaryAudioSweep.Run(_workingDirectory);
+        var outcome = TemporaryAudioSweep.Run(_workingDirectory, Real);
 
         Assert.True(File.Exists(notAudio));
         Assert.True(File.Exists(alsoNot));
@@ -91,7 +104,7 @@ public sealed class TemporaryAudioSweepTests : IDisposable
         var untouched = Path.Combine(below, "theirs.wav");
         File.WriteAllText(untouched, "not this plugin's");
 
-        var outcome = TemporaryAudioSweep.Run(_workingDirectory);
+        var outcome = TemporaryAudioSweep.Run(_workingDirectory, Real);
 
         Assert.True(File.Exists(untouched));
         Assert.Equal(0, outcome.Collected);
@@ -127,14 +140,18 @@ public sealed class TemporaryAudioSweepTests : IDisposable
     }
 
     [Fact]
-    public void The_removal_the_sweep_reaches_the_disk_through_is_a_real_one()
+    public void The_removal_the_composition_root_registers_really_deletes()
     {
-        // The seam above is only worth having while the default still deletes.
-        // A default that quietly did nothing would leave every test in this file
-        // green through the double and the disk full on a server.
+        // The seam above is only worth having while the real removal deletes. One
+        // that quietly did nothing would leave every test in this file green
+        // through the double and the disk full on a server.
+        //
+        // It reads the type out of what the registrator registered rather than
+        // constructing a name typed here, so a registration changed to something
+        // that does not delete fails this and not only a test somewhere else.
         var stale = Leftover("real.wav");
 
-        TemporaryAudioSweep.SystemRemoval.Delete(stale);
+        Registered().Delete(stale);
 
         Assert.False(File.Exists(stale));
     }
@@ -157,7 +174,7 @@ public sealed class TemporaryAudioSweepTests : IDisposable
         // process that stopped would have left.
         Assert.True(File.Exists(audio.Path));
 
-        var outcome = TemporaryAudioSweep.Run(_workingDirectory);
+        var outcome = TemporaryAudioSweep.Run(_workingDirectory, Real);
 
         Assert.Equal(1, outcome.Collected);
         Assert.False(File.Exists(audio.Path));
@@ -166,7 +183,18 @@ public sealed class TemporaryAudioSweepTests : IDisposable
     [Fact]
     public void A_directory_that_was_not_named_is_refused()
     {
-        Assert.Throws<ArgumentException>(() => TemporaryAudioSweep.Run("   "));
+        Assert.Throws<ArgumentException>(() => TemporaryAudioSweep.Run("   ", Real));
+    }
+
+    private static IFileRemoval Registered()
+    {
+        var services = new ServiceCollection();
+
+        new PluginServiceRegistrator().RegisterServices(services, null!);
+
+        using var provider = services.BuildServiceProvider();
+
+        return provider.GetRequiredService<IFileRemoval>();
     }
 
     /// <inheritdoc />

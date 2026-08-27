@@ -1,0 +1,25 @@
+// The neighbour that has to stay accepted. It differs from the refused fixture in
+// where the removal comes from and in nothing else, so a rule coarse enough to
+// refuse any source that names SystemFileRemoval would pass its own fixture and
+// fail here.
+using System;
+
+namespace Jellyfin.Plugin.WhisperSubtitles.Audio;
+
+public sealed class SweepGivenItsRemoval
+{
+    private readonly IFileRemoval _removal;
+
+    /// <summary>
+    /// The container answers this with SystemFileRemoval, which is registered
+    /// once in PluginServiceRegistrator and built nowhere.
+    /// </summary>
+    public SweepGivenItsRemoval(IFileRemoval removal)
+    {
+        ArgumentNullException.ThrowIfNull(removal);
+        _removal = removal;
+    }
+
+    public SweepOutcome Run(string workingDirectory) =>
+        TemporaryAudioSweep.Run(workingDirectory, _removal);
+}
