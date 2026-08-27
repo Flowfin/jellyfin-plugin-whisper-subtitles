@@ -1,0 +1,8 @@
+# A release checklist whose item answers from nowhere
+
+## A condition a run is said to answer
+
+Decided by a run. The build is clean, the suite is green and the archive is the one
+the tag names, which is what #1 asked for. Which run, and which of its verdicts, is
+not written anywhere on the item, so the recorded result it promises comes from
+nowhere and reads exactly like the item beside it.

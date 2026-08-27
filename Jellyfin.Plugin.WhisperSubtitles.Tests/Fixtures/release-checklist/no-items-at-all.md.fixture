@@ -1,0 +1,8 @@
+# A release checklist whose items stopped being sections
+
+A page that lists its conditions as prose, or under headings a level deeper than
+the reader walks, is a list with nothing in it. Every leg keyed on an item then
+passes by walking an empty population, which is the shape a guard exists against.
+
+The full merge gate is green on the release commit. The coverage floor is held. The
+package carries no native runtime and no model. None of those is a section.

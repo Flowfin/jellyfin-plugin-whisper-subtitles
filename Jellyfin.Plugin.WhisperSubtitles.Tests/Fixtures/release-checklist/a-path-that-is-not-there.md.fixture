@@ -1,0 +1,8 @@
+# A release checklist pointing at evidence that moved
+
+## A condition whose evidence is somewhere else now
+
+Decided by a run. The `Pull request hygiene` check is the verdict and the script
+behind it is `.github/scripts/refuse-a-condition-nobody-wrote.sh`, which #1
+recorded. At a release that is somebody looking for the evidence and not finding
+it.
