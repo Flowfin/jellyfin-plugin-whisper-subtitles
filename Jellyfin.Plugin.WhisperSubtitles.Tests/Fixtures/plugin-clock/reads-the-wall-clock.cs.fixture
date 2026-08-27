@@ -1,0 +1,19 @@
+// The shape somebody writes when a type wants to know when a measurement was made
+// and reaches for the clock instead of asking its caller. Nothing else about it is
+// wrong, which is why it would land.
+using System;
+
+namespace Jellyfin.Plugin.WhisperSubtitles.Calibration;
+
+public sealed class MeasurementStampedByTheMachine
+{
+    public MeasurementStampedByTheMachine(ThroughputFactor factor)
+    {
+        Factor = factor;
+        MeasuredAt = DateTimeOffset.UtcNow;
+    }
+
+    public ThroughputFactor Factor { get; }
+
+    public DateTimeOffset MeasuredAt { get; }
+}

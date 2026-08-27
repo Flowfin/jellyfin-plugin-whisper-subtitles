@@ -1,0 +1,19 @@
+// The neighbour that has to stay accepted. It differs from the refused fixture in
+// where the moment comes from and in nothing else, so a rule coarse enough to
+// refuse any source that names a moment would pass its own fixture and fail here.
+using System;
+
+namespace Jellyfin.Plugin.WhisperSubtitles.Calibration;
+
+public sealed class MeasurementStampedByItsCaller
+{
+    public MeasurementStampedByItsCaller(ThroughputFactor factor, DateTimeOffset measuredAt)
+    {
+        Factor = factor;
+        MeasuredAt = measuredAt;
+    }
+
+    public ThroughputFactor Factor { get; }
+
+    public DateTimeOffset MeasuredAt { get; }
+}
