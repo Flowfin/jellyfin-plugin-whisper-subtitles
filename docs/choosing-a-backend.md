@@ -31,7 +31,7 @@ The tool and the model are two paths the operator types. Neither is ever
 downloaded:
 
     git grep -n 'is ever downloaded\|Neither is downloaded' -- Jellyfin.Plugin.WhisperSubtitles
-    Jellyfin.Plugin.WhisperSubtitles/Backends/Local/LocalBackendOptions.cs:14:/// Neither path is ever downloaded. That is a fixed property of this plugin
+    Jellyfin.Plugin.WhisperSubtitles/Backends/Local/LocalBackendOptions.cs:16:/// Neither path is ever downloaded. That is a fixed property of this plugin
     Jellyfin.Plugin.WhisperSubtitles/Backends/Local/LocalWhisperBackend.cs:20:/// The tool and the model are paths an operator typed. Neither is downloaded and
 
 That is a property of the plugin and not a default somebody set. A plugin that
@@ -78,7 +78,7 @@ that is also serving video.
 There is a floor on what this plugin will believe is a model at all:
 
     git grep -n 'SmallestPlausibleModelBytes =' -- Jellyfin.Plugin.WhisperSubtitles
-    Jellyfin.Plugin.WhisperSubtitles/Backends/Local/LocalBackendOptions.cs:39:    public const long SmallestPlausibleModelBytes = 1024L * 1024;
+    Jellyfin.Plugin.WhisperSubtitles/Backends/Local/LocalBackendOptions.cs:41:    public const long SmallestPlausibleModelBytes = 1024L * 1024;
 
 One mebibyte, which is three orders of magnitude below the smallest published
 model. It catches a download that was refused and saved anyway, a page of HTML
@@ -164,14 +164,16 @@ page and no further, which is a state worth naming rather than filing under
 either.
 
 **Where the tool path, the model path, the URL and the key are typed.** Nowhere
-yet. The configuration holds four properties and none of them is a backend's own
+yet. The configuration holds six properties and none of them is a backend's own
 setting:
 
     git grep -n 'public .* { get; set; }' -- Jellyfin.Plugin.WhisperSubtitles/Configuration/PluginConfiguration.cs
     Jellyfin.Plugin.WhisperSubtitles/Configuration/PluginConfiguration.cs:33:    public int SchemaVersion { get; set; } = ConfigurationValidation.CurrentSchemaVersion;
     Jellyfin.Plugin.WhisperSubtitles/Configuration/PluginConfiguration.cs:45:    public string Backend { get; set; } = ConfigurationValidation.NoBackendChosen;
     Jellyfin.Plugin.WhisperSubtitles/Configuration/PluginConfiguration.cs:58:    public string TargetLanguage { get; set; } = string.Empty;
-    Jellyfin.Plugin.WhisperSubtitles/Configuration/PluginConfiguration.cs:78:    public LibraryLanguageTarget[] LibraryTargets { get; set; } = [];
+    Jellyfin.Plugin.WhisperSubtitles/Configuration/PluginConfiguration.cs:79:    public int ItemsAtOnce { get; set; } = ConfigurationValidation.LetTheMachineDecide;
+    Jellyfin.Plugin.WhisperSubtitles/Configuration/PluginConfiguration.cs:97:    public int ThreadsPerItem { get; set; } = ConfigurationValidation.LetTheMachineDecide;
+    Jellyfin.Plugin.WhisperSubtitles/Configuration/PluginConfiguration.cs:117:    public LibraryLanguageTarget[] LibraryTargets { get; set; } = [];
 
 Choosing `Local` or `Remote` on the page today reaches selection, which reports
 which settings are not filled in and transcribes nothing. The page is #36.
