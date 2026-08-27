@@ -1,0 +1,12 @@
+# A release checklist with an item claiming both states
+
+## A condition filed twice over
+
+Decided by a run, and this is the command:
+
+```
+git grep -n 'nothing an operator did not choose' -- .github/workflows/
+```
+
+Nothing decides this yet either, so #1 is where a route is owed. Whichever leg
+reads the item first decides what it promised.

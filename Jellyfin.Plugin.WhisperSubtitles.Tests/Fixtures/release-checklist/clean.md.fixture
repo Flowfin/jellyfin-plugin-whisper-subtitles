@@ -1,0 +1,18 @@
+# A release checklist for a repository that is not this one
+
+Two states are kept apart at every item, and neither item below breaks a rule.
+
+## A condition a run answers
+
+Decided by a run. The `Pull request hygiene` check is the verdict, and what it
+promises an operator is written in `docs/limits.md` rather than here.
+
+## A condition nobody answers yet
+
+Nothing decides this yet. The route is owed by #1, and until it lands somebody
+answers this by hand at every release.
+
+## When an item has no answer
+
+`LimitsPageTests` is named here so the leg that resolves a suite has something to
+resolve on a page that is otherwise about nothing.

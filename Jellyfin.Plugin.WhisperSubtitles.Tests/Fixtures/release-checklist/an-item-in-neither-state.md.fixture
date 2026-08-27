@@ -1,0 +1,13 @@
+# A release checklist with an item in neither state
+
+## A condition that reads like an assurance
+
+The archive carries the assembly and nothing else, which #1 recorded, and this is
+what says so:
+
+```
+git grep -n 'nothing an operator did not choose' -- .github/workflows/
+```
+
+Whether a run answers that or whether somebody has to is what the item never says,
+so a reader takes the sentence for the answer.

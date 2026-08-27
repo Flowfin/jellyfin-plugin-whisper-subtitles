@@ -2,6 +2,14 @@
 
 A release is published by pushing a tag. Nothing is created by hand.
 
+## The checklist
+
+`docs/release-checklist.md` is the list of conditions a release is cut against,
+one section per condition, each naming the command or the status check whose
+verdict is the answer. It also says which conditions nothing answers yet, and
+which issue owes each of those a route. Read it before the tag is pushed; nothing
+in the publish run reads it for you.
+
 ## The tag
 
 The tag has the form `X.Y.Z-stable` or `X.Y.Z.W-stable`, for example `1.4.0-stable`
