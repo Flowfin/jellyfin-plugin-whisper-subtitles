@@ -40,6 +40,15 @@ where the comparison between the two is owed. So a check deleted between one
 release and the next disappears from the list above rather than failing it, and
 the list is what ran and not what had to run.
 
+It also does not decide whether a red name has anything to do with the release. A
+job that is red on every mainline commit for a standing reason is red on the
+release commit too, and it fails this item exactly the way a regression would. So
+read the list rather than assuming which names are in it, and read each red name
+against the issue that records it before deciding this item is unanswerable. The
+draft the changelog workflow in `.github/workflows/changelog.yaml` builds is the
+one this repository stands red on, and #59 is where that is recorded and where
+what it waits on is written.
+
 ## The interoperability matrix is green on both server lines
 
 The supported set of sibling plugins installed together, on each supported server
