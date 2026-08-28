@@ -5,12 +5,14 @@ that put things on a disk: the list of what this plugin writes and where, and th
 section saying what removing the plugin leaves behind. Each file here breaks
 exactly one thing it checks.
 
-The two documents are versions of that page somebody could plausibly write. One
-lists all three kinds and then answers for two of them on the way out, which is
-the uninstall section written from memory. The other answers for three and lists
-two, which is what a change to the code produces when the page is not read again
-afterwards. `clean.md.fixture` is the neighbour that has to stay accepted, without
-which a reader that found nothing in either section would pass both legs.
+The documents are versions of that page somebody could plausibly write. One lists
+all three kinds and then answers for two of them on the way out, which is the
+uninstall section written from memory. One answers for three and lists two, which
+is what a change to the code produces when the page is not read again afterwards.
+One accounts for every kind in both sections and then says the plugin removes
+nothing at all, which is what the page said while four of its sources took a file
+off a disk. `clean.md.fixture` is the neighbour that has to stay accepted, without
+which a reader that found nothing in either section would pass every leg.
 
 The three sources are the other half. One writes a record of its own beside the
 plugin's other state, which is useful, plausible and a location the page never

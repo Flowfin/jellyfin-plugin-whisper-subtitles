@@ -228,15 +228,17 @@ gone: `TemporaryAudioSweep` is what would collect it, nothing calls it, and that
 half is decided and not yet built. #11 and #21.
 
 Generated subtitle files stay on disk. They are in the operator's library, and
-deleting a viewer's subtitles as a side effect of uninstalling a plugin would be
-wrong. Nothing here watches a server remove a plugin, so what is held today is
-the narrower thing a checkout can answer for: this plugin has no removal path at
-all, and `WriteLocationsTests` refuses a source of it that deletes something no
-kind above answers for. An operator who does want them gone gets a surface that
-lists what it would remove before removing it, and that never removes a file it
-did not write or one that has been edited since. That surface is decided and not
-yet built, in #43, and what it would match a file against is the record that is
-absent two paragraphs above.
+deleting a viewer's subtitles as a side effect of uninstalling a plugin would
+be wrong. Nothing here watches a server remove a plugin, so what is held today
+is the narrower thing a checkout can answer for: no source of this plugin
+removes a subtitle it published. It does remove files it made for itself, the
+temporary audio and the part-written file a failed publish would otherwise
+leave behind, and `WriteLocationsTests` refuses a source that deletes something
+no kind above answers for. An operator who does want them gone gets a surface
+that lists what it would remove before removing it, and that never removes a
+file it did not write or one that has been edited since. That surface is
+decided and not yet built, in #43, and what it would match a file against is
+the record that is absent two paragraphs above.
 
 ## When this list is checked against the code
 
