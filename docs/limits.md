@@ -21,12 +21,20 @@ something this plugin does.
 Held today. The backend interface has one language field, and its meaning is
 fixed at the field: a language names what the audio is in, and its absence is a
 request to detect that language rather than a request to convert it into
-something else. The interface cannot express a translation, which is the point
-of writing it that way. Recorded in #9 and readable in
+something else. A transcription needs one language and a translation needs two,
+so the interface cannot express a translation, and `BackendInterfaceTests`
+refuses a request or a call that could. Readable in
 `Backends/TranscriptionRequest.cs`.
 
-Which language a library asks for is the operator's setting, in #30, and it is
-still a statement about the audio.
+Decided in #9. Where a reader goes to argue with that decision is the change
+that closed the issue rather than the issue text, which asks for the interface
+and never for this meaning, and this is the one entry on this page where those
+are two different places.
+
+Which language a library asks for is the operator's setting, in #30. That the
+setting is still a statement about the audio rather than a language to convert
+into is #9's decision and not #30's, which is worth separating because both
+issues call the field a target language.
 
 ## It carries no model and no inference runtime
 
