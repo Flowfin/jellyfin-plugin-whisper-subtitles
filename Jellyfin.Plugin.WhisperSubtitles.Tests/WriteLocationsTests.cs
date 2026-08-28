@@ -23,10 +23,19 @@ namespace Jellyfin.Plugin.WhisperSubtitles.Tests;
 /// plugin does to it, and the uninstall section written from memory is the shape that
 /// produces.
 ///
-/// So the comparison runs three ways. Every plugin source that writes is a writer of
+/// So the comparison runs four ways. Every plugin source that writes is a writer of
 /// a kind the list names. Every file this map names as a writer still writes, so a
-/// rename empties a permission loudly rather than quietly. And every kind on the list
-/// is accounted for on the way out.
+/// rename empties a permission loudly rather than quietly. Every kind on the list is
+/// accounted for on the way out. And the way out does not deny a removal this plugin
+/// makes.
+///
+/// The fourth arrived after the uninstall section said this plugin has no removal
+/// path at all while four of its sources took a file off a disk. That sentence was
+/// wrong on the day it was written, and the map below already named one of those
+/// sources as a permitted remover, so the page and this class contradicted each
+/// other in the same commit and every route stayed green. What makes the denial
+/// decidable here rather than a reading is that the population it asserts is empty
+/// is the one this class already computes.
 ///
 /// The vocabulary is assembled from fragments, which is the neighbouring scanners'
 /// reasoning: a file holding the literals it looks for cannot be read by the next
@@ -49,6 +58,11 @@ namespace Jellyfin.Plugin.WhisperSubtitles.Tests;
 /// It does not judge whether a sentence on the page is TRUE of the location it
 /// describes. That is a reading, and the review is where a wrong one is caught. What
 /// is refused is a location, or a kind, that nothing on the page answers for.
+///
+/// The denial leg is the one exception and it is a narrow one. It reads a phrase and
+/// not a meaning: the vocabulary holds the sentence that was actually written rather
+/// than every way of writing it, so the same denial in other words passes. What it
+/// buys is that this one cannot come back.
 /// </remarks>
 public class WriteLocationsTests
 {
@@ -77,6 +91,16 @@ public class WriteLocationsTests
     private const string Dot = ".";
 
     /// <summary>
+    /// A sentence in the uninstall section saying this plugin takes nothing off a
+    /// disk at all.
+    /// </summary>
+    /// <remarks>
+    /// The words the page actually carried, rather than a guess at the ways somebody
+    /// could write the same denial. The bound that leaves is stated at the class.
+    /// </remarks>
+    private const string DenialOfEveryRemoval = "no removal path";
+
+    /// <summary>
     /// Creating, moving, replacing or removing something on a disk. Opening a file
     /// for reading is deliberately not here: the remote backend opens the extracted
     /// audio to send it, and a rule coarse enough to refuse that would be refusing a
@@ -98,6 +122,20 @@ public class WriteLocationsTests
         "Directory" + Dot + "Move",
         "new File" + "Stream",
         "new Stream" + "Writer"
+    ];
+
+    /// <summary>
+    /// The tokens above that take something off a disk rather than putting it there.
+    /// </summary>
+    /// <remarks>
+    /// A subset rather than a second vocabulary, and a leg below holds that it is one,
+    /// so the shape proof the writes carry covers these as well instead of a copy of
+    /// it going stale on its own.
+    /// </remarks>
+    private static readonly string[] _removals =
+    [
+        "File" + Dot + "Delete",
+        "Directory" + Dot + "Delete"
     ];
 
     /// <summary>
@@ -261,6 +299,49 @@ public class WriteLocationsTests
     }
 
     [Fact]
+    public void Every_removal_token_is_one_the_write_vocabulary_already_holds()
+    {
+        // So the shape proof above reaches these too. A removal token spelled
+        // differently from its write would match nothing and pass for as long as
+        // nobody looked, which is the accident that proof exists against.
+        Assert.All(_removals, token => Assert.Contains(token, _writes));
+    }
+
+    [Fact]
+    public void The_scanner_can_see_that_this_plugin_removes_something()
+    {
+        // Guards the leg below rather than duplicating it. The denial it refuses is
+        // TRUE of a plugin that removes nothing, so a scan finding none would let the
+        // page say it and pass; the day this plugin stops removing anything is a
+        // change somebody makes on purpose and should meet here rather than discover
+        // later on the page.
+        Assert.NotEmpty(SourcesThatRemove());
+    }
+
+    [Fact]
+    public void The_way_out_does_not_deny_a_removal_this_plugin_makes()
+    {
+        Assert.False(
+            DeniesEveryRemoval(Page()),
+            $"{UninstallHeading} says this plugin has no removal path, and each of {string.Join(", ", SourcesThatRemove())} takes a file off a disk");
+    }
+
+    [Fact]
+    public void The_reader_refuses_a_way_out_that_denies_every_removal()
+    {
+        // The fixture differs from the accepted neighbour in one sentence, and it is
+        // the sentence the page carried. Both other legs stay green on it, which is
+        // what says this one is answering for the denial and not for a kind going
+        // missing at the same time.
+        var fixture = Fixture("denies-every-removal", "md");
+
+        Assert.True(DeniesEveryRemoval(fixture));
+        Assert.False(DeniesEveryRemoval(Fixture("clean", "md")));
+        Assert.Empty(MissingFromList(fixture));
+        Assert.Empty(MissingFromTheWayOut(fixture));
+    }
+
+    [Fact]
     public void The_list_names_every_kind_this_plugin_writes()
     {
         Assert.Empty(MissingFromList(Page()));
@@ -362,6 +443,20 @@ public class WriteLocationsTests
                 || path.EndsWith(".cs.fixture", StringComparison.Ordinal),
                 $"{Path.GetFileName(path)} is a fixture under an extension something else reads"));
     }
+
+    private static bool DeniesEveryRemoval(string page) =>
+        Flattened(Section(page, UninstallHeading))
+            .Contains(DenialOfEveryRemoval, StringComparison.Ordinal);
+
+    /// <summary>
+    /// The plugin sources that take something off a disk.
+    /// </summary>
+    private static List<string> SourcesThatRemove() =>
+        PluginSourceFiles()
+            .Where(path => _removals.Any(token =>
+                WithoutComments(File.ReadAllText(path)).Contains(token, StringComparison.Ordinal)))
+            .Select(path => Path.GetFileName(path)!)
+            .ToList();
 
     private static List<string> MissingFromList(string page) =>
         Absent(Section(page, ListHeading), kind => kind.OnTheList);
