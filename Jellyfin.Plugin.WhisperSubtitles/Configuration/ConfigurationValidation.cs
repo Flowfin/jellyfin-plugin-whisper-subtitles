@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using Jellyfin.Plugin.WhisperSubtitles.Attempts;
 using Jellyfin.Plugin.WhisperSubtitles.Backends;
 using Jellyfin.Plugin.WhisperSubtitles.Detection;
 using Jellyfin.Plugin.WhisperSubtitles.Scheduling;
@@ -82,6 +83,24 @@ public static class ConfigurationValidation
     /// </remarks>
     public const int LetTheMachineDecide = 0;
 
+    /// <summary>
+    /// The value the quarantine limit carries when nobody has chosen one.
+    /// </summary>
+    /// <remarks>
+    /// Zero, and outside the range <see cref="RetryPolicy"/> accepts on purpose, so
+    /// the sentinel cannot collide with a number of failures an operator meant. It
+    /// is also what an absent element deserialises to, which is what makes every
+    /// configuration this plugin has already written read as nobody having chosen.
+    ///
+    /// The same numeral as <see cref="LetTheMachineDecide"/> and deliberately not
+    /// the same constant. What that one resolves to is a reading of the processors
+    /// this server reports; what this one resolves to is a constant, because nothing
+    /// about a machine says how many times a broken item is worth trying. Sharing
+    /// the name would put a machine's answer and a policy's answer behind one word,
+    /// and the day either default moves is the day that costs something.
+    /// </remarks>
+    public const int LetThePolicyDecide = 0;
+
     private static readonly string[] _validatedFields =
     [
         nameof(PluginConfiguration.SchemaVersion),
@@ -92,6 +111,7 @@ public static class ConfigurationValidation
         nameof(PluginConfiguration.ThreadsPerItem),
         nameof(PluginConfiguration.LocalToolPath),
         nameof(PluginConfiguration.LocalModelPath),
+        nameof(PluginConfiguration.FailuresBeforeQuarantine),
     ];
 
     /// <summary>
@@ -159,9 +179,10 @@ public static class ConfigurationValidation
         var threads = ThreadsPerItem(configuration.ThreadsPerItem, processorCount, complaints);
         var tool = BackendPath(nameof(PluginConfiguration.LocalToolPath), configuration.LocalToolPath, complaints);
         var model = BackendPath(nameof(PluginConfiguration.LocalModelPath), configuration.LocalModelPath, complaints);
+        var failures = FailuresBeforeQuarantine(configuration.FailuresBeforeQuarantine, complaints);
 
         return new ConfigurationLoad(
-            new SettingsInForce(version, backend, target, byLibrary, items, threads, tool, model),
+            new SettingsInForce(version, backend, target, byLibrary, items, threads, tool, model, failures),
             complaints);
     }
 
@@ -221,7 +242,8 @@ public static class ConfigurationValidation
             ConcurrencyCap.Default,
             ThreadCount.DefaultFor(processorCount),
             NoPathNamed,
-            NoPathNamed);
+            NoPathNamed,
+            RetryPolicy.DefaultFailureLimit);
 
     private static ConfigurationLoad Defaults(List<SettingComplaint> complaints, int processorCount) =>
         new(DefaultSettings(processorCount), complaints);
@@ -504,6 +526,46 @@ public static class ConfigurationValidation
                 whenNobodyChose)));
 
         return whenNobodyChose;
+    }
+
+    /// <remarks>
+    /// The same shape as the two resource limits above, with the machine left out of
+    /// it: nobody choosing falls back to a constant rather than to a reading of the
+    /// processors, so the sentence an operator gets names a number that is the same
+    /// on every server.
+    ///
+    /// The rule is asked of <see cref="RetryPolicy"/> rather than restated here, so
+    /// the values a file may carry and the values <see cref="RetryPolicy.Record"/>
+    /// will act on are one rule. Refusing rather than raising is the same trade the
+    /// other limits make: an operator who typed zero and got three would go on
+    /// believing they had switched quarantine off.
+    /// </remarks>
+    /// <param name="declared">The number the file carried.</param>
+    /// <param name="complaints">Where a refused value is recorded.</param>
+    /// <returns>How many counted failures an item gets before it is quarantined.</returns>
+    private static int FailuresBeforeQuarantine(int declared, List<SettingComplaint> complaints)
+    {
+        if (declared == LetThePolicyDecide)
+        {
+            return RetryPolicy.DefaultFailureLimit;
+        }
+
+        var refusal = RetryPolicy.RefuseAsAFailureLimit(declared);
+
+        if (refusal is null)
+        {
+            return declared;
+        }
+
+        complaints.Add(new SettingComplaint(
+            nameof(PluginConfiguration.FailuresBeforeQuarantine),
+            refusal,
+            string.Format(
+                CultureInfo.InvariantCulture,
+                "An item is quarantined after {0} counted failures.",
+                RetryPolicy.DefaultFailureLimit)));
+
+        return RetryPolicy.DefaultFailureLimit;
     }
 
     private static SettingComplaint Row(int index, string problem, string inForce) =>

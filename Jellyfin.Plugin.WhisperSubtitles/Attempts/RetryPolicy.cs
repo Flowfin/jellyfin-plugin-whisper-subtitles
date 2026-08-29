@@ -1,4 +1,5 @@
 using System;
+using System.Globalization;
 
 namespace Jellyfin.Plugin.WhisperSubtitles.Attempts;
 
@@ -23,6 +24,39 @@ public static class RetryPolicy
     /// by hand for something that fixed itself.
     /// </remarks>
     public const int DefaultFailureLimit = 3;
+
+    /// <summary>
+    /// The fewest counted failures a quarantine can be set to happen after.
+    /// </summary>
+    /// <remarks>
+    /// One, because a limit is a count of attempts and zero attempts is not one.
+    /// It is the low end and there is no high end here, which is a deliberate
+    /// absence rather than an oversight: every other limit in this plugin is
+    /// bounded by the machine it runs on, and this one is not. A large limit costs
+    /// one more attempt per run on an item that keeps failing, so the number that
+    /// would be refused above is a number nobody has a reason for, and inventing
+    /// one here would be a rule this type made up rather than one it holds.
+    /// </remarks>
+    public const int SmallestFailureLimit = 1;
+
+    /// <summary>
+    /// Why a number cannot be a failure limit, or null where it can.
+    /// </summary>
+    /// <param name="asked">The number somebody set.</param>
+    /// <returns>What an operator is told, or null where the number is a limit.</returns>
+    /// <remarks>
+    /// The sentence lives here rather than at whatever reads a file, so the rule and
+    /// what an operator is told about it cannot drift apart. <see cref="Record"/>
+    /// throws on the same values, which is the right answer for a caller that has
+    /// already resolved a number and the wrong one for a file somebody edited: a
+    /// plugin that will not load leaves nobody a page to repair it from.
+    /// </remarks>
+    public static string? RefuseAsAFailureLimit(int asked) =>
+        asked < SmallestFailureLimit
+            ? string.Create(
+                CultureInfo.InvariantCulture,
+                $"An item is quarantined after counted failures, and {asked} is not a number of failures.")
+            : null;
 
     /// <summary>
     /// Whether trying this item again, unchanged, could plausibly end differently.
@@ -109,7 +143,7 @@ public static class RetryPolicy
         DateTimeOffset endedAt,
         int failureLimit = DefaultFailureLimit)
     {
-        ArgumentOutOfRangeException.ThrowIfLessThan(failureLimit, 1);
+        ArgumentOutOfRangeException.ThrowIfLessThan(failureLimit, SmallestFailureLimit);
 
         var failures = previous?.Failures ?? 0;
 

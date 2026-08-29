@@ -86,6 +86,25 @@
                         them to a backend is the run this plugin does not perform,
                         and nothing on this page offers the dry run yet either.
                     </div>
+                    <div class="inputContainer">
+                        <label class="inputLabel inputLabelUnfocused" for="FailuresBeforeQuarantine">Failures before an item is set aside</label>
+                        <input is="emby-input" type="number" id="FailuresBeforeQuarantine" min="0" step="1" class="emby-input">
+                        <div class="fieldDescription">
+                            Zero lets this plugin decide, which is three. An item that
+                            fails this many times is quarantined and later runs skip it,
+                            so a broken file is not paid for every night. Runs you stop
+                            yourself never count. A failure nothing about tomorrow
+                            changes, such as an item with no audio, sets the item aside
+                            on the first attempt whatever this number says. Zero
+                            attempts is not a number of attempts and is refused rather
+                            than quietly raised.
+                        </div>
+                        <div class="fieldDescription">
+                            Nothing reads this number yet: what would apply it is the
+                            run this plugin does not perform. Typing it changes what the
+                            file says and not what a server does.
+                        </div>
+                    </div>
                     <div id="WhisperSubtitlesLibraryTargets">
                         <h3 class="checkboxListLabel">Libraries that want something else</h3>
                         <div id="WhisperSubtitlesLibraryTargetRows"></div>
@@ -109,6 +128,7 @@
                 detect: 'detect',
                 noBackendChosen: '',
                 letTheMachineDecide: 0,
+                letThePolicyDecide: 0,
                 localBackend: 'Local',
                 noPathNamed: '',
                 backends: [
@@ -237,19 +257,24 @@
                 return field.value || WhisperSubtitlesConfig.noPathNamed;
             };
 
-            WhisperSubtitlesConfig.limitValue = function (field, stored) {
+            WhisperSubtitlesConfig.limitValue = function (field, stored, whenUnchosen) {
+                // The sentinel is a parameter rather than one constant read here,
+                // because two settings on this page mean different things by nobody
+                // having chosen: one is answered by the machine and one by this
+                // plugin. They share a numeral today and a single reference would
+                // quietly decide for both of them on the day either moves.
                 var held = parseInt(stored, 10);
 
                 field.value = isNaN(held) || held < 0
-                    ? WhisperSubtitlesConfig.letTheMachineDecide
+                    ? whenUnchosen
                     : held;
             };
 
-            WhisperSubtitlesConfig.limitTyped = function (field) {
+            WhisperSubtitlesConfig.limitTyped = function (field, whenUnchosen) {
                 var typed = parseInt(field.value, 10);
 
                 return isNaN(typed) || typed < 0
-                    ? WhisperSubtitlesConfig.letTheMachineDecide
+                    ? whenUnchosen
                     : typed;
             };
 
@@ -296,9 +321,15 @@
                             document.querySelector('#LocalModelPath'), config.LocalModelPath);
 
                         WhisperSubtitlesConfig.limitValue(
-                            document.querySelector('#ItemsAtOnce'), config.ItemsAtOnce);
+                            document.querySelector('#ItemsAtOnce'), config.ItemsAtOnce,
+                            WhisperSubtitlesConfig.letTheMachineDecide);
                         WhisperSubtitlesConfig.limitValue(
-                            document.querySelector('#ThreadsPerItem'), config.ThreadsPerItem);
+                            document.querySelector('#ThreadsPerItem'), config.ThreadsPerItem,
+                            WhisperSubtitlesConfig.letTheMachineDecide);
+                        WhisperSubtitlesConfig.limitValue(
+                            document.querySelector('#FailuresBeforeQuarantine'),
+                            config.FailuresBeforeQuarantine,
+                            WhisperSubtitlesConfig.letThePolicyDecide);
 
                         WhisperSubtitlesConfig.renderLibraries(config);
                         Dashboard.hideLoadingMsg();
@@ -323,9 +354,14 @@
                     config.LocalModelPath = WhisperSubtitlesConfig.pathTyped(
                         document.querySelector('#LocalModelPath'));
                     config.ItemsAtOnce = WhisperSubtitlesConfig.limitTyped(
-                        document.querySelector('#ItemsAtOnce'));
+                        document.querySelector('#ItemsAtOnce'),
+                        WhisperSubtitlesConfig.letTheMachineDecide);
                     config.ThreadsPerItem = WhisperSubtitlesConfig.limitTyped(
-                        document.querySelector('#ThreadsPerItem'));
+                        document.querySelector('#ThreadsPerItem'),
+                        WhisperSubtitlesConfig.letTheMachineDecide);
+                    config.FailuresBeforeQuarantine = WhisperSubtitlesConfig.limitTyped(
+                        document.querySelector('#FailuresBeforeQuarantine'),
+                        WhisperSubtitlesConfig.letThePolicyDecide);
 
                     ApiClient.updatePluginConfiguration(WhisperSubtitlesConfig.pluginUniqueId, config).then(function (result) {
                         Dashboard.processPluginConfigurationUpdateResult(result);

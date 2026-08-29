@@ -6,6 +6,7 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 using System.Xml.Serialization;
+using Jellyfin.Plugin.WhisperSubtitles.Attempts;
 using Jellyfin.Plugin.WhisperSubtitles.Configuration;
 using Jellyfin.Plugin.WhisperSubtitles.Scheduling;
 using Xunit;
@@ -370,7 +371,8 @@ public class ResourceLimitSettingsTests
             items,
             threads,
             ConfigurationValidation.NoPathNamed,
-            ConfigurationValidation.NoPathNamed));
+            ConfigurationValidation.NoPathNamed,
+            RetryPolicy.DefaultFailureLimit));
     }
 
     [Fact]

@@ -176,6 +176,7 @@ chosen. They are the first two settings a backend owns rather than the plugin:
     Jellyfin.Plugin.WhisperSubtitles/Configuration/PluginConfiguration.cs:110:    public int ItemsAtOnce { get; set; } = ConfigurationValidation.LetTheMachineDecide;
     Jellyfin.Plugin.WhisperSubtitles/Configuration/PluginConfiguration.cs:128:    public int ThreadsPerItem { get; set; } = ConfigurationValidation.LetTheMachineDecide;
     Jellyfin.Plugin.WhisperSubtitles/Configuration/PluginConfiguration.cs:148:    public LibraryLanguageTarget[] LibraryTargets { get; set; } = [];
+    Jellyfin.Plugin.WhisperSubtitles/Configuration/PluginConfiguration.cs:175:    public int FailuresBeforeQuarantine { get; set; } = ConfigurationValidation.LetThePolicyDecide;
 
 Typing a path does not check it. Whether a file is there, whether it runs and
 whether it is a model are the readiness probe's questions, which is #15, so what

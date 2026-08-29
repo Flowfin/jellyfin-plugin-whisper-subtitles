@@ -149,6 +149,32 @@ public class PluginConfiguration : BasePluginConfiguration
 #pragma warning restore CA1819
 
     /// <summary>
+    /// Gets or sets how many counted failures an item gets before it is
+    /// quarantined, or zero for the number this plugin decides.
+    /// </summary>
+    /// <remarks>
+    /// Zero out of the box, and zero is not a number of failures. It is the absence
+    /// of a choice, which is what an absent element deserialises to as well, so a
+    /// file written before this setting existed reads as nobody having chosen rather
+    /// than as an item quarantined before it has been tried once.
+    ///
+    /// What zero resolves to is
+    /// <see cref="Attempts.RetryPolicy.DefaultFailureLimit"/>. That is where the
+    /// sentinel differs from the one the two resource limits carry, and the
+    /// difference is worth seeing rather than reading this as the same field again:
+    /// those two resolve against the processors this server reports, and this one
+    /// resolves to a constant, because nothing about a machine says how many times a
+    /// broken item is worth trying.
+    ///
+    /// A value below one is refused rather than quietly raised, and the rule doing
+    /// the refusing is the retry policy's own, so the number a run acts on and the
+    /// number an operator is allowed to type cannot come apart. There is no ceiling,
+    /// and <see cref="Attempts.RetryPolicy.SmallestFailureLimit"/> is where that
+    /// absence is argued.
+    /// </remarks>
+    public int FailuresBeforeQuarantine { get; set; } = ConfigurationValidation.LetThePolicyDecide;
+
+    /// <summary>
     /// The per-library targets in the shape selection reads.
     /// </summary>
     /// <returns>A target per library that names one.</returns>

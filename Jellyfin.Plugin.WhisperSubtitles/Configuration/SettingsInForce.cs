@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Jellyfin.Plugin.WhisperSubtitles.Attempts;
 
 namespace Jellyfin.Plugin.WhisperSubtitles.Configuration;
 
@@ -28,6 +29,7 @@ public sealed class SettingsInForce
     /// <param name="threadsPerItem">How many threads one transcription may use.</param>
     /// <param name="localToolPath">The Whisper program the local backend runs, or none named.</param>
     /// <param name="localModelPath">The model file it is handed, or none named.</param>
+    /// <param name="failuresBeforeQuarantine">How many counted failures an item gets before it is quarantined.</param>
     public SettingsInForce(
         int schemaVersion,
         string backend,
@@ -36,10 +38,14 @@ public sealed class SettingsInForce
         int itemsAtOnce,
         int threadsPerItem,
         string localToolPath,
-        string localModelPath)
+        string localModelPath,
+        int failuresBeforeQuarantine)
     {
         ArgumentOutOfRangeException.ThrowIfLessThan(itemsAtOnce, 1);
         ArgumentOutOfRangeException.ThrowIfLessThan(threadsPerItem, 1);
+        ArgumentOutOfRangeException.ThrowIfLessThan(
+            failuresBeforeQuarantine,
+            RetryPolicy.SmallestFailureLimit);
 
         SchemaVersion = schemaVersion;
         Backend = backend;
@@ -49,6 +55,7 @@ public sealed class SettingsInForce
         ThreadsPerItem = threadsPerItem;
         LocalToolPath = localToolPath;
         LocalModelPath = localModelPath;
+        FailuresBeforeQuarantine = failuresBeforeQuarantine;
     }
 
     /// <summary>
@@ -126,4 +133,18 @@ public sealed class SettingsInForce
     /// is one somebody typed and not one that opens.
     /// </remarks>
     public string LocalModelPath { get; }
+
+    /// <summary>
+    /// Gets how many counted failures an item gets before it is quarantined.
+    /// </summary>
+    /// <remarks>
+    /// Resolved rather than the zero the file may carry, for the reason
+    /// <see cref="ItemsAtOnce"/> is, and refused below
+    /// <see cref="RetryPolicy.SmallestFailureLimit"/> at construction because every
+    /// value this type can hold is one <see cref="RetryPolicy.Record"/> will act on,
+    /// and that method throws on the same values. Refusing here rather than there is
+    /// the difference between a run that cannot start and a page an operator can
+    /// repair the file from.
+    /// </remarks>
+    public int FailuresBeforeQuarantine { get; }
 }
