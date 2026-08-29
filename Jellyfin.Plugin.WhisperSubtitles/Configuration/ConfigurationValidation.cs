@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 using Jellyfin.Plugin.WhisperSubtitles.Backends;
 using Jellyfin.Plugin.WhisperSubtitles.Detection;
 using Jellyfin.Plugin.WhisperSubtitles.Scheduling;
@@ -59,6 +60,17 @@ public static class ConfigurationValidation
     public const string NoBackendChosen = "";
 
     /// <summary>
+    /// The default for a backend path nobody has typed: none named.
+    /// </summary>
+    /// <remarks>
+    /// Blank rather than a location this plugin would look in. A default naming a
+    /// usual place would be a plugin that runs whatever is there, on a server where
+    /// nobody chose it, and the two paths this covers are a program that executes
+    /// and a file it loads.
+    /// </remarks>
+    public const string NoPathNamed = "";
+
+    /// <summary>
     /// The value a resource limit carries when nobody has chosen one.
     /// </summary>
     /// <remarks>
@@ -78,6 +90,8 @@ public static class ConfigurationValidation
         nameof(PluginConfiguration.LibraryTargets),
         nameof(PluginConfiguration.ItemsAtOnce),
         nameof(PluginConfiguration.ThreadsPerItem),
+        nameof(PluginConfiguration.LocalToolPath),
+        nameof(PluginConfiguration.LocalModelPath),
     ];
 
     /// <summary>
@@ -143,9 +157,11 @@ public static class ConfigurationValidation
         var byLibrary = LibraryTargets(configuration.LibraryTargets, complaints);
         var items = ItemsAtOnce(configuration.ItemsAtOnce, processorCount, complaints);
         var threads = ThreadsPerItem(configuration.ThreadsPerItem, processorCount, complaints);
+        var tool = BackendPath(nameof(PluginConfiguration.LocalToolPath), configuration.LocalToolPath, complaints);
+        var model = BackendPath(nameof(PluginConfiguration.LocalModelPath), configuration.LocalModelPath, complaints);
 
         return new ConfigurationLoad(
-            new SettingsInForce(version, backend, target, byLibrary, items, threads),
+            new SettingsInForce(version, backend, target, byLibrary, items, threads, tool, model),
             complaints);
     }
 
@@ -203,7 +219,9 @@ public static class ConfigurationValidation
             NoTargetLanguage,
             new Dictionary<Guid, string>(),
             ConcurrencyCap.Default,
-            ThreadCount.DefaultFor(processorCount));
+            ThreadCount.DefaultFor(processorCount),
+            NoPathNamed,
+            NoPathNamed);
 
     private static ConfigurationLoad Defaults(List<SettingComplaint> complaints, int processorCount) =>
         new(DefaultSettings(processorCount), complaints);
@@ -287,6 +305,56 @@ public static class ConfigurationValidation
             "No language is chosen, so no item is selected."));
 
         return NoTargetLanguage;
+    }
+
+    /// <remarks>
+    /// The one rule a path can be held to without touching a disk, and the whole of
+    /// what is decided here. Surrounding whitespace is taken off, because a path
+    /// pasted out of a file manager or a terminal carries it and the failure it
+    /// causes names a path that reads correctly; that is the same trim
+    /// <see cref="Backend"/> and <see cref="TargetLanguage"/> already do, rather
+    /// than a rule of this field's own.
+    ///
+    /// What is refused is a control character left inside the value after that trim.
+    /// No path an operator typed into a page contains one; what does is a value that
+    /// arrived with a line break in the middle of it, from a paste that wrapped or
+    /// from the file being edited by hand. It fails inside a process launch or a
+    /// file open, and the message it fails with prints the path on two lines or
+    /// stops at the break, so the operator is shown something that looks like what
+    /// they meant.
+    ///
+    /// Nothing else is decided. Whether a file is at either path, whether it
+    /// executes, and whether it is a model are questions about a disk, they are the
+    /// readiness probe in #15, and answering any of them here would put the same
+    /// question in two places and let the two disagree. A path this accepts is a
+    /// path somebody named, which is all
+    /// <see cref="Backends.Local.LocalBackendOptions.IsComplete"/> claims about the
+    /// same value.
+    /// </remarks>
+    /// <param name="field">The setting being read, for the complaint.</param>
+    /// <param name="declared">The path the file carried.</param>
+    /// <param name="complaints">Where a refused value is recorded.</param>
+    /// <returns>The path the local backend is given, or none named.</returns>
+    private static string BackendPath(string field, string? declared, List<SettingComplaint> complaints)
+    {
+        if (string.IsNullOrWhiteSpace(declared))
+        {
+            return NoPathNamed;
+        }
+
+        var trimmed = declared.Trim();
+
+        if (!trimmed.Any(char.IsControl))
+        {
+            return trimmed;
+        }
+
+        complaints.Add(new SettingComplaint(
+            field,
+            "the path holds a line break or another control character, which no path typed on the page does.",
+            "No path is named, so the local backend reports that it is not configured."));
+
+        return NoPathNamed;
     }
 
     private static Dictionary<Guid, string> LibraryTargets(

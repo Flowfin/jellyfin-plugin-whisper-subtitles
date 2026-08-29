@@ -45,6 +45,37 @@ public class PluginConfiguration : BasePluginConfiguration
     public string Backend { get; set; } = ConfigurationValidation.NoBackendChosen;
 
     /// <summary>
+    /// Gets or sets the path to the Whisper program the local backend runs, or
+    /// empty when the operator has named none.
+    /// </summary>
+    /// <remarks>
+    /// Empty out of the box, and empty means the local backend cannot run. There is
+    /// no default worth writing: the program is one the operator installed, this
+    /// plugin never downloads it, and a guess at a location would be a plugin
+    /// launching whatever happens to sit at a path nobody typed.
+    ///
+    /// Trimmed and otherwise carried through untouched. Whether a file is there,
+    /// whether it runs, and whether it speaks the command line this backend uses are
+    /// the readiness probe's questions and are #15; the local backend's own options
+    /// type says the same thing about the same value, and this property does not
+    /// make a second rule about it.
+    /// </remarks>
+    public string LocalToolPath { get; set; } = ConfigurationValidation.NoPathNamed;
+
+    /// <summary>
+    /// Gets or sets the path to the model file the local backend hands that program,
+    /// or empty when the operator has named none.
+    /// </summary>
+    /// <remarks>
+    /// Empty for the reason <see cref="LocalToolPath"/> is empty, and here the
+    /// reason is a fixed property of this plugin rather than a default somebody
+    /// chose: the model is a file the operator supplies, nothing here downloads
+    /// several gigabytes it was not asked for, and a path pointing at a file that
+    /// was never fetched is the same state as no path at all.
+    /// </remarks>
+    public string LocalModelPath { get; set; } = ConfigurationValidation.NoPathNamed;
+
+    /// <summary>
     /// Gets or sets the language a library gets when it names none: a language
     /// code, or the reserved word for detection.
     /// </summary>

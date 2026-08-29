@@ -15,10 +15,10 @@
                             <option value="">Not chosen yet, and nothing runs</option>
                         </select>
                         <div class="fieldDescription">
-                            Naming a backend here is the whole of what this field does
-                            today. What each one needs to run is not on this page yet, so
-                            a run reports which setting is missing and transcribes
-                            nothing.
+                            The local backend's own two settings appear below when it is
+                            chosen. The remote endpoint's are not on this page yet, so
+                            choosing it leaves a run reporting which setting is missing
+                            and transcribing nothing.
                         </div>
                     </div>
                     <div class="selectContainer">
@@ -32,6 +32,29 @@
                             While this is unchosen no item is selected, so a fresh
                             install transcribes nothing into a language nobody asked
                             for.
+                        </div>
+                    </div>
+                    <div id="WhisperSubtitlesLocalSettings">
+                        <div class="inputContainer">
+                            <label class="inputLabel inputLabelUnfocused" for="LocalToolPath">Whisper program on this machine</label>
+                            <input is="emby-input" type="text" id="LocalToolPath" class="emby-input">
+                            <div class="fieldDescription">
+                                The full path to the whisper.cpp compatible command line
+                                program you installed. This plugin never downloads one.
+                            </div>
+                        </div>
+                        <div class="inputContainer">
+                            <label class="inputLabel inputLabelUnfocused" for="LocalModelPath">Model file to hand it</label>
+                            <input is="emby-input" type="text" id="LocalModelPath" class="emby-input">
+                            <div class="fieldDescription">
+                                The full path to the model file you downloaded yourself.
+                                Which model to choose is in the operator guide.
+                            </div>
+                        </div>
+                        <div class="fieldDescription">
+                            Neither path is checked here. Whether a file is there, whether
+                            it runs and whether it is a model are answered when the
+                            backend is asked, and nothing on this page asks it yet.
                         </div>
                     </div>
                     <div class="inputContainer">
@@ -86,6 +109,8 @@
                 detect: 'detect',
                 noBackendChosen: '',
                 letTheMachineDecide: 0,
+                localBackend: 'Local',
+                noPathNamed: '',
                 backends: [
                     { name: 'None', label: 'None, and nothing is transcribed' },
                     { name: 'Local', label: 'Local, a Whisper program on this machine' },
@@ -192,6 +217,26 @@
                 });
             };
 
+            WhisperSubtitlesConfig.showLocalSettings = function (chosen) {
+                // Hidden rather than shown disabled. A disabled field an operator
+                // cannot use still asks them for a model path while they are
+                // configuring an endpoint somewhere else, and it reads as a setting
+                // that broke rather than as one that does not apply.
+                document.querySelector('#WhisperSubtitlesLocalSettings').style.display =
+                    chosen === WhisperSubtitlesConfig.localBackend ? '' : 'none';
+            };
+
+            WhisperSubtitlesConfig.pathValue = function (field, stored) {
+                field.value = stored || WhisperSubtitlesConfig.noPathNamed;
+            };
+
+            WhisperSubtitlesConfig.pathTyped = function (field) {
+                // Sent as typed. What comes off a page is checked once, where every
+                // other value from this file is checked, and a second trim here would
+                // be the same rule in two places with nothing keeping them equal.
+                return field.value || WhisperSubtitlesConfig.noPathNamed;
+            };
+
             WhisperSubtitlesConfig.limitValue = function (field, stored) {
                 var held = parseInt(stored, 10);
 
@@ -239,6 +284,17 @@
                         WhisperSubtitlesConfig.fillLanguages(target, false);
                         target.value = config.TargetLanguage || WhisperSubtitlesConfig.followsTheDefault;
 
+                        WhisperSubtitlesConfig.showLocalSettings(chosen);
+                        backend.addEventListener('change', function () {
+                            WhisperSubtitlesConfig.showLocalSettings(
+                                document.querySelector('#Backend').value);
+                        });
+
+                        WhisperSubtitlesConfig.pathValue(
+                            document.querySelector('#LocalToolPath'), config.LocalToolPath);
+                        WhisperSubtitlesConfig.pathValue(
+                            document.querySelector('#LocalModelPath'), config.LocalModelPath);
+
                         WhisperSubtitlesConfig.limitValue(
                             document.querySelector('#ItemsAtOnce'), config.ItemsAtOnce);
                         WhisperSubtitlesConfig.limitValue(
@@ -262,6 +318,10 @@
                     config.Backend = document.querySelector('#Backend').value;
                     config.TargetLanguage = document.querySelector('#TargetLanguage').value;
                     config.LibraryTargets = WhisperSubtitlesConfig.collectLibraries();
+                    config.LocalToolPath = WhisperSubtitlesConfig.pathTyped(
+                        document.querySelector('#LocalToolPath'));
+                    config.LocalModelPath = WhisperSubtitlesConfig.pathTyped(
+                        document.querySelector('#LocalModelPath'));
                     config.ItemsAtOnce = WhisperSubtitlesConfig.limitTyped(
                         document.querySelector('#ItemsAtOnce'));
                     config.ThreadsPerItem = WhisperSubtitlesConfig.limitTyped(
