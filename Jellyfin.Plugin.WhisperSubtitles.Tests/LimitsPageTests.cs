@@ -88,6 +88,12 @@ public class LimitsPageTests
     /// </summary>
     private const string Closing = "When this list is checked against the code";
 
+    /// <summary>
+    /// The one entry whose evidence is what another file says rather than that it
+    /// exists. Named here because the leg that reads it has to find it by title.
+    /// </summary>
+    private const string Accuracy = "It promises nothing about accuracy";
+
     private static readonly Regex _heading = new(
         @"^## (?<title>.+?)\r?$",
         RegexOptions.Multiline | RegexOptions.CultureInvariant,
@@ -390,6 +396,97 @@ public class LimitsPageTests
 
         Assert.NotEmpty(fixtures);
         Assert.All(fixtures, path => Assert.EndsWith(".md.fixture", path, StringComparison.Ordinal));
+    }
+
+    /// <summary>
+    /// The accuracy entry rests on a sentence in another file, and this reads that
+    /// file rather than the page's account of it.
+    /// </summary>
+    /// <remarks>
+    /// It is the only claim on this page whose evidence is WORDING somebody can
+    /// change without opening the page. Every other entry points at a source file
+    /// or a suite, and the two resolution legs above ask whether those names exist,
+    /// which is enough for evidence that is evidence by existing. The manifest
+    /// description is shipped to an operator and is the text a catalogue shows, so
+    /// it is edited for reasons that have nothing to do with this page, and the
+    /// accident this refuses is the promise leaving build.yaml while the page goes
+    /// on saying the manifest carries one.
+    ///
+    /// What it compares is one claim and not the paragraph around it. A description
+    /// carrying the promise inside a sentence that says something else passes, and
+    /// so does a page drawing a wrong conclusion from wording that is really there.
+    /// It has no opinion about the other half of the entry either: that the marking
+    /// was decided in the issue named beside it is a tracker fact, and this suite
+    /// reaches no tracker.
+    /// </remarks>
+    [Fact]
+    public void The_manifest_carries_the_promise_the_accuracy_entry_says_it_carries()
+    {
+        var entry = Entries(Page())
+            .SingleOrDefault(section => section.Title.Equals(Accuracy, StringComparison.Ordinal));
+
+        Assert.True(
+            entry is not null,
+            $"the limits page carries no entry titled \"{Accuracy}\", so this leg compared nothing");
+
+        Assert.Contains(
+            "build.yaml",
+            Backticked(entry!.Body),
+            StringComparer.Ordinal);
+
+        var description = ManifestDescription();
+
+        Assert.Contains(
+            "promises nothing about its accuracy",
+            description,
+            StringComparison.Ordinal);
+
+        Assert.Contains(
+            "does not measure",
+            description,
+            StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// Guards the reader above rather than the manifest, for the reason
+    /// <c>PluginIdentityTests</c> guards its own: a reader that quietly stopped
+    /// finding the block would make the leg above pass by comparing nothing.
+    /// </summary>
+    [Fact]
+    public void The_description_reader_returns_the_block_and_stops_at_the_next_key()
+    {
+        var description = ManifestDescription();
+
+        Assert.False(string.IsNullOrWhiteSpace(description));
+        Assert.DoesNotContain("category:", description, StringComparison.Ordinal);
+        Assert.DoesNotContain("artifacts:", description, StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// The manifest's description, which is a folded block scalar and so is outside
+    /// what <c>PluginIdentityTests</c>'s line reader declares it can do.
+    /// </summary>
+    /// <remarks>
+    /// Still a line reader and not a YAML parser. It takes the indented lines that
+    /// follow the key and joins them the way a folded block folds, which is what
+    /// this manifest's description is written as. It reads the checkout rather than
+    /// the copy beside the assembly, so it is the same bytes the page beside it is
+    /// read from.
+    /// </remarks>
+    private static string ManifestDescription()
+    {
+        var lines = File.ReadAllLines(Path.Combine(RepositoryRoot(), "build.yaml"));
+        var start = Array.FindIndex(lines, line => line.StartsWith("description:", StringComparison.Ordinal));
+
+        Assert.True(
+            start >= 0,
+            "build.yaml declares no description, so there is nothing for the accuracy entry to rest on");
+
+        return string.Join(
+            " ",
+            lines.Skip(start + 1)
+                .TakeWhile(line => line.Length > 0 && char.IsWhiteSpace(line[0]))
+                .Select(line => line.Trim()));
     }
 
     private static Section Entry(string title) =>
