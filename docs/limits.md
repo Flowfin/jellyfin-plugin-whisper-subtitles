@@ -106,8 +106,18 @@ this plugin does not measure the difference or claim one.
 
 Held today in what the plugin says about itself: the manifest description in
 `build.yaml` states that it promises nothing about accuracy, which it does not
-measure. Subtitles it writes are marked as machine made so a viewer can tell one
-from a subtitle a person wrote, which is #26.
+measure, and `LimitsPageTests` reads that description rather than trusting this
+sentence, so a manifest that loses the promise takes this paragraph red with it.
+Subtitles it writes are marked as machine made so a viewer can tell one from a
+subtitle a person wrote, which is #26.
+
+Decided in #57, and this is the one entry here whose decision was taken in the
+issue that asked for this page rather than in an issue of its own. #26 is named
+above for the marking and says nothing about accuracy, so a reader who followed
+it looking for this decision would arrive at a different subject. Where to argue
+with it is that issue's own list of limits, together with the manifest sentence
+above, which is this plugin saying it to an operator rather than to a reader of
+this page.
 
 ## It starts nothing on its own
 
