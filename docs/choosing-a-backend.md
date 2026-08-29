@@ -158,25 +158,33 @@ arrival of a pipeline, which would leave this page reading as a walkthrough of
 something that works, and the sentence disappearing while nothing runs, which
 would leave the same impression more quietly. The join is #183.
 
-Three things this page would otherwise tell an operator to do follow from that.
-Two are absent for the same reason. The third has arrived as far as a field on a
-page and no further, which is a state worth naming rather than filing under
-either.
+Four things this page would otherwise tell an operator to do follow from that,
+and they are in three states rather than two. Two have arrived as far as a field
+on a page and no further, which is worth naming rather than filing under either of
+the others. One is absent. One does not exist to be run.
 
-**Where the tool path, the model path, the URL and the key are typed.** Nowhere
-yet. The configuration holds six properties and none of them is a backend's own
-setting:
+**Where the tool path and the model path are typed.** On the configuration page,
+under the backend chooser, and they appear there only while `Local` is the backend
+chosen. They are the first two settings a backend owns rather than the plugin:
 
     git grep -n 'public .* { get; set; }' -- Jellyfin.Plugin.WhisperSubtitles/Configuration/PluginConfiguration.cs
     Jellyfin.Plugin.WhisperSubtitles/Configuration/PluginConfiguration.cs:33:    public int SchemaVersion { get; set; } = ConfigurationValidation.CurrentSchemaVersion;
     Jellyfin.Plugin.WhisperSubtitles/Configuration/PluginConfiguration.cs:45:    public string Backend { get; set; } = ConfigurationValidation.NoBackendChosen;
-    Jellyfin.Plugin.WhisperSubtitles/Configuration/PluginConfiguration.cs:58:    public string TargetLanguage { get; set; } = string.Empty;
-    Jellyfin.Plugin.WhisperSubtitles/Configuration/PluginConfiguration.cs:79:    public int ItemsAtOnce { get; set; } = ConfigurationValidation.LetTheMachineDecide;
-    Jellyfin.Plugin.WhisperSubtitles/Configuration/PluginConfiguration.cs:97:    public int ThreadsPerItem { get; set; } = ConfigurationValidation.LetTheMachineDecide;
-    Jellyfin.Plugin.WhisperSubtitles/Configuration/PluginConfiguration.cs:117:    public LibraryLanguageTarget[] LibraryTargets { get; set; } = [];
+    Jellyfin.Plugin.WhisperSubtitles/Configuration/PluginConfiguration.cs:63:    public string LocalToolPath { get; set; } = ConfigurationValidation.NoPathNamed;
+    Jellyfin.Plugin.WhisperSubtitles/Configuration/PluginConfiguration.cs:76:    public string LocalModelPath { get; set; } = ConfigurationValidation.NoPathNamed;
+    Jellyfin.Plugin.WhisperSubtitles/Configuration/PluginConfiguration.cs:89:    public string TargetLanguage { get; set; } = string.Empty;
+    Jellyfin.Plugin.WhisperSubtitles/Configuration/PluginConfiguration.cs:110:    public int ItemsAtOnce { get; set; } = ConfigurationValidation.LetTheMachineDecide;
+    Jellyfin.Plugin.WhisperSubtitles/Configuration/PluginConfiguration.cs:128:    public int ThreadsPerItem { get; set; } = ConfigurationValidation.LetTheMachineDecide;
+    Jellyfin.Plugin.WhisperSubtitles/Configuration/PluginConfiguration.cs:148:    public LibraryLanguageTarget[] LibraryTargets { get; set; } = [];
 
-Choosing `Local` or `Remote` on the page today reaches selection, which reports
-which settings are not filled in and transcribes nothing. The page is #36.
+Typing a path does not check it. Whether a file is there, whether it runs and
+whether it is a model are the readiness probe's questions, which is #15, so what
+these two fields buy today is that the values a run would use are values an
+operator chose rather than values nobody could set.
+
+**Where the URL and the key are typed.** Nowhere yet. The remote endpoint's own
+settings are not on the page, and choosing `Remote` reaches selection, which
+reports which settings are not filled in and transcribes nothing. The page is #36.
 
 **How to run the calibration so the estimate is about this machine.** There is no
 calibration to run. The arithmetic that folds measured items into a factor exists
@@ -194,8 +202,8 @@ what the file says rather than what a server does.
 The two fields on the page:
 
     git grep -n 'public int ItemsAtOnce\|public int ThreadsPerItem' -- Jellyfin.Plugin.WhisperSubtitles/Configuration/PluginConfiguration.cs
-    Jellyfin.Plugin.WhisperSubtitles/Configuration/PluginConfiguration.cs:79:    public int ItemsAtOnce { get; set; } = ConfigurationValidation.LetTheMachineDecide;
-    Jellyfin.Plugin.WhisperSubtitles/Configuration/PluginConfiguration.cs:97:    public int ThreadsPerItem { get; set; } = ConfigurationValidation.LetTheMachineDecide;
+    Jellyfin.Plugin.WhisperSubtitles/Configuration/PluginConfiguration.cs:110:    public int ItemsAtOnce { get; set; } = ConfigurationValidation.LetTheMachineDecide;
+    Jellyfin.Plugin.WhisperSubtitles/Configuration/PluginConfiguration.cs:128:    public int ThreadsPerItem { get; set; } = ConfigurationValidation.LetTheMachineDecide;
 
 Zero on either means nobody has chosen and the machine decides. A number above
 one per processor is refused rather than quietly reduced, and what is in force

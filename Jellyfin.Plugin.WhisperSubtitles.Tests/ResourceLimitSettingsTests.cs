@@ -368,7 +368,9 @@ public class ResourceLimitSettingsTests
             ConfigurationValidation.NoTargetLanguage,
             new Dictionary<Guid, string>(),
             items,
-            threads));
+            threads,
+            ConfigurationValidation.NoPathNamed,
+            ConfigurationValidation.NoPathNamed));
     }
 
     [Fact]

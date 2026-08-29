@@ -284,7 +284,9 @@ public sealed class DryRunTests
                 "en",
                 new Dictionary<Guid, string>(),
                 itemsAtOnce,
-                threadsPerItem),
+                threadsPerItem,
+                ConfigurationValidation.NoPathNamed,
+                ConfigurationValidation.NoPathNamed),
             backend,
             model,
             calibration ?? new CalibrationLedger());

@@ -26,13 +26,17 @@ public sealed class SettingsInForce
     /// <param name="targetLanguagesByLibrary">The libraries that ask for something else.</param>
     /// <param name="itemsAtOnce">How many items the run transcribes at once.</param>
     /// <param name="threadsPerItem">How many threads one transcription may use.</param>
+    /// <param name="localToolPath">The Whisper program the local backend runs, or none named.</param>
+    /// <param name="localModelPath">The model file it is handed, or none named.</param>
     public SettingsInForce(
         int schemaVersion,
         string backend,
         string targetLanguage,
         IReadOnlyDictionary<Guid, string> targetLanguagesByLibrary,
         int itemsAtOnce,
-        int threadsPerItem)
+        int threadsPerItem,
+        string localToolPath,
+        string localModelPath)
     {
         ArgumentOutOfRangeException.ThrowIfLessThan(itemsAtOnce, 1);
         ArgumentOutOfRangeException.ThrowIfLessThan(threadsPerItem, 1);
@@ -43,6 +47,8 @@ public sealed class SettingsInForce
         TargetLanguagesByLibrary = targetLanguagesByLibrary;
         ItemsAtOnce = itemsAtOnce;
         ThreadsPerItem = threadsPerItem;
+        LocalToolPath = localToolPath;
+        LocalModelPath = localModelPath;
     }
 
     /// <summary>
@@ -97,4 +103,27 @@ public sealed class SettingsInForce
     /// the same reason.
     /// </remarks>
     public int ThreadsPerItem { get; }
+
+    /// <summary>
+    /// Gets the Whisper program the local backend runs, or none named.
+    /// </summary>
+    /// <remarks>
+    /// Not refused at construction, and that is the difference from the two limits
+    /// above. Every number they can hold is one a run will act on, so a value
+    /// outside their range has no meaning; a path nobody has typed has one, and it
+    /// is the state a fresh install is in. What answers it is selection reporting
+    /// that the local backend is not configured, which is a sentence an operator can
+    /// repair from, rather than a plugin that fails to construct its own settings.
+    /// </remarks>
+    public string LocalToolPath { get; }
+
+    /// <summary>
+    /// Gets the model file the local backend hands that program, or none named.
+    /// </summary>
+    /// <remarks>
+    /// Empty for the reason <see cref="LocalToolPath"/> may be empty. Named rather
+    /// than checked: nothing here has looked at a disk, so a path in this property
+    /// is one somebody typed and not one that opens.
+    /// </remarks>
+    public string LocalModelPath { get; }
 }
