@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using Jellyfin.Plugin.WhisperSubtitles.Attempts;
 using Jellyfin.Plugin.WhisperSubtitles.Audio;
 using Jellyfin.Plugin.WhisperSubtitles.Backends;
 using Jellyfin.Plugin.WhisperSubtitles.Calibration;
@@ -286,7 +287,8 @@ public sealed class DryRunTests
                 itemsAtOnce,
                 threadsPerItem,
                 ConfigurationValidation.NoPathNamed,
-                ConfigurationValidation.NoPathNamed),
+                ConfigurationValidation.NoPathNamed,
+                RetryPolicy.DefaultFailureLimit),
             backend,
             model,
             calibration ?? new CalibrationLedger());
