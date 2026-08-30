@@ -69,6 +69,8 @@ internal sealed class ScriptedProcess : IStartedProcess
     private readonly bool _keepsRunning;
     private readonly TaskCompletionSource _killed = new();
     private readonly TaskCompletionSource _reachedTheEndOfItsOutput = new();
+    private Exception? _refusesToLowerPriority;
+    private int _linesRead;
 
     private ScriptedProcess(IReadOnlyList<string> lines, int exitCode, bool keepsRunning, string standardError)
     {
@@ -86,6 +88,28 @@ internal sealed class ScriptedProcess : IStartedProcess
     /// that only watched the token would leave this false.
     /// </remarks>
     public bool KillRequested { get; private set; }
+
+    /// <summary>
+    /// Gets a value indicating whether the caller asked for a lower priority.
+    /// </summary>
+    /// <remarks>
+    /// A caller that meant to ask and did not leaves this false, which is the only
+    /// difference between a limit that is applied and one that is described in a
+    /// remark.
+    /// </remarks>
+    public bool LowerPriorityRequested { get; private set; }
+
+    /// <summary>
+    /// Gets what the caller had already read when it asked for a lower priority,
+    /// or null while it has not asked.
+    /// </summary>
+    /// <remarks>
+    /// The ask is worth nothing at the end of a transcription, so a test reads
+    /// this rather than only the flag above: an ask made after the tool has
+    /// printed its whole transcript has let the item run at the ordinary priority
+    /// for all of the time that mattered.
+    /// </remarks>
+    public int? LinesReadWhenPriorityWasAsked { get; private set; }
 
     /// <summary>
     /// Gets a value indicating whether the caller disposed the process.
@@ -120,6 +144,33 @@ internal sealed class ScriptedProcess : IStartedProcess
 
     public Task<int> WaitForExitAsync() => Task.FromResult(_exitCode);
 
+    /// <summary>
+    /// Makes this process one whose priority the platform will not lower.
+    /// </summary>
+    /// <remarks>
+    /// The exception a test hands in is the point rather than a detail: the real
+    /// implementation throws whatever the platform throws, so a caller that
+    /// catches one named type would pass a test written against that type and
+    /// fail on the machine that throws another.
+    /// </remarks>
+    public ScriptedProcess RefusingToLowerPriority(Exception refusal)
+    {
+        _refusesToLowerPriority = refusal;
+
+        return this;
+    }
+
+    public void LowerPriority()
+    {
+        LowerPriorityRequested = true;
+        LinesReadWhenPriorityWasAsked = _linesRead;
+
+        if (_refusesToLowerPriority is not null)
+        {
+            throw _refusesToLowerPriority;
+        }
+    }
+
     public void Kill()
     {
         KillRequested = true;
@@ -133,6 +184,8 @@ internal sealed class ScriptedProcess : IStartedProcess
     {
         foreach (var line in _lines)
         {
+            _linesRead++;
+
             yield return line;
         }
 

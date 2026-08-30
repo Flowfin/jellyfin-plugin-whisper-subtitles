@@ -227,7 +227,7 @@ Half the processors, rounded down, and one on a single-processor machine, where
 there is no value below it. That number reaches the local tool on every run:
 
     git grep -n '"-t",' -- Jellyfin.Plugin.WhisperSubtitles/Backends/Local/LocalWhisperBackend.cs
-    Jellyfin.Plugin.WhisperSubtitles/Backends/Local/LocalWhisperBackend.cs:306:            "-t",
+    Jellyfin.Plugin.WhisperSubtitles/Backends/Local/LocalWhisperBackend.cs:359:            "-t",
 
 It is passed on every run rather than only when it differs from something,
 because there is no value of that flag meaning "whatever you would have done".

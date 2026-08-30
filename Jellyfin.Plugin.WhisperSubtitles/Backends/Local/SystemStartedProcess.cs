@@ -67,6 +67,18 @@ internal sealed class SystemStartedProcess : IStartedProcess
     }
 
     /// <inheritdoc />
+    /// <remarks>
+    /// Below normal rather than idle. Idle is the class that is scheduled only
+    /// when nothing else wants the machine at all, and a transcription that never
+    /// finishes is a limit that turned into a refusal to work.
+    ///
+    /// Nothing is caught here. The platforms that refuse this, and the accounts
+    /// that may not do it, are real, and what a refusal costs is the caller's to
+    /// decide rather than this class's to hide.
+    /// </remarks>
+    public void LowerPriority() => _process.PriorityClass = ProcessPriorityClass.BelowNormal;
+
+    /// <inheritdoc />
     public void Kill()
     {
         try

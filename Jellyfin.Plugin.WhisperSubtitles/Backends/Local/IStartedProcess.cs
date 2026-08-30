@@ -42,6 +42,25 @@ public interface IStartedProcess : IDisposable
     Task<int> WaitForExitAsync();
 
     /// <summary>
+    /// Asks the operating system to schedule the program below ordinary work.
+    /// </summary>
+    /// <remarks>
+    /// On the seam for the same reason <see cref="Kill"/> is: a caller that meant
+    /// to ask and did not is indistinguishable from one that asked, unless the
+    /// asking is something a double can see.
+    ///
+    /// Downward only. Raising a priority is the direction that needs a privilege,
+    /// and nothing in this plugin offers it.
+    ///
+    /// THIS ONE MAY THROW, and that is the difference from <see cref="Kill"/>.
+    /// Lowering a priority is not available on every platform and is not
+    /// permitted to every account, and the caller decides what a refusal costs.
+    /// Swallowing it here would make the promise that a refused priority does not
+    /// spoil the work a promise no test could read.
+    /// </remarks>
+    void LowerPriority();
+
+    /// <summary>
     /// Ends the program now, without waiting for it.
     /// </summary>
     /// <remarks>
