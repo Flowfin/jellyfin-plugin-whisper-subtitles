@@ -238,6 +238,13 @@ public sealed class LocalWhisperBackend : ITranscriptionBackend
                 // nobody reading what it prints.
                 using var killOnCancellation = cancellationToken.Register(process.Kill);
 
+                // After the registration and before the first line is read. After,
+                // because a cancellation that surfaces here is carried by the catch
+                // below, which ends the child; before, because a priority asked for
+                // once the transcript has been printed has let the item run at the
+                // ordinary one for all of the time that mattered.
+                LowerPriorityBestEffort(process);
+
                 var reader = new WhisperOutputReader();
 
                 await foreach (var line in process.StandardOutputLines.WithCancellation(cancellationToken).ConfigureAwait(false))
@@ -279,6 +286,52 @@ public sealed class LocalWhisperBackend : ITranscriptionBackend
 
                 throw;
             }
+        }
+    }
+
+    /// <summary>
+    /// Asks the child to be scheduled below the work this machine was bought for,
+    /// and treats a refusal as nothing.
+    /// </summary>
+    /// <remarks>
+    /// The transcription is the one thing this plugin runs that will take every
+    /// core it is given for as long as it is given them, and the server it runs
+    /// beside is streaming to somebody. A run that finished sooner and made
+    /// playback stutter is the failure this asks against, and it costs the run
+    /// nothing on a machine with a core to spare, because a lower priority is only
+    /// consulted when something else wants the processor.
+    ///
+    /// Best effort by design rather than by oversight. Lowering a priority is not
+    /// available on every platform and not permitted to every account, and a
+    /// transcription that ran at the ordinary priority is a worse run rather than
+    /// a failed one, so a refusal must not reach the item.
+    ///
+    /// The swallow is HERE rather than behind the seam, so a double that refuses
+    /// can be handed to a run and the item watched surviving it. Inside
+    /// <see cref="SystemStartedProcess"/> the same swallow would be a promise
+    /// nothing in the suite could read.
+    ///
+    /// WHAT THIS DOES NOT DO IS LOG. This plugin does not log at all, and
+    /// docs/logging.md is the table the first change that logs is measured
+    /// against, with the three tests that hold it owed by #73. So the half of
+    /// #22's sentence that says a failure to lower the priority is logged is not
+    /// carried here, and an operator whose platform refuses this is not told.
+    ///
+    /// It reaches this backend's child and no other. The media tool that extracts
+    /// the audio is started through the same seam by <c>AudioExtractor</c>, and
+    /// nothing lowers that one.
+    /// </remarks>
+    /// <param name="process">The child that has just been started.</param>
+    private static void LowerPriorityBestEffort(IStartedProcess process)
+    {
+        try
+        {
+            process.LowerPriority();
+        }
+        catch (Exception refused) when (refused is not OperationCanceledException)
+        {
+            // Nothing here can repair it and nothing may report it yet. The
+            // remarks above say why both halves are deliberate.
         }
     }
 

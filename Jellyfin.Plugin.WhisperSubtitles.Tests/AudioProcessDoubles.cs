@@ -134,9 +134,22 @@ internal sealed class MediaToolProcess : IStartedProcess
     /// </summary>
     public bool Disposed { get; private set; }
 
+    /// <summary>
+    /// Gets a value indicating whether the caller asked for a lower priority.
+    /// </summary>
+    /// <remarks>
+    /// False on every run today, and it is here so that the day something lowers
+    /// the media tool's priority the double can say so. Nothing asks it now:
+    /// <c>LocalWhisperBackend</c> lowers the transcription child and the
+    /// extractor's child is not covered by #22 yet.
+    /// </remarks>
+    public bool LowerPriorityRequested { get; private set; }
+
     public string StandardError => "the tool said something about the stream";
 
     public IAsyncEnumerable<string> StandardOutputLines => Nothing();
+
+    public void LowerPriority() => LowerPriorityRequested = true;
 
     public async Task<int> WaitForExitAsync()
     {
