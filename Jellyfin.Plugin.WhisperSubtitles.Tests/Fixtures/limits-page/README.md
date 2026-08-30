@@ -57,3 +57,22 @@ with the uninstall section put back to the one `origin/master` carried, all
 three of its kinds are refused and every other leg stays green, which is the
 whole of what the per-heading question could not see. This fixture carries its
 own neighbour for the same reason the one above it does.
+
+`a-question-named-as-though-it-were-answered.md.fixture` is a different accident
+from the four above it. Its entry is in a state, names an issue, and points at
+nothing that has moved; what it does is name #8, which is where the decisions
+this plan has not taken are collected, in a sentence saying that issue decided
+something. The real page had the quiet half of that until 2026-08-30: the
+out-of-process entry rested on #8's first question and named only the issue that
+built the branch the plan assumes, while the entry directly above it said in so
+many words that the question it rests on is open. Two entries resting on two
+questions of one issue, and one of them saying so. It was found by reading each
+entry's claim against the issue it names, by hand, and no leg here would have
+found it.
+
+The leg that fixture proves refuses the loud half rather than the quiet one, and
+the difference is worth knowing before trusting it. It reads a paragraph that
+names #8 and asks whether that paragraph also says the question is open, so an
+entry that rests on one of those questions and names no issue for it passes.
+Whether a limit rests on an unanswered question is a reading of the tracker, and
+this suite reaches none.

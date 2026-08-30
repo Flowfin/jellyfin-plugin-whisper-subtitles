@@ -70,6 +70,15 @@ The cost is the one worth stating: progress inside a single item is only as fine
 as what the backend reports, because the plugin is reading another process
 rather than sitting inside the work.
 
+Whether transcription may ever run inside the server process is a separate
+question and it is open, in #8. That is the same issue the model entry above
+rests on, at its first question rather than its second, and this entry rested
+on it without saying so. Held today is the right marker and it says exactly
+what it says: the tree is out of process now, so a reader can rely on this for
+a running server and not for what the answer will be. An in-process binding is
+one of the two branches that question holds, and if it were taken this entry
+would move rather than be quietly contradicted.
+
 ## It writes one subtitle format
 
 SubRip, with the `.srt` extension, and nothing else for the first release.
