@@ -56,12 +56,16 @@ public sealed class PluginServiceRegistrator : IPluginServiceRegistrator
         serviceCollection.AddSingleton<IFileRemoval, SystemFileRemoval>();
         serviceCollection.AddSingleton<RemoteHttpHandler>();
 
-        // The two backends that do work need settings, and no setting on the
-        // configuration holds one yet: the schema carries the backend name, the
-        // target language and the per-library targets, and the page an operator
-        // would type a tool path or an endpoint into is #36. Until those fields
-        // exist these two lines are where they arrive, and every candidate built
-        // from them reports what it is missing rather than pretending to be ready.
+        // The two backends that do work need settings, and these two lines are
+        // where they arrive. Nothing here reads the configuration, so a
+        // LocalToolPath and a LocalModelPath an operator has typed are validated
+        // on load and then dropped at this line, and no setting holds a remote
+        // endpoint or a key at all. Every candidate built from these reports what
+        // it is missing rather than pretending to be ready, so what this costs is
+        // not a wrong answer: it is two path fields on the page that change
+        // nothing. The remark said the schema held none of this and went on
+        // saying it after the fields landed, which is why BackendSettingsClaimTests
+        // now refuses this file falling silent about a path the schema declares.
         serviceCollection.AddSingleton(_ => new LocalBackendOptions(null, null));
         serviceCollection.AddSingleton(_ => new RemoteBackendOptions(null, null, null));
 

@@ -17,8 +17,16 @@ does not exist.
     0
 
 No release and no tag. The tree goes further than that:
-`PluginServiceRegistrator` builds both backends with empty settings, because no
-configuration field holds a tool path or an endpoint URL yet, and
+`PluginServiceRegistrator` builds both backends with empty settings, and it does
+that whatever the operator saved. The configuration schema holds a local tool
+path and a local model path, and the one place this plugin's source builds the
+local backend's settings passes neither of them:
+
+    $ git grep 'new LocalBackendOptions' -- 'Jellyfin.Plugin.WhisperSubtitles/*.cs'
+    Jellyfin.Plugin.WhisperSubtitles/PluginServiceRegistrator.cs:        serviceCollection.AddSingleton(_ => new LocalBackendOptions(null, null));
+
+So a path an operator types is validated and then reaches no backend, and no
+setting holds a remote endpoint or a key at all.
 `SubtitleGenerationTask.ExecuteAsync` selects a backend, records that none is
 configured, and stops. Nothing in the plugin's own source calls the audio
 extractor, the item selection or the subtitle publisher; those are reached only
