@@ -284,3 +284,20 @@ entry filed as decided and not yet built whose issue closed yesterday stays
 green until a person moves it, and whether a named thing really holds a limit is
 a reading rather than a comparison. So the review at the first release is
 smaller than it was and it is not replaced.
+
+Three of the markers are read rather than trusted, and that is a narrower thing
+than the sentence above rather than a correction to it. Where an entry rests on a
+sentence saying nothing here reaches something - that no type reaches
+`ITaskManager`, that nothing calls the sweep, that nothing joins the pipeline into
+the task - what the sentence asserts is a search over this project and not a
+judgement, and `LimitsPageAbsenceTests` runs the search. It refuses this page in
+both directions: one of those three sentences surviving the arrival of the thing
+it denies, and one of them disappearing while the tree still answers nothing.
+Every other marker is where the paragraph above leaves it.
+
+Why those three are worth a check of their own is a failure this repository has
+already met once, on `SECURITY.md`, where a sentence denying that anything in this
+plugin called the item selection outlived the arrival of a caller by four days and
+one edit to the file that did not re-read it. #85 is where that one is recorded. A
+denial that outlives the work it denies is worse than one nobody made, because a
+reader takes it for a reading.
