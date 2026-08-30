@@ -94,6 +94,28 @@ public class LimitsPageTests
     /// </summary>
     private const string Accuracy = "It promises nothing about accuracy";
 
+    /// <summary>
+    /// The entries whose limit is the branch of a question #8 holds that nobody has
+    /// ruled out, by title, because the leg that reads them cannot find them any
+    /// other way.
+    /// </summary>
+    /// <remarks>
+    /// A list rather than a derivation, and it is the price of refusing the quiet
+    /// half of this. Which of a page's limits rests on an unanswered question is a
+    /// reading of the tracker, and this suite reaches none, so the alternative to
+    /// writing them down is a leg that only ever sees the entries that already say
+    /// so. The cost is the usual one: a fourth entry resting on that issue is
+    /// invisible here until somebody adds it, and the review is where that is
+    /// caught. A title reworded turns this red rather than passing quietly, which
+    /// is the direction worth having.
+    /// </remarks>
+    private static readonly string[] _restingOnAnOpenQuestion =
+    [
+        "It carries no model and no inference runtime",
+        "It does not run the transcription inside the server process",
+        "What it writes, and where",
+    ];
+
     private static readonly Regex _heading = new(
         @"^## (?<title>.+?)\r?$",
         RegexOptions.Multiline | RegexOptions.CultureInvariant,
@@ -116,6 +138,25 @@ public class LimitsPageTests
 
     private static readonly Regex _issue = new(
         @"#[0-9]+",
+        RegexOptions.CultureInvariant,
+        TimeSpan.FromSeconds(5));
+
+    // The issue that collects the decisions this plan needs and has not had, and
+    // the digits are held apart from #80 and its neighbours rather than matched as
+    // a prefix. An entry naming it rests on a question nobody has answered.
+    private static readonly Regex _decisionsIssue = new(
+        @"#8(?![0-9])",
+        RegexOptions.CultureInvariant,
+        TimeSpan.FromSeconds(5));
+
+    // The vocabulary that says a question has not been answered, and the whole of
+    // it. The page writes one of these four today, in two sentences; the other
+    // three are the wordings a writer reaches for next and are here so that the
+    // leg refuses a missing disclosure rather than a missing turn of phrase.
+    // Widening it is a change to this expression and narrowing it is a change to
+    // the page.
+    private static readonly Regex _openQuestion = new(
+        @"\bis open\b|\bstill open\b|\bopen question\b|\bunanswered\b",
         RegexOptions.CultureInvariant,
         TimeSpan.FromSeconds(5));
 
@@ -144,6 +185,9 @@ public class LimitsPageTests
 
     public static TheoryData<string> EveryEntry =>
         new(Entries(Page()).Select(entry => entry.Title).ToArray());
+
+    public static TheoryData<string> EveryEntryRestingOnAnOpenQuestion =>
+        new(_restingOnAnOpenQuestion);
 
     public static TheoryData<string> EveryKindTheWriteListNames =>
         new(WriteLocationsTests.KindsAsTheListNamesThem.ToArray());
@@ -362,6 +406,65 @@ public class LimitsPageTests
             name => Assert.Contains(name, running));
     }
 
+    [Theory]
+    [MemberData(nameof(EveryEntryRestingOnAnOpenQuestion))]
+    public void Every_entry_resting_on_a_question_the_decisions_issue_holds_names_it(string title)
+    {
+        var entry = Entries(Page())
+            .SingleOrDefault(section => section.Title.Equals(title, StringComparison.Ordinal));
+
+        Assert.True(
+            entry is not null,
+            $"the limits page carries no entry titled \"{title}\", so this leg read nothing");
+
+        Assert.True(
+            ParagraphsNaming(entry!.Body, _decisionsIssue).Count > 0,
+            $"the entry \"{title}\" on the limits page rests on a question #8 holds and names no issue for it, so a reader is told what the plugin does today and not that the answer is somebody's to take");
+    }
+
+    [Theory]
+    [MemberData(nameof(EveryEntry))]
+    public void Every_paragraph_naming_the_decisions_issue_says_that_question_is_open(string title)
+    {
+        foreach (var paragraph in ParagraphsNaming(Entry(title).Body, _decisionsIssue))
+        {
+            Assert.True(
+                _openQuestion.IsMatch(paragraph),
+                $"the entry \"{title}\" on the limits page names #8 without saying that the question there is open, so a limit resting on a decision nobody has taken reads as one somebody took");
+        }
+    }
+
+    [Fact]
+    public void The_page_names_the_decisions_issue_rather_than_leaving_the_leg_above_iterating_over_nothing()
+    {
+        // The same guard the resolution legs carry. Every entry that stopped
+        // naming #8 would leave the leg above walking an empty list at every
+        // heading, and the day the last of them went would look exactly like
+        // today.
+        var naming = Entries(Page())
+            .SelectMany(entry => ParagraphsNaming(entry.Body, _decisionsIssue))
+            .ToList();
+
+        Assert.NotEmpty(naming);
+    }
+
+    [Fact]
+    public void The_reader_refuses_an_entry_that_names_the_decisions_issue_as_though_it_were_answered()
+    {
+        // The accident this is for is the one the page had until #57 was read
+        // entry by entry: the out-of-process limit rested on the first question of
+        // #8 and named only the issue that built the branch the plan assumes, so a
+        // reader met a decision where there is an assumption. The fixture is the
+        // louder half of the same shape, where the number is there and the word
+        // that says it is unanswered is not.
+        var entry = Assert.Single(Entries(Fixture("a-question-named-as-though-it-were-answered")));
+        var naming = ParagraphsNaming(entry.Body, _decisionsIssue);
+
+        Assert.NotEmpty(naming);
+        Assert.DoesNotContain(naming, paragraph => _openQuestion.IsMatch(paragraph));
+        Assert.True(_state.IsMatch(entry.Body) && _issue.IsMatch(entry.Body), "the fixture has to trip this leg and no other");
+    }
+
     [Fact]
     public void The_page_reads_the_same_whatever_the_checkout_did_to_its_line_endings()
     {
@@ -520,6 +623,25 @@ public class LimitsPageTests
 
         return naming[0];
     }
+
+    /// <summary>
+    /// Every paragraph of an entry that names a given issue, each as one line.
+    /// </summary>
+    /// <remarks>
+    /// All of them rather than exactly one, which is where this differs from
+    /// <see cref="ParagraphNaming"/>. A kind is named once by the rule that leg
+    /// holds; an issue can be named twice in one entry for two different reasons,
+    /// and a reader that took the first would let the second stand unread.
+    ///
+    /// Flattened for the reason its neighbour gives. Both halves of the question
+    /// asked of these paragraphs, the number and the words saying it is
+    /// unanswered, are the kind of thing somebody's editor breaks a line between.
+    /// </remarks>
+    private static List<string> ParagraphsNaming(string body, Regex naming) =>
+        _paragraphBreak.Split(body)
+            .Select(Flattened)
+            .Where(paragraph => naming.IsMatch(paragraph))
+            .ToList();
 
     private static string Flattened(string paragraph) =>
         string.Join(' ', paragraph.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries));

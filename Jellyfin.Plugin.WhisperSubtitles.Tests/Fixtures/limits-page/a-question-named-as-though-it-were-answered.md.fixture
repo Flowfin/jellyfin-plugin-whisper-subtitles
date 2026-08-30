@@ -1,0 +1,17 @@
+# What this plugin will not do
+
+One entry, in a state the page keeps and with an issue a reader can argue with,
+resting on a question that issue has not answered and saying nothing about that.
+
+## It does not run the transcription inside the server process
+
+Every backend is out of process: a child process on the same machine, or a
+remote endpoint. A native fault inside an inference library therefore ends one
+transcription rather than the media server.
+
+Held today. The local backend drives a command line tool through an injected
+process runner, in #12. Out of process is what #8 decided.
+
+## When this list is checked against the code
+
+The closing section, which is about the list rather than a limit in it.
