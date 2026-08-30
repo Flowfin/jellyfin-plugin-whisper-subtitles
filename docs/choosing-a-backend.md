@@ -190,7 +190,8 @@ reports which settings are not filled in and transcribes nothing. The page is #3
 **How to run the calibration so the estimate is about this machine.** There is no
 calibration to run. The arithmetic that folds measured items into a factor exists
 and is held by a suite; nothing has measured anything, because measuring needs a
-run over an item. That is #38, and the estimate it would feed is #37.
+run over an item and the task performs none. What joins the pipeline into such a
+run is #183, and the estimate a factor would feed is the dry run in #37.
 
 **Which setting to lower first when a run interferes with playback.** Both limits
 are settings now and neither reaches a transcription yet, which are two different
