@@ -53,8 +53,8 @@ including a hardening idea, is welcome as an ordinary issue.
 
 ## What I do not promise
 
-No acknowledgement deadline, anywhere in this document, on purpose. A maintainer
-who publishes a number will eventually miss it, and the reporter on the other
+No acknowledgement deadline, anywhere in this document, on purpose. If I
+published a number I would eventually miss it, and the reporter on the other
 end cannot tell a missed deadline from a report that never arrived. What I will
 do is answer once I have read the report properly, and say what I intend to do.
 

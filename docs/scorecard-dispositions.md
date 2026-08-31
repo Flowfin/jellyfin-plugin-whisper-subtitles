@@ -231,7 +231,7 @@ fuzz/WhisperSubtitles.Fuzz/FuzzTargets.cs:101:        var read = TranscriptionRe
 fuzz/WhisperSubtitles.Fuzz/SegmentProperties.cs:39:        TimeSpan.FromSeconds(TranscriptionResponseReader.SecondsCeiling);
 ```
 
-The other half of that sentence, that onboarding an external service needs maintainers who
+The other half of that sentence, that onboarding an external service needs people who
 can be paged, is untouched by any of this and is the part the disposition rests on.
 
 WHAT IS RECORDED RATHER THAN REPAIRED, AND WHY. The dismissal is text on the tab, nothing
