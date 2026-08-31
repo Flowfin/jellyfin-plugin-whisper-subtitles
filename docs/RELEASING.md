@@ -68,8 +68,13 @@ is gone and no catalog is fed until a manifest generator is added.
 - The tag does not end in `-stable`, or the workflow was started from something
   other than a tag.
 - The numeric part of the tag differs from `version` in `build.yaml`.
+- `build.yaml` is missing from the repository root. Every piece of plugin metadata
+  the packaging step uses comes out of that file, so its absence is refused before
+  any field is read.
 - `build.yaml` is missing a required field, or `version`, `targetAbi`, `framework`
   or `guid` has the wrong shape.
+- The plugin project declares neither `TargetFramework` nor `TargetFrameworks`, so
+  there is nothing for `framework` to be compared against.
 - `framework` in `build.yaml` names a target the plugin project is not built for.
 - A packaging manifest that shadows `build.yaml` is present, such as `jprm.yaml` or
   `meta.yaml`.
@@ -86,8 +91,17 @@ is gone and no catalog is fed until a manifest generator is added.
 - The version stamped into the assembly is not the version in `build.yaml`.
 - The build produced no archive, or more than one, or no packaging metadata.
 - A release already exists for the tag.
+- Asking whether a release exists for the tag comes back as neither a yes nor a
+  no. An unclear answer is not published on.
 
 All of these fail before anything is published.
+
+This list is kept by hand and nothing compares it against
+`.github/workflows/publish.yaml`, so a refusal added to the run reaches this page
+only if somebody writes it here as well. Three of the entries above arrived that
+way, found by reading the two side by side rather than by anything that runs, and
+the same reading is what would find the next one. No issue names a mechanism for
+it, and this sentence is the whole of the disclosure.
 
 ## What the run notes without failing
 
