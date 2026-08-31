@@ -1,0 +1,24 @@
+<div id="WhisperSubtitlesConfigPage">
+    <div class="fieldDescription">
+        Neither path is checked here. Whether a file is there, whether it runs and
+        whether it is a model are answered when the backend is asked, and nothing on
+        this page asks it yet.
+    </div>
+    <script type="text/javascript">
+        function load() {
+            return ApiClient.getVirtualFolders().then(function (libraries) {
+                return ApiClient.getPluginConfiguration(pluginUniqueId).then(function (config) {
+                    render(config, libraries);
+                });
+            });
+        }
+
+        function readiness() {
+            return ApiClient.getJSON('WhisperSubtitles/Readiness');
+        }
+
+        function save(config) {
+            return ApiClient.updatePluginConfiguration(pluginUniqueId, config);
+        }
+    </script>
+</div>
