@@ -115,6 +115,13 @@ public sealed class AudioExtractor
             using (process)
             using (cancellationToken.Register(process.Kill))
             {
+                // After the registration and before the wait. After, because a
+                // cancellation surfacing out of the ask has to reach a child that
+                // is already ending; before, because a decode asked to step down
+                // once it has finished has run at the ordinary priority for all of
+                // the time that mattered.
+                AskToRunBelowOrdinaryWork(process);
+
                 var exitCode = await process.WaitForExitAsync().ConfigureAwait(false);
 
                 // After the wait rather than before it. A token cancelled while the
@@ -143,6 +150,61 @@ public sealed class AudioExtractor
             // includes cancellation, where the tool was killed mid-write and what
             // it left is a truncated WAV with a plausible name.
             Delete(outputPath);
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Asks the media tool to be scheduled below the work this machine was bought
+    /// for, and treats a refusal as nothing.
+    /// </summary>
+    /// <remarks>
+    /// The decode is the second thing this plugin runs that takes every core it is
+    /// given, and it runs beside a server that is streaming to somebody. The same
+    /// argument that lowers the transcription child in
+    /// <see cref="Backends.Local.LocalWhisperBackend"/> reaches this one: a run
+    /// that finished sooner and made playback stutter is the failure #22 asks
+    /// against, and a lower priority costs a machine with a core to spare nothing,
+    /// because it is consulted only when something else wants the processor.
+    ///
+    /// Best effort by design. Lowering a priority is not available on every
+    /// platform and not permitted to every account, and an extraction that ran at
+    /// the ordinary priority is a worse run rather than a failed one, so a refusal
+    /// must not reach the item.
+    ///
+    /// The swallow is HERE rather than behind the seam, so a double that refuses
+    /// can be handed to a run and the item watched surviving it. Inside
+    /// <see cref="Backends.Local.SystemStartedProcess"/> the same swallow would be
+    /// a promise nothing in the suite could read.
+    ///
+    /// A CANCELLATION IS NOT SWALLOWED, AND IT ENDS THE TOOL ON THE WAY OUT. The
+    /// registration above fires on the token and not on an exception, so an ask
+    /// that unwound this method by itself would leave the tool decoding an item
+    /// nobody is waiting for any more. The kill is safe to ask for twice, which
+    /// is what covers the case where the registration has already asked.
+    ///
+    /// WHAT THIS DOES NOT DO IS LOG, for the same reason the transcription child's
+    /// ask does not: this plugin does not log at all, docs/logging.md is the table
+    /// the first change that logs is measured against, and the three tests that
+    /// hold it are owed by #73. So an operator whose platform refuses this is not
+    /// told, and the half of #22's sentence that asks for a log line stays owed.
+    /// </remarks>
+    /// <param name="process">The tool that has just been started.</param>
+    private static void AskToRunBelowOrdinaryWork(IStartedProcess process)
+    {
+        try
+        {
+            process.LowerPriority();
+        }
+        catch (Exception refused) when (refused is not OperationCanceledException)
+        {
+            // Nothing here can repair it and nothing may report it yet. The
+            // remarks above say why both halves are deliberate.
+        }
+        catch (OperationCanceledException)
+        {
+            process.Kill();
+
             throw;
         }
     }

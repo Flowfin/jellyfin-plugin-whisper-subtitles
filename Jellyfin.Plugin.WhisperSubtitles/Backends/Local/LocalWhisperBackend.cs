@@ -317,9 +317,12 @@ public sealed class LocalWhisperBackend : ITranscriptionBackend
     /// #22's sentence that says a failure to lower the priority is logged is not
     /// carried here, and an operator whose platform refuses this is not told.
     ///
-    /// It reaches this backend's child and no other. The media tool that extracts
-    /// the audio is started through the same seam by <c>AudioExtractor</c>, and
-    /// nothing lowers that one.
+    /// The media tool that extracts the audio is started through the same seam by
+    /// <c>AudioExtractor</c>, and it asks for the same thing there, for the same
+    /// reason and with the same swallow. These are two asks rather than one place
+    /// both callers reach: what a caller does with a refusal is the decision the
+    /// seam leaves to it, and a shared helper would be a swallow neither suite
+    /// could watch an item surviving.
     /// </remarks>
     /// <param name="process">The child that has just been started.</param>
     private static void LowerPriorityBestEffort(IStartedProcess process)

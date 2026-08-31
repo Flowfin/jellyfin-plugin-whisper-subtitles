@@ -228,7 +228,7 @@ Half the processors, rounded down, and one on a single-processor machine, where
 there is no value below it. That number reaches the local tool on every run:
 
     git grep -n '"-t",' -- Jellyfin.Plugin.WhisperSubtitles/Backends/Local/LocalWhisperBackend.cs
-    Jellyfin.Plugin.WhisperSubtitles/Backends/Local/LocalWhisperBackend.cs:359:            "-t",
+    Jellyfin.Plugin.WhisperSubtitles/Backends/Local/LocalWhisperBackend.cs:362:            "-t",
 
 It is passed on every run rather than only when it differs from something,
 because there is no value of that flag meaning "whatever you would have done".
@@ -250,9 +250,14 @@ chosen by somebody who never saw your server.
 Conservative defaults are the answer question 6 of #8 carries, taken on
 2026-08-24: one item at a time, few threads, and this page telling the raising
 story. Raising them is now something you can do on the page, and it does not yet
-reach a run. What is still missing from #22 is a process priority, a per-item
-time limit and a rule that yields to a busy server, and the definition of busy
-that last rule turns on is still open in that issue's own body.
+reach a run. The process priority is no longer among what is missing: both
+programs this plugin starts, the transcription tool and the media tool that
+extracts the audio, ask the operating system to schedule them below ordinary
+work, and a platform that refuses costs the item nothing. Nothing tells you when
+one refuses, because this plugin does not log yet. What is still missing from
+#22 is a per-item time limit and a rule that yields to a busy server, and the
+definition of busy that last rule turns on is still open in that issue's own
+body.
 
 So this page can be read to a decision about a backend and a model, and it cannot
 be followed to a first generated subtitle. That is what it says rather than

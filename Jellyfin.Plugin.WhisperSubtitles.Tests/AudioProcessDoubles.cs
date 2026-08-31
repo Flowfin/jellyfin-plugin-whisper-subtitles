@@ -28,6 +28,7 @@ internal sealed class MediaToolRunner : IProcessRunner
     private readonly int _exitCode;
     private readonly bool _runsUntilKilled;
     private readonly Exception? _refusal;
+    private Exception? _refusesToLowerPriority;
 
     private MediaToolRunner(byte[]? writes, int exitCode, bool runsUntilKilled, Exception? refusal)
     {
@@ -85,6 +86,24 @@ internal sealed class MediaToolRunner : IProcessRunner
     public static MediaToolRunner Refusing(Exception refusal) =>
         new(null, 0, runsUntilKilled: false, refusal);
 
+    /// <summary>
+    /// Makes the tool this runner starts one whose priority the platform will not
+    /// lower.
+    /// </summary>
+    /// <remarks>
+    /// On the runner rather than on the process because the extractor is handed
+    /// the runner and starts the process itself, so a test has no other moment at
+    /// which to reach the tool it is about.
+    /// </remarks>
+    /// <param name="refusal">What the platform answers with.</param>
+    /// <returns>This runner, so a test reads as one sentence.</returns>
+    public MediaToolRunner RefusingToLowerPriority(Exception refusal)
+    {
+        _refusesToLowerPriority = refusal;
+
+        return this;
+    }
+
     public IStartedProcess Start(ProcessInvocation invocation)
     {
         Invocation = invocation;
@@ -101,6 +120,11 @@ internal sealed class MediaToolRunner : IProcessRunner
 
         Started = new MediaToolProcess(_exitCode, _runsUntilKilled);
 
+        if (_refusesToLowerPriority is not null)
+        {
+            Started.RefusingToLowerPriority(_refusesToLowerPriority);
+        }
+
         return Started;
     }
 }
@@ -113,6 +137,8 @@ internal sealed class MediaToolProcess : IStartedProcess
     private readonly int _exitCode;
     private readonly bool _runsUntilKilled;
     private readonly TaskCompletionSource _killed = new();
+    private Exception? _refusesToLowerPriority;
+    private bool _waitBegun;
 
     public MediaToolProcess(int exitCode, bool runsUntilKilled)
     {
@@ -138,21 +164,63 @@ internal sealed class MediaToolProcess : IStartedProcess
     /// Gets a value indicating whether the caller asked for a lower priority.
     /// </summary>
     /// <remarks>
-    /// False on every run today, and it is here so that the day something lowers
-    /// the media tool's priority the double can say so. Nothing asks it now:
-    /// <c>LocalWhisperBackend</c> lowers the transcription child and the
-    /// extractor's child is not covered by #22 yet.
+    /// <c>AudioExtractor</c> asks for it on every extraction, which is the half of
+    /// #22's priority limit that reaches the media tool. A caller that meant to
+    /// ask and did not is indistinguishable from one that asked, unless the asking
+    /// is something this double can say.
     /// </remarks>
     public bool LowerPriorityRequested { get; private set; }
+
+    /// <summary>
+    /// Gets a value indicating whether the wait for the tool had already been
+    /// entered when the caller asked for a lower priority, or null when nothing
+    /// asked at all.
+    /// </summary>
+    /// <remarks>
+    /// The two are different states and a single boolean would collapse them. A
+    /// run that never asked and a run that asked at the right moment both leave a
+    /// "was it late" flag false, so the null is what keeps an assertion about the
+    /// moment from passing on a run where the moment never came.
+    ///
+    /// An ask made once the wait is under way is an ask made after the decode has
+    /// had the processor at the ordinary priority for the whole of the item, which
+    /// is the failure this limit exists against rather than a smaller version of
+    /// it. This tool prints nothing, so the wait is the only thing there is to be
+    /// early or late against.
+    /// </remarks>
+    public bool? WaitHadBegunWhenPriorityWasAsked { get; private set; }
 
     public string StandardError => "the tool said something about the stream";
 
     public IAsyncEnumerable<string> StandardOutputLines => Nothing();
 
-    public void LowerPriority() => LowerPriorityRequested = true;
+    /// <summary>
+    /// Makes this tool one whose priority the platform will not lower.
+    /// </summary>
+    /// <param name="refusal">What the platform answers with.</param>
+    /// <returns>This process, so a test reads as one sentence.</returns>
+    public MediaToolProcess RefusingToLowerPriority(Exception refusal)
+    {
+        _refusesToLowerPriority = refusal;
+
+        return this;
+    }
+
+    public void LowerPriority()
+    {
+        LowerPriorityRequested = true;
+        WaitHadBegunWhenPriorityWasAsked = _waitBegun;
+
+        if (_refusesToLowerPriority is not null)
+        {
+            throw _refusesToLowerPriority;
+        }
+    }
 
     public async Task<int> WaitForExitAsync()
     {
+        _waitBegun = true;
+
         if (_runsUntilKilled)
         {
             await _killed.Task.ConfigureAwait(false);
