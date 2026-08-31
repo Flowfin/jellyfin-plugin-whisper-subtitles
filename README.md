@@ -133,12 +133,14 @@ and finishes, reaching no part of the pipeline. That joining is #183.
 
 1. Install the plugin from a repository listing, which is #61, or from a release
    archive, which is #60.
-2. Open the plugin's page in the dashboard and choose a backend. The page is in
-   the tree and the choice of backend is on it. What is not on it is what each
-   backend needs to run, which for the local tool is the path to the executable
-   and the path to a model file you placed yourself, held in #36; and the answer
-   the readiness probe gives, which says whether the choice works before a run
-   starts, held in #15.
+2. Open the plugin's page in the dashboard and choose a backend. What the page
+   carries today is `Backend`, `TargetLanguage`, `LibraryTargets`,
+   `LocalToolPath`, `LocalModelPath`, `ItemsAtOnce`, `ThreadsPerItem` and
+   `FailuresBeforeQuarantine`. That list is compared against the page itself on
+   every run rather than kept by hand, so a setting that arrives on the page and
+   a setting that leaves it are both a red suite here. What is still not on it is
+   what a remote endpoint needs, held in #36, and the answer the readiness probe
+   gives, which says whether the choice works before a run starts, held in #15.
 3. Set the target language per library, in #30, or leave it to detection, in #31.
 4. Run the scheduled task by hand from the dashboard, in #17. It ships with no
    trigger, so nothing starts on its own on a server whose operator did not ask

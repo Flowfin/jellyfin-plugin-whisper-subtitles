@@ -1,0 +1,7 @@
+## From an install to a first subtitle
+
+1. Install the plugin from a repository listing or from a release archive.
+2. Open the plugin's page in the dashboard and choose a backend. What the page
+   carries today is `Backend`, `TargetLanguage`, `LocalToolPath` and
+   `LocalModelPath`. What is still not on it is what a remote endpoint needs.
+3. Run the scheduled task by hand from the dashboard.

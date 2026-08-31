@@ -1,0 +1,6 @@
+## From an install to a first subtitle
+
+1. Install the plugin from a repository listing or from a release archive.
+2. Open the plugin's page in the dashboard and choose a backend. The page is in
+   the tree and the choice of backend is on it.
+3. Run the scheduled task by hand from the dashboard.
