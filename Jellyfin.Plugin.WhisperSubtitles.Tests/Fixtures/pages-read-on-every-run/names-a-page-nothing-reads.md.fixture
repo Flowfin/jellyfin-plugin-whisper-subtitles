@@ -1,0 +1,11 @@
+# A release checklist that credits a page with a reader it has not got
+
+## The documentation matches what the build produces
+
+Nothing decides this yet, and what is missing is a decision rather than a check.
+The issue is #62.
+
+The pages read against the tree on every run rather than trusted are
+`docs/alpha.md`, `docs/beta.md` and `docs/gamma.md`.
+
+Two of the three are right, so this trips the direction it is for and no other.
