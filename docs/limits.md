@@ -88,6 +88,16 @@ The writer takes cues and returns bytes behind an interface, so a second format
 is a second implementation rather than a rewrite, which is why this is a limit
 of the release and not of the design.
 
+That interface is also what makes this the cheapest entry on the page to
+falsify: one class in `Output/SubRipWriter.cs`'s directory and the release
+writes two formats while this paragraph goes on saying it writes one.
+`SubtitleFormatLimitTests` reads it rather than trusting it, in both directions.
+It takes the implementations of that interface out of the assembly this plugin
+ships and refuses a second one arriving while this entry still denies it, and it
+takes the extension out of the sentence above and compares it against the one
+that writer reports, so a page and a tree disagreeing about the format are red
+rather than quiet.
+
 ## It does not touch a subtitle that is already there
 
 A file already sitting at the target path is never overwritten, truncated or

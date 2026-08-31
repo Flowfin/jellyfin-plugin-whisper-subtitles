@@ -1,0 +1,23 @@
+# What this plugin will not do
+
+The page after somebody rewrote the entry in prose and took the one token a
+reader could compare with it. The claim is still made and there is nothing left
+to check it against.
+
+## It writes one subtitle format
+
+SubRip, with the extension that format is usually given, and nothing else for
+the first release.
+
+Held today. Recorded in #35, with the reasoning in `docs/subtitle-format.md`.
+
+## It does not touch a subtitle that is already there
+
+Held today. Recorded in #28. A file already sitting at the target path is left
+alone whatever it is, and a `.srt` somebody wrote by hand is the case that
+matters, which is here so a reader looking for an extension anywhere on the page
+rather than inside the entry above finds one.
+
+## When this list is checked against the code
+
+The closing section, which is about the list rather than a limit in it.

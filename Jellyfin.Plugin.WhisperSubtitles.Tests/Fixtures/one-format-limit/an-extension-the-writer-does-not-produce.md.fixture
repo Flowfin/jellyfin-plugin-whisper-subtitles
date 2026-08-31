@@ -1,0 +1,15 @@
+# What this plugin will not do
+
+The page after somebody changed which format the entry promises without the
+writer moving with it. The claim is one a reader would act on and the tree does
+not keep it.
+
+## It writes one subtitle format
+
+WebVTT, with the `.vtt` extension, and nothing else for the first release.
+
+Held today. Recorded in #35, with the reasoning in `docs/subtitle-format.md`.
+
+## When this list is checked against the code
+
+The closing section, which is about the list rather than a limit in it.

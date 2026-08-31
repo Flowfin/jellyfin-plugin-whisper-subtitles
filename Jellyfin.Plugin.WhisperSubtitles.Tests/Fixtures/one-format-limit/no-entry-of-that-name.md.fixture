@@ -1,0 +1,18 @@
+# What this plugin will not do
+
+The page after somebody folded the format limit into a neighbouring entry and
+left no heading behind. It still says in prose that it writes one subtitle
+format, which is the half that makes this fixture worth having: a reader that
+searched the page for those words rather than for the heading would report the
+entry as present and compare the wrong sentence.
+
+## It does not touch a subtitle that is already there
+
+Held today. Recorded in #28. It writes one subtitle format and it leaves a file
+already sitting at the target path alone, whatever that file is, and a `.srt`
+somebody wrote by hand is the case that matters. The extension is here so a
+reader looking anywhere on the page rather than inside one entry finds one.
+
+## When this list is checked against the code
+
+The closing section, which is about the list rather than a limit in it.
