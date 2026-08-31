@@ -15,7 +15,7 @@
 # The tier that decides is skipped for a pull request from a fork. A first
 # contribution should not be met with a red gate about a convention nobody told
 # the contributor about, and the conventions live in CONTRIBUTING.md, which is
-# what a maintainer points at instead.
+# what I point at instead.
 name: Pull request hygiene
 
 on:
@@ -116,8 +116,8 @@ jobs:
           PR_BASE_MANIFEST_FILE: base-manifest.yaml
           PR_HEAD_MANIFEST_FILE: head-manifest.yaml
           # The tier that decides is skipped for a fork, and the run still reports
-          # what every rule found, so a maintainer reading a first contribution
-          # sees the same output without a red check attached to it.
+          # what every rule found, so I read a first contribution with the same
+          # output in front of me and no red check attached to it.
           SKIP_DECIDING_TIER: ${{ github.event.pull_request.head.repo.full_name != github.repository }}
         run: |
           set -uo pipefail
