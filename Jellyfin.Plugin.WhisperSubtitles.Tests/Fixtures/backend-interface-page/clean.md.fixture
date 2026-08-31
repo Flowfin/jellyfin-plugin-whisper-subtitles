@@ -1,0 +1,15 @@
+# Adding a transcription backend
+
+## What a new backend changes outside its own folder
+
+Three files outside `Backends/` hold that set as well.
+
+- the first surface, held by `AlphaGuardTests`
+- the second surface, held by `BetaGuardTests`
+
+That list is compared against every class in the test project that judges a
+surface against the known set of backend names.
+
+## A list somebody added later
+
+- a surface this section invented, held by `GammaGuardTests`

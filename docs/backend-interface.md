@@ -2,11 +2,19 @@
 
 This plugin does no transcription of its own. Everything heavy sits behind
 `ITranscriptionBackend`, and the point of that is that a third backend can be
-added without the scheduled task, the output writer, the naming, the language
-handling or the configuration page changing.
+added without the scheduled task, the output writer, the naming or the language
+handling changing.
 
 That is only true if what a new backend has to satisfy is written down. This page
 is that, and it is written for somebody who has not read the rest of the code.
+
+THE CONFIGURATION PAGE WAS IN THAT LIST AND DOES NOT BELONG IN IT. What the
+interface buys is that nothing which runs an item has to learn a backend's name.
+The name itself is a different thing: it is written down in three places outside
+`Backends/`, and this suite refuses each of them the moment the set of names
+moves without it. They are under "What a new backend changes outside its own
+folder" below, which is the section this page was missing rather than a caveat
+on the sentence above.
 
 ## Where a backend lives
 
@@ -107,6 +115,39 @@ and `LocalWhisperBackend` shows a backend driven through it; the remote backend
 takes an `HttpMessageHandler` and `RemoteWhisperBackendTests` drives it through a
 stub endpoint. A backend that constructs its own process or its own HTTP client
 cannot be tested, and this suite does not accept one that cannot.
+
+## What a new backend changes outside its own folder
+
+A backend is reached through the interface, so nothing that runs an item has to
+know which one it is. Its NAME is not reached through the interface. It is a
+string an operator stores, a value a page offers, and a choice a reporter picks
+from, and the set of them is `BackendNames`.
+
+Three files outside `Backends/` hold that set as well, and each one is compared
+against `BackendNames` by a class in this repository's test project rather than
+read by somebody. Add a backend without touching them and the suite is red, which
+is the point:
+
+- the configuration page,
+  `Jellyfin.Plugin.WhisperSubtitles/Configuration/configPage.html`, which is what
+  an operator chooses from, held by `BackendChoicePageTests`
+- the operator guide, `docs/choosing-a-backend.md`, whose table says what each
+  value means, held by `BackendGuidePageTests`
+- the defect form, `.github/ISSUE_TEMPLATE/defect.yml`, which asks a reporter
+  which backend they were running, held by `CommunityFilesTests`
+
+That list is compared against every class in the test project that judges a
+surface against `BackendNames`, in both directions, by
+`BackendInterfacePageTests`. A surface that gains a guard and one that loses it
+are both a red suite rather than a sentence on this page going quietly out of
+date, which is the state this section was added in: the page told an author the
+configuration page did not change, and a machine had refused that for as long as
+the page had said it.
+
+What the comparison does not do is name the FILES. It reads the guards, because a
+class naming its own subject is in the suite and a path repeated here is a second
+copy to keep in step. The three paths above are prose a reader follows, and the
+sentence they are in is the thing the guard holds.
 
 ## The tests a new backend has to pass
 

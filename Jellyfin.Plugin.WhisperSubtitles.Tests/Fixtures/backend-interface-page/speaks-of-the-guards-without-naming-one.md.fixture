@@ -1,0 +1,11 @@
+# Adding a transcription backend
+
+## What a new backend changes outside its own folder
+
+Three files outside `Backends/` hold that set as well, and each one is compared
+against `BackendNames` by a class in this repository's test project rather than
+read by somebody. Add a backend without touching them and the suite is red.
+
+## Something else
+
+Nothing here.

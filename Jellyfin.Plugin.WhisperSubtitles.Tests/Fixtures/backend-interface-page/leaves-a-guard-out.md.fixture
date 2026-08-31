@@ -1,0 +1,14 @@
+# Adding a transcription backend
+
+## What a new backend changes outside its own folder
+
+Three files outside `Backends/` hold that set as well.
+
+- the first surface, held by `AlphaGuardTests`
+
+That list is compared against every class in the test project that judges a
+surface against `BackendNames`.
+
+## Something else
+
+Nothing here.
