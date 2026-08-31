@@ -70,6 +70,18 @@ public class TroubleshootingPageTests
     private const string ReadinessReportIssue = "#15";
 
     /// <summary>
+    /// The issue that holds the rule being checked once for the whole plugin, which
+    /// is the absence the key paragraph rests on.
+    /// </summary>
+    private const string LoggingRuleIssue = "#73";
+
+    /// <summary>
+    /// The sentence that paragraph gives as the reason the half a reporter is not
+    /// covered by is not covered yet.
+    /// </summary>
+    private const string NothingLogsYet = "nothing in this plugin logs yet";
+
+    /// <summary>
     /// One line ending, and the space two lines of one paragraph are joined with.
     /// Named rather than escaped so this file carries no line ending inside a
     /// literal, which is the same care the comment below takes for the same page.
@@ -281,6 +293,62 @@ public class TroubleshootingPageTests
         Assert.True(
             paragraph.Contains(ReadinessReportIssue, StringComparison.Ordinal),
             $"docs/troubleshooting.md says the readiness report is missing and names nothing holding it, so a reader cannot follow it up: {paragraph}");
+    }
+
+    /// <summary>
+    /// The key paragraph tells a reporter that the half of the rule covering a
+    /// logger is owed because nothing here logs, and `docs/logging.md` makes the
+    /// same claim while this page's copy of it was read by nothing.
+    /// </summary>
+    /// <remarks>
+    /// `LoggingPageTests` holds that sentence on the page it is about, in both
+    /// directions. This page says it a second time, to a different reader and for a
+    /// different purpose: the one here is what somebody about to send a report is
+    /// deciding on, and it is the reason they are told the backend half is all that
+    /// is asserted. Nothing read it.
+    ///
+    /// The direction that costs the most is the day a logger arrives. The change
+    /// that adds one is told about `docs/logging.md` by the leg over there and has
+    /// no reason to open this page, so the repair gets made on one of the two and
+    /// this one goes on telling a reporter that no log line can carry their key.
+    /// Both pages are read against the one search in <see cref="PluginLoggerSites"/>
+    /// rather than against two, so they cannot be judged by slightly different
+    /// questions.
+    ///
+    /// The other direction is the sentence quietly going while nothing logs, which
+    /// leaves the paragraph saying a half is owed without saying why, and the issue
+    /// reference is asked for beside it so a reader can follow the absence up.
+    ///
+    /// WHAT THIS DOES NOT DO. It reads one paragraph and it matches a phrase rather
+    /// than a meaning, so the same claim in other words passes and a rewording of
+    /// this one turns it red and has to be made here as well. The tree side counts a
+    /// file naming the type, in a comment as readily as in code, and it says nothing
+    /// about whether a line is ever written. And it has no opinion about the rest of
+    /// the paragraph: the backend half it credits `RemoteWhisperBackendTests` with
+    /// is the leg above rather than this one.
+    /// </remarks>
+    [Fact]
+    public void The_page_says_nothing_here_logs_exactly_while_nothing_does()
+    {
+        var paragraph = ParagraphSaying("The rule that key carries");
+        var naming = PluginLoggerSites.All();
+
+        if (naming.Count == 0)
+        {
+            Assert.True(
+                paragraph.Contains(NothingLogsYet, StringComparison.Ordinal),
+                $"nothing under the plugin project names {PluginLoggerSites.LoggerType} and docs/troubleshooting.md no longer says so, so a reporter is told a half of the rule is owed and not why: {paragraph}");
+
+            Assert.True(
+                paragraph.Contains(LoggingRuleIssue, StringComparison.Ordinal),
+                $"docs/troubleshooting.md says the whole-plugin half of the key rule is not built and names nothing holding it, so a reporter cannot follow it up: {paragraph}");
+        }
+        else
+        {
+            Assert.False(
+                paragraph.Contains(NothingLogsYet, StringComparison.Ordinal),
+                $"docs/troubleshooting.md still says \"{NothingLogsYet}\" and the plugin names {PluginLoggerSites.LoggerType} in {string.Join(", ", naming)}. A reporter reading that sentence concludes no log line can carry the key they configured, which is the one thing this section exists to stop them concluding.");
+        }
     }
 
     /// <summary>

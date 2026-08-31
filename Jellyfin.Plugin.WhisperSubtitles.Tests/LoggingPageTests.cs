@@ -45,7 +45,11 @@ public class LoggingPageTests
     /// </summary>
     private const string NothingLogsYet = "This plugin does not log at all";
 
-    private const string LoggerType = "ILogger";
+    /// <summary>
+    /// The type a logger arrives as, taken from the reading both pages share rather
+    /// than written again here.
+    /// </summary>
+    private const string LoggerType = PluginLoggerSites.LoggerType;
 
     [Fact]
     public void The_page_says_nothing_logs_yet_exactly_while_nothing_does()
@@ -74,31 +78,16 @@ public class LoggingPageTests
     }
 
     /// <summary>
-    /// The plugin source files that name a logger type, by path relative to the
-    /// project.
+    /// The plugin source files that name a logger type.
     /// </summary>
     /// <remarks>
-    /// Read off the checkout rather than off the compiled assembly, because a
-    /// reference in a comment or in a remark counts here: the question is whether
-    /// this plugin has acquired a logger, and a file that names one in prose is a
-    /// file where somebody has started.
+    /// The search itself is <see cref="PluginLoggerSites"/>, because
+    /// `docs/troubleshooting.md` states the same absence and is read against the
+    /// same question rather than against a second copy of it.
     /// </remarks>
-    private static System.Collections.Generic.List<string> FilesNamingALogger()
-    {
-        var project = Path.Combine(RepositoryRoot(), "Jellyfin.Plugin.WhisperSubtitles");
-
-        Assert.True(Directory.Exists(project), $"the plugin project was not found at {project}");
-
-        var sources = Directory.GetFiles(project, "*.cs", SearchOption.AllDirectories);
-
-        Assert.NotEmpty(sources);
-
-        return sources
-            .Where(path => File.ReadAllText(path).Contains(LoggerType, StringComparison.Ordinal))
-            .Select(path => Path.GetRelativePath(project, path).Replace('\\', '/'))
-            .Order(StringComparer.Ordinal)
-            .ToList();
-    }
+    /// <returns>Relative paths with forward slashes, ordinal ordered.</returns>
+    private static System.Collections.Generic.List<string> FilesNamingALogger() =>
+        PluginLoggerSites.All();
 
     /// <summary>
     /// The logging page, read out of the checkout rather than out of a copy.
