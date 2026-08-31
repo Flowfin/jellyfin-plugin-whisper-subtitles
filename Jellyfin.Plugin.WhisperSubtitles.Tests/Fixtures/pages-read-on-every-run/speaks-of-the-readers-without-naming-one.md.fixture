@@ -1,0 +1,15 @@
+# A release checklist that counts its readers instead of naming them
+
+## The documentation matches what the build produces
+
+Nothing decides this yet, and what is missing is a decision rather than a check.
+The issue is #62.
+
+Four pages under `docs/` are already read against the tree on every run rather
+than trusted, by `LimitsPageTests`, `LoggingPageTests`, `TroubleshootingPageTests`
+and `UntrustedInputTests`. None of them reads anything the build emits.
+
+This is the shape the real page carried. A count and a list of readers reads as
+correct against every population there could ever be, which is exactly why it
+says nothing, and it is why a missing sentence is refused rather than read as an
+empty list.

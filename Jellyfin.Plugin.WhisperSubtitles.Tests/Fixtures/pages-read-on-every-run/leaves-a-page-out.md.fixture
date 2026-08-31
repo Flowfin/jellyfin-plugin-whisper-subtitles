@@ -1,0 +1,12 @@
+# A release checklist that names one reader of two
+
+## The documentation matches what the build produces
+
+Nothing decides this yet, and what is missing is a decision rather than a check.
+The issue is #62.
+
+The pages read against the tree on every run rather than trusted are
+`docs/alpha.md`.
+
+One name is right and the other page is missing, so a reader that refused every
+backticked word would fail the equality here rather than pass this refusal.

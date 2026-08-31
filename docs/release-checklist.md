@@ -102,13 +102,23 @@ is made to operators in `docs/limits.md`.
 
 Nothing decides this yet, and what is missing is a decision rather than a check.
 
-Four pages under `docs/` are already read against the tree on every run rather
-than trusted, by `LimitsPageTests`, `LoggingPageTests`, `TroubleshootingPageTests`
-and `UntrustedInputTests`. None of them reads anything the build emits. So this
-item is a choice between two readings: either it is those readers being green on
-the release commit, which the merge gate item above already covers and which means
-this item says nothing new, or it is a comparison against the published archive,
-which nothing here makes and which needs the artefact to exist first.
+The pages read against the tree on every run rather than trusted are
+`docs/RELEASING.md`, `docs/choosing-a-backend.md`, `docs/limits.md`,
+`docs/logging.md`, `docs/release-checklist.md`, `docs/scorecard-dispositions.md`,
+`docs/troubleshooting.md` and `docs/untrusted-input.md`.
+
+That list is compared against what this repository's test project reads, in both
+directions, by `PagesReadOnEveryRunTests`, so a page that gains a reader and a
+page that loses one are both a red suite rather than a sentence going quietly out
+of date. It replaces a hand count of four, naming four reader classes, which was
+wrong about the population by half on the day anybody read it against the tree.
+
+None of those readers reads anything the build emits, and that half is a reading
+rather than a comparison. So this item is a choice between two readings: either it
+is those readers being green on the release commit, which the merge gate item
+above already covers and which means this item says nothing new, or it is a
+comparison against the published archive, which nothing here makes and which
+needs the artefact to exist first.
 
 Which of the two it is belongs in #62, because an item naming the weaker one while
 its words promise the stronger one is the failure this checklist is written

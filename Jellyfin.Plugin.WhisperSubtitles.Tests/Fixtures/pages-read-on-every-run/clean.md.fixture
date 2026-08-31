@@ -1,0 +1,13 @@
+# A release checklist that names exactly what the suite reads
+
+## The documentation matches what the build produces
+
+Nothing decides this yet, and what is missing is a decision rather than a check.
+The issue is #62.
+
+The pages read against the tree on every run rather than trusted are
+`docs/alpha.md` and `docs/beta.md`.
+
+This is the neighbour that has to stay accepted. A reader that refused every
+backticked word would satisfy each refusal beside it and say nothing about the
+real page.
