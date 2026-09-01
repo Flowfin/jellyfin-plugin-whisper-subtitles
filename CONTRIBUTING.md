@@ -119,7 +119,11 @@ the suite red, and a line naming neither is refused instead of being read past.
 - A test that needs elevation to lower a process priority or apply a cgroup
   limit. What is asserted instead is the values the limiter computes and the
   calls it makes through an injected seam, together with a failure to apply a
-  limit being logged and not failing the item. Owed by #22.
+  limit being logged and not failing the item. Replaced by
+  `ChildProcessPriorityTests`, `MediaToolPriorityTests`, for the ask each of the
+  two programs this plugin starts makes through that seam and for an item
+  surviving a platform that refuses it. Owed by #22, for the cgroup limit and
+  for the failure being logged.
 - A test that requires a GPU. Capability probe tests over a stubbed device query
   stand in, together with the backend contract suite, which is hardware
   independent by construction. Replaced by `BackendContractTests`. Owed by #15,
