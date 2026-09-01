@@ -118,10 +118,11 @@ public sealed class SubtitleGenerationTask : IScheduledTask, IConfigurableSchedu
 
         cancellationToken.ThrowIfCancellationRequested();
 
-        // Null because no setting holds a backend name yet. #40 is the configuration
-        // schema and it is where that arrives; until then selection takes the same
-        // route it will take when the setting is empty, which is the case a fresh
-        // install is in anyway.
+        // Null because nothing carries the setting to this task, not because no
+        // setting exists: PluginConfiguration.Backend has held a backend name since
+        // #40, and what would read it into here is the composition root in #71.
+        // Until then selection takes the same route it will take when the setting is
+        // empty, which is the case a fresh install is in anyway.
         var choice = await BackendSelector
             .SelectAsync(null, _candidates, cancellationToken)
             .ConfigureAwait(false);
