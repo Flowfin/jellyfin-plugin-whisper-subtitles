@@ -18,10 +18,10 @@ namespace Jellyfin.Plugin.WhisperSubtitles.Tests;
 /// through the injected seam, and that a refusal of it does not fail the item.
 ///
 /// CONTRIBUTING.md refuses "a test that needs elevation to lower a process
-/// priority", and names the seam and this failure case as what stands in. That
-/// line stays owed by #22 rather than becoming a replacement, because the cgroup
-/// half of it has nothing in the tree and the log line has nowhere to go while
-/// this plugin does not log.
+/// priority", and names the seam and this failure case as what stands in. This
+/// class is one of the two that line names as its replacement, and the line goes
+/// on owing #22 the cgroup limit and the log line: the first has nothing in the
+/// tree and the second has nowhere to go while this plugin does not log.
 ///
 /// Nothing here starts a process, reads a clock or asks the operating system for
 /// anything. Lowering a priority needs no elevation on any platform this runs on
