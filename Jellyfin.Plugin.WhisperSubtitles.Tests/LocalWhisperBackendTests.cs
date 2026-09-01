@@ -285,7 +285,7 @@ public class LocalWhisperBackendTests
     public void The_cost_hint_never_shrinks_as_the_media_grows()
     {
         // The one property a caller may rely on while the numbers themselves are a
-        // placeholder that #38 replaces with a measurement.
+        // placeholder that a measured factor would replace.
         var backend = new LocalWhisperBackend(
             ScriptedProcessRunner.Starting(ScriptedProcess.Printing(_threeCues)),
             Files(),

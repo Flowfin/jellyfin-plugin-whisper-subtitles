@@ -171,9 +171,12 @@ public sealed class LocalWhisperBackend : ITranscriptionBackend
     /// <remarks>
     /// A placeholder range, and it is marked as one wherever it is shown. Nothing
     /// here has measured this machine, this model or this thread count, and a
-    /// number that has measured none of those is not an estimate. #38 replaces it
-    /// with a factor calibrated on the operator's own library, which is the only
-    /// version of this that is honest.
+    /// number that has measured none of those is not an estimate. What replaces
+    /// it is a factor calibrated on the operator's own library, which is the only
+    /// version of this that is honest. The arithmetic that folds measured items
+    /// into such a factor is in <c>Calibration</c> and nothing calls it, because
+    /// measuring needs a run over an item and the scheduled task performs none.
+    /// That run is #183.
     ///
     /// It is still linear in the media duration, so a longer item never costs less
     /// than a shorter one, which is the one property a caller may rely on.
