@@ -306,17 +306,30 @@ green until a person moves it, and whether a named thing really holds a limit is
 a reading rather than a comparison. So the review at the first release is
 smaller than it was and it is not replaced.
 
-Three of the markers are read rather than trusted, and that is a narrower thing
+Four of the markers are read rather than trusted, and that is a narrower thing
 than the sentence above rather than a correction to it. Where an entry rests on a
 sentence saying nothing here reaches something - that no type reaches
 `ITaskManager`, that nothing calls the sweep, that nothing joins the pipeline into
-the task - what the sentence asserts is a search over this project and not a
+the task, that nothing in this plugin reaches the location its own configuration
+is written to - what the sentence asserts is a search over this project and not a
 judgement, and `LimitsPageAbsenceTests` runs the search. It refuses this page in
-both directions: one of those three sentences surviving the arrival of the thing
+both directions: one of those four sentences surviving the arrival of the thing
 it denies, and one of them disappearing while the tree still answers nothing.
 Every other marker is where the paragraph above leaves it.
 
-Why those three are worth a check of their own is a failure this repository has
+The fourth is the one to read carefully, because it is the only one of the four
+whose entry is filed as held today rather than as decided and not yet built. A
+reader is told that limit holds on the strength of the denial, so the sentence
+carries the entry instead of explaining why the entry is waiting, and it was the
+last of the four to be run. What reaching the location means there is a member
+that yields a path - `ConfigurationFilePath`, `PluginConfigurationsPath`,
+`ConfigurationDirectoryPath`, `PluginsPath`, `DataPath`, `ApplicationPaths` - and
+not the paths object itself, which `Plugin.cs` takes as a constructor parameter
+and hands to the server's own base class without reading a location out of it.
+Searching for that parameter instead would refuse this page for a plugin that
+reaches nothing.
+
+Why those four are worth a check of their own is a failure this repository has
 already met once, on `SECURITY.md`, where a sentence denying that anything in this
 plugin called the item selection outlived the arrival of a caller by four days and
 one edit to the file that did not re-read it. #85 is where that one is recorded. A
