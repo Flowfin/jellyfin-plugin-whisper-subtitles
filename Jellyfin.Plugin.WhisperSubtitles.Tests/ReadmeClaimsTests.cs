@@ -87,6 +87,30 @@ public class ReadmeClaimsTests
     private const string TaskSource = "Scheduling/SubtitleGenerationTask.cs";
 
     /// <summary>
+    /// The member a caller uses to ask a backend for a transcription, which is the
+    /// thing the remote backend paragraph denies anything in this plugin does.
+    /// </summary>
+    /// <remarks>
+    /// Written whole rather than assembled, for the reason the remote backend type
+    /// above gives: the walk it feeds is scoped to the plugin project, and this file
+    /// sits beside that project rather than under it, so a literal here cannot put
+    /// this file into its own result set the way the two whole-tree searches would.
+    /// </remarks>
+    private const string TranscribingMember = "TranscribeAsync";
+
+    /// <summary>
+    /// The folder the interface and its implementations live in, where the member
+    /// above is declared and answered rather than asked for.
+    /// </summary>
+    private const string BackendFolder = "Backends/";
+
+    /// <summary>
+    /// The sentence that tells somebody deciding whether to install that nothing
+    /// they hold leaves their machine yet.
+    /// </summary>
+    private const string AudioDenial = "No audio leaves the machine from this plugin today";
+
+    /// <summary>
     /// The heading whose opening paragraph says what can be walked today.
     /// </summary>
     private const string InstallPathHeading = "## From an install to a first subtitle";
@@ -294,6 +318,61 @@ public class ReadmeClaimsTests
         Assert.True(
             paragraph.Contains(RemoteBackendFile, StringComparison.Ordinal),
             $"README.md says the remote backend is here and does not say where. A reader is asked to take it on trust instead of being sent to the file: {paragraph}");
+    }
+
+    /// <summary>
+    /// The remote backend paragraph tells a reader that no audio of theirs leaves
+    /// their machine, and nothing read that sentence against the tree.
+    /// </summary>
+    /// <remarks>
+    /// The leg above asks whether the backend is filed as built and says in its own
+    /// remarks that it has no opinion about the rest of the paragraph. This sentence
+    /// is the rest of the paragraph, and it is the one with the most riding on it:
+    /// it is about somebody else's media leaving somebody else's server, and a
+    /// reader takes a denial nobody withdrew for a reading.
+    ///
+    /// Both directions are refused. A denial outliving the caller it denies is the
+    /// expensive one, and it is a shape this repository has already met on
+    /// `SECURITY.md`, where a sentence saying nothing here called the item selection
+    /// stood for days after the dry run started calling it; #85 is where that is
+    /// recorded. A denial disappearing while nothing asks for a transcription is the
+    /// other, and it costs a reader the sentence they were relying on.
+    ///
+    /// WHAT THIS DOES NOT DO. The population is the plugin project outside the
+    /// backend folder, because the interface declares that member and its
+    /// implementations answer it; a backend naming its own transcription is not the
+    /// joining this sentence is about, so a call added inside that folder passes.
+    /// It reads a name in source text, so it cannot see a call made through
+    /// reflection and it would count a mention parked at the end of a line of code.
+    /// It matches a phrase rather than a meaning, so the same denial written in
+    /// other words passes and a rewording of this one turns this red and has to be
+    /// made here as well. And it has no opinion about the two sentences either side
+    /// of it, the disclosure #81 owes and what the readiness probe sends.
+    /// </remarks>
+    [Fact]
+    public void The_page_denies_a_transcription_only_while_nothing_here_asks_for_one()
+    {
+        var paragraph = ParagraphSaying(RemoteBackendSubject);
+        var asking = SourcesNaming(PluginProjectPath(), [TranscribingMember])
+            .Where(path => !path.StartsWith(BackendFolder, StringComparison.Ordinal))
+            .ToList();
+
+        if (asking.Count == 0)
+        {
+            Assert.True(
+                paragraph.Contains(AudioDenial, StringComparison.Ordinal),
+                $"nothing outside {BackendFolder} asks a backend for a transcription and README.md no longer says \"{AudioDenial}\". That sentence is what a reader deciding whether to install is relying on, and losing it while it is still true leaves them with nothing said either way: {paragraph}");
+
+            Assert.True(
+                paragraph.Contains(JoiningIssue, StringComparison.Ordinal),
+                $"README.md denies that audio leaves the machine and names no issue holding the joining. An absence stated with nothing beside it is one a reader cannot follow up: {paragraph}");
+        }
+        else
+        {
+            Assert.False(
+                paragraph.Contains(AudioDenial, StringComparison.Ordinal),
+                $"{Show(asking)} asks a backend for a transcription and README.md still says \"{AudioDenial}\". That sentence is about somebody else's media leaving their server, and a run arriving under it is exactly the change that has to take it with it.");
+        }
     }
 
     /// <summary>
