@@ -1,0 +1,19 @@
+// The neighbour that breaks nothing, and it is the shape the plugin really uses.
+//
+// It reaches the same tool and it reaches it as a child process, through the
+// seam the backend was handed. Without this beside the fixture above, a scan
+// refusing every source in the project would pass its leg.
+
+namespace Jellyfin.Plugin.WhisperSubtitles.Backends.Local;
+
+internal sealed class WhisperCommandLine
+{
+    private readonly IProcessRunner _runner;
+
+    internal WhisperCommandLine(IProcessRunner runner)
+    {
+        _runner = runner;
+    }
+
+    internal IStartedProcess Start(ProcessInvocation invocation) => _runner.Start(invocation);
+}
