@@ -7,10 +7,11 @@ namespace Jellyfin.Plugin.WhisperSubtitles.Selection;
 /// The bounds an operator set on what a run may touch.
 /// </summary>
 /// <remarks>
-/// Separate from <c>PluginConfiguration</c>, which carries no settings yet and
-/// which is a type the server serialises. This is the shape selection reads, so
-/// selection stays a function of its arguments and a test can vary one bound at a
-/// time.
+/// Separate from <c>PluginConfiguration</c>, which is the type the server
+/// serialises and stores on disk. What separates them is not that one side is
+/// empty - a bound here and a setting there can name the same thing - but that
+/// this is the shape selection reads, so selection stays a function of its
+/// arguments and a test can vary one bound at a time.
 /// </remarks>
 public sealed class SelectionOptions
 {
