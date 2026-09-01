@@ -1,0 +1,22 @@
+// A run that folds a measured item into the factor, which is what the README
+// denies. It is the shape the joining in #183 would arrive as: the run already
+// holds the ledger, and one call at the end of an item is the whole of it.
+
+namespace Jellyfin.Plugin.WhisperSubtitles.Scheduling;
+
+using Jellyfin.Plugin.WhisperSubtitles.Calibration;
+
+internal sealed class RunThatMeasures
+{
+    private readonly CalibrationLedger _calibration;
+
+    internal RunThatMeasures(CalibrationLedger calibration)
+    {
+        _calibration = calibration;
+    }
+
+    internal void ItemFinished(CalibrationKey key, System.TimeSpan audio, System.TimeSpan work, System.DateTimeOffset at)
+    {
+        _calibration.Record(key, audio, work, at);
+    }
+}

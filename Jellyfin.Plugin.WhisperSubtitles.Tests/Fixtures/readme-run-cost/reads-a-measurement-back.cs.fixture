@@ -1,0 +1,18 @@
+// The neighbour that breaks nothing, and it is what Estimation/DryRun.cs really
+// does. It names the ledger and takes a measurement back out of it, which is a
+// reading rather than a folding, so a search that could not tell the two apart
+// would refuse this plugin as it stands today.
+
+namespace Jellyfin.Plugin.WhisperSubtitles.Estimation;
+
+using Jellyfin.Plugin.WhisperSubtitles.Calibration;
+
+internal static class EstimateFromWhatWasMeasured
+{
+    internal static bool AnythingMeasured(CalibrationLedger calibration, CalibrationKey key)
+    {
+        var measurement = calibration.For(key);
+
+        return measurement is not null || calibration.HasAMeasurement;
+    }
+}

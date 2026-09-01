@@ -111,7 +111,10 @@ acceleration. No measurement of throughput has been made in this repository, so
 no number for it is quoted here. The arithmetic that folds measured items into a
 factor is built and nothing calls it, because measuring needs a run over an item
 and the scheduled task performs none. That run is #183, and the estimate an
-operator would be shown on top of such a factor is #37.
+operator would be shown on top of such a factor is #37. `ReadmeRunCostTests`
+reads that sentence rather than leaving it to be trusted, in both directions: a
+caller arriving while the denial stands, and the denial going while the tree
+still answers nothing.
 
 Memory is the backend's for the same reason. The work happens in another process,
 so what a model costs in memory is charged to that process and reclaimed when it
