@@ -28,13 +28,27 @@ local backend's settings passes neither of them:
 So a path an operator types is validated and then reaches no backend, and no
 setting holds a remote endpoint or a key at all.
 `SubtitleGenerationTask.ExecuteAsync` selects a backend, records that none is
-configured, and stops. Nothing in the plugin's own source calls the audio
-extractor, the item selection or the subtitle publisher; those are reached only
-from the test suite. On a server built from this tree no audio is extracted, no
-child process is started, no request leaves the machine, and no file is written
-into a library. The boundaries below are real code with tests over them, but a
-flaw in one is a flaw in a part not yet joined to a run rather than something
-loose on a live server.
+configured, and stops. The audio extractor and the subtitle publisher are
+reached from the test suite and from nowhere else in this plugin. The item
+selection is reached once more than that, and this paragraph denied it from the
+day the dry run landed: the dry run calls it, and nothing in this plugin calls
+the dry run.
+
+    $ git grep 'ItemSelection.Select' -- 'Jellyfin.Plugin.WhisperSubtitles/*.cs'
+    Jellyfin.Plugin.WhisperSubtitles/Estimation/DryRun.cs:        var selected = ItemSelection.Select(items, options);
+
+Following type names out of the task through this plugin's own sources reaches
+neither the extractor, nor the selection, nor the publisher, so what sits behind
+that call is a route no server takes rather than no route at all. On a server
+built from this tree no audio is extracted, no child process is started, no
+request leaves the machine, and no file is written into a library. The
+boundaries below are real code with tests over them, but a flaw in one is a flaw
+in a part not yet joined to a run rather than something loose on a live server.
+
+`SecurityPolicyClaimTests` derives both of those readings from the sources
+rather than trusting the paragraphs above, and refuses this section in either
+direction: a caller of one of the three arriving that this section does not
+name, and this section going on denying a run once the task reaches one of them.
 
 ## Where to report
 
