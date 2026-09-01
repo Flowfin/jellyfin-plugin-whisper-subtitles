@@ -1,0 +1,13 @@
+// A backend that binds an inference runtime into the process that declares it.
+//
+// The declaration is the whole of the fixture. Nothing here has to compile or
+// run: what the scan reads is the source of the plugin project, so what proves
+// it bites is a source carrying the declaration and nothing else.
+
+namespace Jellyfin.Plugin.WhisperSubtitles.Backends.Local;
+
+internal static class WhisperNative
+{
+    [System.Runtime.InteropServices.DllImport("whisper")]
+    internal static extern int whisper_full(System.IntPtr context, System.IntPtr samples, int count);
+}

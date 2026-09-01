@@ -66,6 +66,17 @@ Held today. The local backend drives a command line tool through an injected
 process runner, in #12, and the package-contents check above refuses the shipped
 runtime that an in-process design would need.
 
+`OutOfProcessBackendTests` reads that rather than trusting it, in the two
+directions this entry can stop being true. It takes the backends out of the
+assembly this plugin ships and asks what each one has to be handed before it can
+work, so a backend reaching neither a child process nor a remote endpoint, and
+transcribing anyway, is refused. And it scans this plugin's sources for a
+declaration that loads native code into the process that declares it, which is the
+quieter direction: it needs no new backend and no new file in the package, and it
+would leave the two promises above - that a native fault ends one transcription
+rather than the media server, and that killing a run reclaims its memory - false
+while this paragraph went on making them.
+
 The cost is the one worth stating: progress inside a single item is only as fine
 as what the backend reports, because the plugin is reading another process
 rather than sitting inside the work.
