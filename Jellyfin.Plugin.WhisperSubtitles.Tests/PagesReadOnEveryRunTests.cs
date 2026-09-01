@@ -55,6 +55,17 @@ namespace Jellyfin.Plugin.WhisperSubtitles.Tests;
 public class PagesReadOnEveryRunTests
 {
     /// <summary>
+    /// The sentence the page says where its own list stops with.
+    /// </summary>
+    /// <remarks>
+    /// The list names pages under <c>docs/</c> and the census behind it looks nowhere
+    /// else, so a reader taking the list for the pages this repository reads on every
+    /// run is reading past the root documents. That is the same defect the list itself
+    /// was repaired for, one level out: a population presented as the population.
+    /// </remarks>
+    private const string StopsAtDocs = "That list and the comparison behind it stop at `docs/`.";
+
+    /// <summary>
     /// The paragraph the checklist carries the list in. It runs to the end of its own
     /// paragraph rather than to a full stop, because every name in it carries one.
     /// </summary>
@@ -92,6 +103,18 @@ public class PagesReadOnEveryRunTests
     /// a fixture leg cannot be moved by anything landing under <c>docs/</c>.
     /// </summary>
     private static readonly string[] Fabricated = ["docs/alpha.md", "docs/beta.md"];
+    /// <summary>
+    /// A document named in a source file with no directory in front of it.
+    /// </summary>
+    /// <remarks>
+    /// A name under <c>docs/</c> is written either with the prefix inside the quotes or
+    /// as two arguments, and neither shape reaches this: the first carries a slash the
+    /// class refuses and the second leaves a file name that is not at the root.
+    /// </remarks>
+    private static readonly Regex NamedWithNoDirectory = new(
+        @"""(?<name>[A-Za-z0-9._-]+\.md)""",
+        RegexOptions.CultureInvariant,
+        TimeSpan.FromSeconds(5));
 
     [Fact]
     public void The_checklist_names_exactly_the_pages_this_suite_reads()
@@ -115,6 +138,27 @@ public class PagesReadOnEveryRunTests
         Assert.True(
             read.Count >= 6,
             $"this test project names {read.Count} page(s) under docs/ and this was written against eight: {string.Join(", ", read)}. A shape that stopped being recognised leaves the comparison agreeing with nothing.");
+    }
+
+    [Fact]
+    public void The_page_says_where_the_list_stops_exactly_while_something_outside_docs_is_read()
+    {
+        // Both directions, over the real files rather than a fixture, because what is at
+        // risk is this page against this tree. A sentence saying the list stops at docs/
+        // while nothing outside it is read tells a releaser about a population that is
+        // not there; the sentence going while the root documents are still read leaves
+        // the list reading as every document this repository holds, which is the state
+        // this leg exists against.
+        var read = RootDocumentsTheSuiteReads();
+        var says = Checklist().Contains(StopsAtDocs, StringComparison.Ordinal);
+
+        Assert.True(
+            !says || read.Count > 0,
+            $"docs/release-checklist.md says its list stops at docs/ and that the root documents are read on every run, and this test project reads none of them: {string.Join(", ", read)}. The sentence describes a population that is not there.");
+
+        Assert.True(
+            says || read.Count == 0,
+            $"this test project reads {read.Count} document(s) at the repository root ({string.Join(", ", read)}) and docs/release-checklist.md no longer says its list stops at docs/, so the list reads as every document read on every run while naming none of these.");
     }
 
     [Fact]
@@ -272,6 +316,46 @@ public class PagesReadOnEveryRunTests
                 if (File.Exists(Path.Combine(documents, name)))
                 {
                     found.Add("docs/" + name);
+                }
+            }
+        }
+
+        return [.. found];
+    }
+
+    /// <summary>
+    /// The documents at the repository root this test project names.
+    /// </summary>
+    /// <remarks>
+    /// The same bound as the census above, and it is the reason this is a floor rather
+    /// than a count: a class naming a document and reading nothing is in here, and the
+    /// exclusion this file writes to keep fixtures apart from real pages names one. What
+    /// the leg above asks of it is only whether it is empty, which that bound cannot
+    /// make wrong in the direction that matters - a root document nothing reads is still
+    /// a root document some class opens.
+    /// </remarks>
+    /// <returns>The file names, ordered.</returns>
+    private static List<string> RootDocumentsTheSuiteReads()
+    {
+        var root = RepositoryRoot();
+        var found = new SortedSet<string>(StringComparer.Ordinal);
+
+        foreach (var source in Directory.EnumerateFiles(ProjectDirectory(), "*.cs", SearchOption.AllDirectories))
+        {
+            if (IsBuildOutput(source))
+            {
+                continue;
+            }
+
+            var flattened = Whitespace.Replace(File.ReadAllText(source), " ");
+
+            foreach (Match named in NamedWithNoDirectory.Matches(flattened))
+            {
+                var name = named.Groups["name"].Value;
+
+                if (File.Exists(Path.Combine(root, name)))
+                {
+                    found.Add(name);
                 }
             }
         }

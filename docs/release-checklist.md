@@ -113,6 +113,11 @@ page that loses one are both a red suite rather than a sentence going quietly ou
 of date. It replaces a hand count of four, naming four reader classes, which was
 wrong about the population by half on the day anybody read it against the tree.
 
+That list and the comparison behind it stop at `docs/`. Documents at the
+repository root are read against the tree on every run as well, and this list
+names none of them, so what this item rests on is the documentation under
+`docs/` rather than every document this repository holds.
+
 None of those readers reads anything the build emits, and that half is a reading
 rather than a comparison. So this item is a choice between two readings: either it
 is those readers being green on the release commit, which the merge gate item
