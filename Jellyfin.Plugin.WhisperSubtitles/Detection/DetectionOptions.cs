@@ -11,8 +11,9 @@ namespace Jellyfin.Plugin.WhisperSubtitles.Detection;
 /// <see cref="Backends.Local.LocalBackendOptions"/> is one: the rule can be built
 /// and driven in a test without a server writing a file. Where an operator types
 /// the number is the configuration page in #36, and the schema and validation
-/// around it are #40. Neither exists yet, so today the floor is a value this
-/// plugin carries and not one an operator can see.
+/// around it are #40. Both of those exist and this number is on neither of them,
+/// so today the floor is a value this plugin carries and not one an operator can
+/// see.
 ///
 /// The floor is a setting rather than a constant because the right number depends
 /// on the library. A collection of clean studio audio can afford a high floor; a
