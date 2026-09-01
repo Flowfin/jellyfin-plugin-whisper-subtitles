@@ -1,0 +1,14 @@
+# What this plugin will not do
+
+The neighbour. Nothing here breaks a rule, and a reader that refused every page
+put in front of it would pass every leg above without this one.
+
+## It writes one subtitle format
+
+SubRip, with the `.srt` extension, and nothing else for the first release.
+
+Held today. Recorded in #35, with the reasoning in `docs/subtitle-format.md`.
+
+## When this list is checked against the code
+
+The closing section, which is about the list rather than a limit in it.
