@@ -1,0 +1,10 @@
+# Adding a transcription backend
+
+## Where a backend lives
+
+Under `Jellyfin.Plugin.WhisperSubtitles/Backends/`.
+
+## The tests a new backend has to pass
+
+`BackendContractTests`, and the guards `AlphaGuardTests` and `BetaGuardTests`
+are named nowhere the reader is pointed at.
