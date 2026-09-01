@@ -108,8 +108,10 @@ Time is the backend's, not this plugin's. A transcription takes as long as the
 model and the hardware take, and that ranges over more than an order of magnitude
 between a small model on a current processor and a large one with no
 acceleration. No measurement of throughput has been made in this repository, so
-no number for it is quoted here. Making that measurement, and building the
-estimate an operator is shown on top of it, is #38 and #37.
+no number for it is quoted here. The arithmetic that folds measured items into a
+factor is built and nothing calls it, because measuring needs a run over an item
+and the scheduled task performs none. That run is #183, and the estimate an
+operator would be shown on top of such a factor is #37.
 
 Memory is the backend's for the same reason. The work happens in another process,
 so what a model costs in memory is charged to that process and reclaimed when it

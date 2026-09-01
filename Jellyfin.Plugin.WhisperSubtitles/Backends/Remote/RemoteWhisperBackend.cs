@@ -201,8 +201,9 @@ public sealed class RemoteWhisperBackend : ITranscriptionBackend
     /// reason the local backend's is: nothing here has measured this endpoint. It
     /// is wider than the local one at the fast end because the work happens on a
     /// machine whose size this plugin cannot see, and a busy endpoint queues.
-    /// #38 replaces it with a measurement, and #37 refuses to show a number when
-    /// there is none.
+    /// What replaces it is a measurement, which needs a run over an item that the
+    /// scheduled task does not perform, so it waits on #183, and #37 refuses to
+    /// show a number when there is none.
     ///
     /// Linear in the media duration, so a longer item never costs less than a
     /// shorter one, which is the one property a caller may rely on.

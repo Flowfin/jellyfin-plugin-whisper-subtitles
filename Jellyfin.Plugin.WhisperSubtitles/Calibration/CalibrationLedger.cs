@@ -26,7 +26,8 @@ namespace Jellyfin.Plugin.WhisperSubtitles.Calibration;
 /// key that comes back after the machine underneath it has changed. A kept
 /// measurement has no way to notice that; a discarded one is measured again. What
 /// this costs is a re-measurement after a round trip, and that is the trade the
-/// literal reading makes. Whether the cache is wanted instead belongs in #38.
+/// literal reading makes. Whether the cache is wanted instead is open and is named
+/// by no open issue, because #38 closed on the invalidation it asked for.
 ///
 /// NOTHING HERE SURVIVES A RESTART. This is memory, like <c>AttemptLedger</c>, and
 /// no type in this plugin writes to where the server puts plugin data. That is not
