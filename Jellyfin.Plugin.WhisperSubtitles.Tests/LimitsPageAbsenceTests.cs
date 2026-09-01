@@ -9,10 +9,10 @@ using Xunit;
 namespace Jellyfin.Plugin.WhisperSubtitles.Tests;
 
 /// <summary>
-/// Three sentences on the limits page say the tree does not do something yet, and
-/// each of them is the reason an entry beside it is filed as decided rather than
-/// held. This reads the tree for those three and refuses the page in both
-/// directions.
+/// Four sentences on the limits page say the tree does not do something yet. Three
+/// of them are the reason an entry beside them is filed as decided rather than
+/// held; the fourth is what two entries filed as held today rest on. This reads the
+/// tree for all four and refuses the page in both directions.
 /// </summary>
 /// <remarks>
 /// THE PAGE ITSELF NAMES THIS GAP AND THIS IS THREE OF IT. Its closing section
@@ -20,8 +20,24 @@ namespace Jellyfin.Plugin.WhisperSubtitles.Tests;
 /// whether a named thing really holds a limit is a reading rather than a
 /// comparison. That is right about a marker in general and wrong about a sentence
 /// of the shape "nothing here reaches X", which is a search over this project and
-/// nothing else. Those are the three taken here, and the rest of the gap is
+/// nothing else. Those are the four taken here, and the rest of the gap is
 /// untouched.
+///
+/// THE FOURTH CARRIES MORE WEIGHT THAN THE OTHER THREE AND ARRIVED LAST. The
+/// yielding, sweep and joining sentences each explain why an entry is filed as
+/// decided and not yet built, so a reader who ignores one still meets an entry
+/// promising nothing. The configuration-location sentence is the whole of why its
+/// two entries are filed as HELD TODAY, on the writing list and on the way out, so
+/// a reader is told a limit holds on the strength of a denial nothing ran.
+///
+/// WHAT REACHING THE LOCATION MEANS IS A MEMBER THAT YIELDS A PATH, NOT THE PATHS
+/// OBJECT. Plugin.cs takes IApplicationPaths as a constructor parameter and hands
+/// it to the server's own base class, which is what makes the server rather than
+/// this plugin the thing that writes the file, so a search for that parameter would
+/// refuse this page for a plugin that reaches nothing. The set below is the members
+/// that return a path instead, and
+/// <c>The_reaching_set_is_the_members_that_yield_a_path_and_not_the_paths_object</c>
+/// is what refuses that distinction being lost.
 ///
 /// THE FAILURE IT IS WRITTEN AGAINST IS A SENTENCE SURVIVING THE WORK IT DENIES,
 /// and it is not hypothetical on this board: the security policy went on saying
@@ -105,6 +121,19 @@ public sealed class LimitsPageAbsenceTests
     private const string NothingJoinsThePipeline = "nothing joins the pipeline into the task";
 
     /// <summary>
+    /// What both configuration entries say about the file the server writes for this
+    /// plugin. The page writes it twice, once in the write list and once on the way
+    /// out, and it is the whole of why either of them is filed as held today.
+    /// </summary>
+    private const string NothingReachesTheLocation = "nothing in this plugin reaches the location";
+
+    /// <summary>
+    /// The parameter the plugin hands to its base class. It is deliberately outside
+    /// the set of names that count as reaching a location.
+    /// </summary>
+    private const string ThePathsObject = "IApplicationPaths";
+
+    /// <summary>
     /// The names a run is assembled out of. The task naming any of them is the
     /// joining the page denies, which is the same set the troubleshooting page and
     /// the issue that owns the joining both read.
@@ -116,6 +145,21 @@ public sealed class LimitsPageAbsenceTests
         "BoundedRun",
         "SubtitlePublisher",
         "TranscriptionRequest",
+    ];
+
+    /// <summary>
+    /// The members that hand out a path under which the server keeps plugin data.
+    /// Naming one of these is this plugin reaching the location; taking the object
+    /// that carries them is not, which is the distinction the remarks above set out.
+    /// </summary>
+    private static readonly string[] _reaching =
+    [
+        "ConfigurationFilePath",
+        "PluginConfigurationsPath",
+        "ConfigurationDirectoryPath",
+        "PluginsPath",
+        "DataPath",
+        "ApplicationPaths",
     ];
 
     [Fact]
@@ -178,6 +222,46 @@ public sealed class LimitsPageAbsenceTests
     }
 
     [Fact]
+    public void The_page_says_nothing_reaches_the_configuration_location_only_while_nothing_does()
+    {
+        var naming = SourcesNaming(SourcesUnder(string.Empty), _reaching);
+
+        AssertTheDenialMatchesTheTree(
+            NothingReachesTheLocation,
+            naming,
+            "both configuration entries, in the write list and on the way out",
+            $"a plugin source naming one of {string.Join(", ", _reaching)} is this plugin reaching the place the server keeps its data, and those two entries are filed as held today on the strength of that sentence rather than on a check of their own");
+    }
+
+    [Fact]
+    public void The_reaching_set_is_the_members_that_yield_a_path_and_not_the_paths_object()
+    {
+        // The near-miss the set above exists against. Widening it to the parameter
+        // the plugin hands to its base class would turn the leg above red for a
+        // plugin that reads no location at all, and that parameter is the first
+        // thing a reader of the composition root meets. So the boundary is asserted
+        // rather than explained: the object is in this tree, and no name in the set
+        // reaches it.
+        var carrying = SourcesNaming(SourcesUnder(string.Empty), [ThePathsObject]);
+
+        Assert.True(
+            carrying.Count > 0,
+            $"no source of this plugin names {ThePathsObject}, so the distinction this leg holds has stopped having a subject and the set above is no longer erring where it says it does");
+
+        Assert.DoesNotContain(ThePathsObject, _reaching, StringComparer.Ordinal);
+
+        // Not that the set holds no substring of the parameter - one of them is a
+        // substring of it - but that the SEARCH does not answer for the parameter.
+        // What separates the two is the word boundary the matcher below applies, so
+        // the guard runs that matcher rather than restating what it is expected to
+        // do. Widening the set to the parameter turns this red, and so does dropping
+        // the boundary out of the matcher.
+        Assert.False(
+            NamesAny(ThePathsObject, _reaching),
+            $"a source whose only mention is {ThePathsObject} is counted as reaching a location, so the leg above refuses this page for a plugin that hands the server's own paths object to the server's own base class and reads no location out of it");
+    }
+
+    [Fact]
     public void The_section_that_describes_this_check_is_not_part_of_what_it_reads()
     {
         // The closing section names the three sentences this class holds. A reader
@@ -191,9 +275,12 @@ public sealed class LimitsPageAbsenceTests
 
         Assert.DoesNotContain(Closing, entries, StringComparison.Ordinal);
 
-        Assert.True(
-            Occurrences(whole, NothingJoinsThePipeline) > Occurrences(entries, NothingJoinsThePipeline),
-            $"{Page} writes \"{NothingJoinsThePipeline}\" {Occurrences(whole, NothingJoinsThePipeline)} time(s) and the part before \"{Closing}\" carries {Occurrences(entries, NothingJoinsThePipeline)} of them. The section after that heading quotes what this class holds, so a reader of the whole page answers its own question, and the two counts being equal means either the split was lost or that section stopped quoting it.");
+        foreach (var quoted in new[] { NothingJoinsThePipeline, NothingReachesTheLocation })
+        {
+            Assert.True(
+                Occurrences(whole, quoted) > Occurrences(entries, quoted),
+                $"{Page} writes \"{quoted}\" {Occurrences(whole, quoted)} time(s) and the part before \"{Closing}\" carries {Occurrences(entries, quoted)} of them. The section after that heading quotes what this class holds, so a reader of the whole page answers its own question, and the two counts being equal means either the split was lost or that section stopped quoting it.");
+        }
     }
 
     [Fact]
@@ -251,14 +338,29 @@ public sealed class LimitsPageAbsenceTests
         var root = Path.Combine(RepositoryRoot(), PluginProject);
 
         return [.. sources
-            .Where(path => names.Any(name => Regex.IsMatch(
-                CodeIn(path),
-                @"\b" + name + @"\b",
-                RegexOptions.CultureInvariant,
-                TimeSpan.FromSeconds(5))))
+            .Where(path => NamesAny(CodeIn(path), names))
             .Select(path => PluginProject + "/" + Path.GetRelativePath(root, path).Replace('\\', '/'))
             .Order(StringComparer.Ordinal)];
     }
+
+    /// <summary>
+    /// Whether a text names any of a set of names as a whole word.
+    /// </summary>
+    /// <remarks>
+    /// The word boundary is the whole of what separates a member that yields a path
+    /// from the paths object carrying it, so this is one function rather than a
+    /// pattern written twice: the search below it and the guard that holds that
+    /// distinction both come through here.
+    /// </remarks>
+    /// <param name="text">The text to search.</param>
+    /// <param name="names">The names to look for.</param>
+    /// <returns><c>true</c> where the text names one of them.</returns>
+    private static bool NamesAny(string text, IReadOnlyList<string> names) =>
+        names.Any(name => Regex.IsMatch(
+            text,
+            @"\b" + name + @"\b",
+            RegexOptions.CultureInvariant,
+            TimeSpan.FromSeconds(5)));
 
     /// <summary>
     /// Every source file of the plugin project, or of one directory inside it.
