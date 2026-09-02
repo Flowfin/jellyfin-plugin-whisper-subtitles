@@ -1,0 +1,13 @@
+# Releasing a plugin that is not this one
+
+## Repository settings this expects
+
+- Every context the ABI floor workflow reports, required on those branches.
+
+  The contexts the ABI floor workflow reports are
+  `The plugin compiles against the floor its manifest promises`, which is the build
+  against the floor, and `And it refuses a symbol the floor does not have`, which is
+  the half that refuses a symbol the floor does not carry, and
+  `A context this workflow does not report`, which no job here is about.
+
+  Nothing else on this page is about a context.
