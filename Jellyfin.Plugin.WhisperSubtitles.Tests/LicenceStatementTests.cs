@@ -40,11 +40,19 @@ namespace Jellyfin.Plugin.WhisperSubtitles.Tests;
 ///
 /// WHAT THIS DOES NOT DO.
 ///
-/// It says nothing about the three upstream licences the same section states.
-/// Those come from a network call this suite does not make, and a reading of this
-/// tree cannot make it. The clause of #56 asking that the upstream statement be
-/// checked rather than remembered is untouched by this, and stays a reading
-/// somebody does by hand.
+/// It says nothing about whether the three upstream licences the same section
+/// states are the licences those projects declare. Those come from a network call
+/// this suite does not make, and a reading of this tree cannot make it. The clause
+/// of #56 asking that the upstream statement be checked rather than remembered is
+/// untouched by this, and stays a reading somebody does by hand.
+///
+/// WHAT IT DOES SAY ABOUT THEM IS HOW MANY THERE ARE. The section opens with a
+/// figure for how many separate statements it is about, and that figure is one for
+/// this plugin plus one per project the loop beside it names. A project added to
+/// the loop moves it, which is the change the sentence is at risk of, so the second
+/// reader below derives it rather than reading it twice. The loop and its paste are
+/// compared first: a figure derived from a reading whose answers are not all there
+/// would be a number nobody read.
 ///
 /// It names a licence from the header of the file rather than auditing the file.
 /// The header shapes it knows are the GNU family, so a <c>LICENSE</c> carrying any
@@ -95,6 +103,65 @@ public sealed class LicenceStatementTests
         TimeSpan.FromSeconds(5));
 
     /// <summary>
+    /// The reading of the upstream projects the section quotes: a loop naming one
+    /// repository per statement it is about.
+    /// </summary>
+    private static readonly Regex _upstreamReading = new(
+        @"^ {4}for r in (?<repositories>[^;]+); do gh api ",
+        RegexOptions.Multiline | RegexOptions.CultureInvariant,
+        TimeSpan.FromSeconds(5));
+
+    /// <summary>
+    /// The figure the section opens with, which is how many licence statements it
+    /// is about.
+    /// </summary>
+    /// <remarks>
+    /// The gap is whitespace rather than a space, because the sentence is wrapped
+    /// and a reader that required a space would call the section silent for where
+    /// its line broke.
+    /// </remarks>
+    private static readonly Regex _separateStatements = new(
+        @"(?<count>[A-Za-z]+)\s+separate\s+statements",
+        RegexOptions.CultureInvariant,
+        TimeSpan.FromSeconds(5));
+
+    /// <summary>
+    /// The number words the section may write its figure in.
+    /// </summary>
+    /// <remarks>
+    /// Bounded on purpose and short of every word English has, which is the shape
+    /// the figure readers already in this suite take. A figure this table does not
+    /// hold is unreadable rather than nought, so a sentence spelling one in a word
+    /// nothing here knows is refused by the leg that requires a figure instead of
+    /// being compared against a number nobody wrote.
+    /// </remarks>
+    private static readonly Dictionary<string, int> _figures = new(StringComparer.Ordinal)
+    {
+        ["None"] = 0,
+        ["none"] = 0,
+        ["One"] = 1,
+        ["one"] = 1,
+        ["Two"] = 2,
+        ["two"] = 2,
+        ["Three"] = 3,
+        ["three"] = 3,
+        ["Four"] = 4,
+        ["four"] = 4,
+        ["Five"] = 5,
+        ["five"] = 5,
+        ["Six"] = 6,
+        ["six"] = 6,
+        ["Seven"] = 7,
+        ["seven"] = 7,
+        ["Eight"] = 8,
+        ["eight"] = 8,
+        ["Nine"] = 9,
+        ["nine"] = 9,
+        ["Ten"] = 10,
+        ["ten"] = 10
+    };
+
+    /// <summary>
     /// The version the header of a GNU licence states.
     /// </summary>
     private static readonly Regex _version = new(
@@ -127,6 +194,79 @@ public sealed class LicenceStatementTests
     public void The_page_states_the_licence_the_file_beside_it_declares()
     {
         Assert.Empty(Complaints(Read(PageName), Read(LicenceName)));
+    }
+
+    [Fact]
+    public void The_figure_the_section_opens_with_is_the_number_of_statements_it_holds()
+    {
+        Assert.Empty(CountComplaints(Read(PageName)));
+    }
+
+    [Fact]
+    public void The_reader_refuses_a_section_whose_figure_is_not_the_number_of_statements()
+    {
+        // The failure this exists against: a fourth upstream project is added to the
+        // loop and the sentence above it goes on saying four.
+        var complaints = CountComplaints(
+            PageWith(
+                "    for r in a/one b/two c/three d/four; do gh api repos/$r --jq '.x'; done",
+                "    a/one MIT",
+                "    b/two MIT",
+                "    c/three MIT",
+                "    d/four MIT",
+                string.Empty,
+                "Four separate statements, and none of them is about the model file."));
+
+        Assert.Contains(complaints, complaint => complaint.Contains("is about Four separate statements and it holds 5", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void The_reader_refuses_a_loop_that_names_more_repositories_than_it_pasted()
+    {
+        // The half a reader would otherwise take on trust. The figure is derived from
+        // the loop, so a loop naming a project whose answer never came back would
+        // move the figure to a number nobody read.
+        var complaints = CountComplaints(
+            PageWith(
+                "    for r in a/one b/two c/three; do gh api repos/$r --jq '.x'; done",
+                "    a/one MIT",
+                "    b/two MIT",
+                string.Empty,
+                "Four separate statements, and none of them is about the model file."));
+
+        Assert.Contains(complaints, complaint => complaint.Contains("names 3 repositories and pastes 2", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void The_reader_refuses_a_section_that_states_no_figure_at_all()
+    {
+        // The fail-closed direction. A sentence rewritten without its number leaves a
+        // comparison with one side, and an unreadable word is no figure rather than
+        // nought.
+        var complaints = CountComplaints(
+            PageWith(
+                "    for r in a/one b/two c/three; do gh api repos/$r --jq '.x'; done",
+                "    a/one MIT",
+                "    b/two MIT",
+                "    c/three MIT",
+                string.Empty,
+                "Several separate statements, and none of them is about the model file."));
+
+        Assert.Contains(complaints, complaint => complaint.Contains("states no figure", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void The_reader_refuses_a_section_that_quotes_no_reading_of_the_upstream_projects()
+    {
+        var complaints = CountComplaints(
+            PageWith(
+                "    git show origin/master:LICENSE | sed -n '1,2p'",
+                "                        GNU GENERAL PUBLIC LICENSE",
+                "                           Version 3, 29 June 2007",
+                string.Empty,
+                "Four separate statements, and none of them is about the model file."));
+
+        Assert.Contains(complaints, complaint => complaint.Contains("quotes no reading of the upstream", StringComparison.Ordinal));
     }
 
     [Fact]
@@ -335,6 +475,68 @@ public sealed class LicenceStatementTests
         if (!string.Equals(named, declared, StringComparison.Ordinal))
         {
             complaints.Add($"\"{Heading}\" names {named} and {LicenceName} declares {declared}.");
+        }
+
+        return complaints;
+    }
+
+    /// <summary>
+    /// What is wrong between the figure the section opens with and the statements it
+    /// actually holds.
+    /// </summary>
+    /// <remarks>
+    /// The count is one for this plugin's own licence, which the section reads out of
+    /// <c>LICENSE</c>, plus one for each upstream project the loop beside it names.
+    /// The loop and its paste are compared first, so a figure derived from a loop
+    /// whose answers are not all there is refused rather than believed.
+    /// </remarks>
+    /// <param name="page">The page, as its clone checked it out.</param>
+    /// <returns>One line per disagreement, empty where the figure and the section agree.</returns>
+    private static List<string> CountComplaints(string page)
+    {
+        var complaints = new List<string>();
+        var section = SectionOf(page);
+
+        if (section.Length == 0)
+        {
+            complaints.Add($"{PageName} carries no \"{Heading}\" section, so there is no figure to compare.");
+
+            return complaints;
+        }
+
+        var upstream = _upstreamReading.Match(section);
+
+        if (!upstream.Success)
+        {
+            complaints.Add($"\"{Heading}\" quotes no reading of the upstream projects, so the figure it opens with is derived from nothing.");
+
+            return complaints;
+        }
+
+        var named = upstream.Groups["repositories"].Value
+            .Split(' ', StringSplitOptions.RemoveEmptyEntries)
+            .Length;
+        var pasted = PastedAfter(section, upstream.Index).Count;
+
+        if (named != pasted)
+        {
+            complaints.Add($"\"{Heading}\" names {named} repositories and pastes {pasted} answer(s) under them, so the two sides of that reading disagree before the figure is compared to either.");
+
+            return complaints;
+        }
+
+        var stated = _separateStatements.Match(section);
+
+        if (!stated.Success || !_figures.TryGetValue(stated.Groups["count"].Value, out var figure))
+        {
+            complaints.Add($"\"{Heading}\" states no figure this reader can name for how many statements it is about, and it holds {named + 1}.");
+
+            return complaints;
+        }
+
+        if (figure != named + 1)
+        {
+            complaints.Add($"\"{Heading}\" is about {stated.Groups["count"].Value} separate statements and it holds {named + 1}: this plugin's own, and one for each of the {named} projects the loop names.");
         }
 
         return complaints;

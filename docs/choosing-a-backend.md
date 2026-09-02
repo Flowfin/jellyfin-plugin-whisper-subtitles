@@ -140,7 +140,7 @@ So this plugin is GPL-3.0, and whisper.cpp, faster-whisper and the original
 Whisper release each declare MIT. Those are readings of what each repository
 declares rather than an audit of what is inside it.
 
-The model file is not covered by any of the four. Whoever published the weights
+The model file is not covered by any of them. Whoever published the weights
 an operator downloads set terms for them, and checking those terms is the
 operator's to do.
 
