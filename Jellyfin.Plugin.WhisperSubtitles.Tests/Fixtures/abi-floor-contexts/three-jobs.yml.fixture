@@ -1,0 +1,29 @@
+name: An ABI floor workflow that is not this repository's
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [ "**" ]
+
+jobs:
+  floor:
+    name: The plugin compiles against the floor its manifest promises
+    runs-on: ubuntu-latest
+    steps:
+      - name: Say what this job is for
+        run: |
+          echo "a job"
+  refuses:
+    name: And it refuses a symbol the floor does not have
+    runs-on: ubuntu-latest
+    steps:
+      - name: Say what this job is for
+        run: |
+          echo "a job"
+  declares:
+    name: And it refuses a floor no manifest declares
+    runs-on: ubuntu-latest
+    steps:
+      - name: Say what this job is for
+        run: |
+          echo "a job"

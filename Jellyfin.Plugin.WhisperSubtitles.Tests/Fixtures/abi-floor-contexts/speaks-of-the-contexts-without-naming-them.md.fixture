@@ -1,0 +1,7 @@
+# Releasing a plugin that is not this one
+
+## Repository settings this expects
+
+- The two contexts the ABI floor workflow reports, required on those branches. A
+  ruleset entry names the context a run reports under rather than the workflow's
+  title, so a name no job carries is a required check that never arrives.

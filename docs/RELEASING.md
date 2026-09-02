@@ -166,13 +166,22 @@ cannot, and the version has to be raised.
   covering less than the release route allows. Whether the gate is required on any of
   them is a repository setting, read by nothing in this tree, and #54 is where that
   comparison is owed.
-- The two contexts the ABI floor workflow reports required on those branches.
-  The `The plugin compiles against the floor its manifest promises` check is the
-  build against the floor. The `And it refuses a symbol the floor does not have`
-  check is the half that refuses a symbol the floor does not carry. A ruleset entry
-  names the context a run reports under rather than the workflow's title, so a name
-  no job carries is a required check that never arrives and a branch that then stops
-  merging.
+- Every context the ABI floor workflow reports, required on those branches. A
+  ruleset entry names the context a run reports under rather than the workflow's
+  title, so a name no job carries is a required check that never arrives and a
+  branch that then stops merging.
+
+  The contexts the ABI floor workflow reports are
+  `The plugin compiles against the floor its manifest promises`, which is the build
+  against the floor, and `And it refuses a symbol the floor does not have`, which is
+  the half that refuses a symbol the floor does not carry.
+
+  That list is compared against the jobs `.github/workflows/abi-floor.yml` declares,
+  in both directions, by `AbiFloorContextsTests`. A job added there and not named
+  here is a red suite rather than a check that runs on every pull request and is
+  never required, and a name here that no job reports is a required context that
+  never arrives. This bullet used to state how many there were and name them by
+  hand, which reads as complete against a workflow of any size.
 - Immutable releases, if the repository wants the guarantee that a published release
   can never be edited or deleted at all. The workflow does not depend on it: the
   refusal to touch an existing release is enforced in the release job. Turning it on

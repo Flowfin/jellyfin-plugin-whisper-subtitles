@@ -1,0 +1,4 @@
+name: An ABI floor workflow that declares no job
+
+on:
+  workflow_dispatch:
