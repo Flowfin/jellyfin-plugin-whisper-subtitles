@@ -1,0 +1,15 @@
+# Releasing a plugin that is not this one
+
+## What fails the run
+
+- The tag does not end in a suffix this run publishes from.
+- The manifest is missing from the repository root.
+
+What is read rather than trusted is how many refusals the run has:
+
+```
+grep -c '::error::' .github/workflows/publish.yaml
+2
+```
+
+Nothing else on this page is about a number.
