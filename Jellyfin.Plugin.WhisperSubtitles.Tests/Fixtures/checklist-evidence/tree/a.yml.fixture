@@ -1,0 +1,5 @@
+name: A run that reads a record
+jobs:
+  records:
+    steps:
+      - run: ./scan interoperability/claims

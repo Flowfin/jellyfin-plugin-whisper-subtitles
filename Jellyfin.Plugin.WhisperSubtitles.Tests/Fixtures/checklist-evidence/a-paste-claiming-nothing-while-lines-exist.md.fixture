@@ -1,0 +1,13 @@
+# A page with one reading of the tree on it
+
+## The matrix is green
+
+Nothing decides this yet, and what installs a sibling plugin is read rather than
+trusted:
+
+```
+git grep -nEi 'interoperab|jellyfin-plugin-(sso|requests|stats)' -- tree/
+exit=1
+```
+
+That is the whole of the reading.

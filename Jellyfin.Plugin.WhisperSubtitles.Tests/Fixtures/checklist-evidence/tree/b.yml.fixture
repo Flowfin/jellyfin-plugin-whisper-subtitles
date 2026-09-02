@@ -1,0 +1,5 @@
+name: A run that installs a sibling
+jobs:
+  build:
+    steps:
+      - run: install jellyfin-plugin-sso
