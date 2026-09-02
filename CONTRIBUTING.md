@@ -138,14 +138,15 @@ the suite red, and a line naming neither is refused instead of being read past.
   culture fails the build. Owed by #71, for the injected clock, which is one of
   the four seams that issue holds.
 
-Half of these are still owed, so for half its length this list is a plan rather
-than a record, and the endings say which lines are which. What is checked
+Four of the six lines above are still owed, so for that much of its length this
+list is a plan rather than a record, and the endings say which lines are which.
+That figure is counted out of the lines rather than kept by hand. What is checked
 is the shape: that every line names a class this suite runs or an issue that owes
 one. TWO THINGS ARE NOT CHECKED. Whether a replacement covers what the refused
 test would have covered is a judgement, and no reading of this file makes it.
 Whether an owed issue has since landed is an answer that lives on the tracker,
 and the suite is offline by the rule two sections above, so an ending that has
-gone stale stays green until a person moves it. This list stays half a plan until
+gone stale stays green until a person moves it. This list stays part plan until
 every `Owed by` on it has become a `Replaced by`, and no issue holds that
 condition now: the one this paragraph used to name closed while the sentence went
 on saying it was open, which is the direction above happening to the sentence

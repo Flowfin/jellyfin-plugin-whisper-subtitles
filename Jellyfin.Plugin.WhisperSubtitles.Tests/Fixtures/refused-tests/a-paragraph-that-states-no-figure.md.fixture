@@ -1,0 +1,15 @@
+## Tests that are refused, and what replaces each one
+
+The sentence speaks of lines being owed and states no number, which is the shape
+this list carried before anything read it.
+
+- A test that reads a document and believes it. Replaced by
+  `RefusedTestsTests`.
+- A test that has not been decided yet. Owed by #46.
+
+Several of these are still owed, so for that much of its length this list is a
+plan rather than a record.
+
+## A later section
+
+Here so the reader has something to stop at.

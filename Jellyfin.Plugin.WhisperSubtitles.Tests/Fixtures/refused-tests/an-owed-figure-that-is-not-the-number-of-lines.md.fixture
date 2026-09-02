@@ -1,0 +1,15 @@
+## Tests that are refused, and what replaces each one
+
+The figure says more lines are owed than are. Every line ends properly, so this
+trips the figure leg and no other.
+
+- A test that reads a document and believes it. Replaced by
+  `RefusedTestsTests`.
+- A test that has not been decided yet. Owed by #46.
+
+Two of the two lines above are still owed, so for that much of its length this
+list is a plan rather than a record.
+
+## A later section
+
+Here so the reader has something to stop at.
