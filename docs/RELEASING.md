@@ -38,7 +38,8 @@ serialising them by hand is what keeps the release order readable.
 ## What the run produces
 
 The workflow builds the plugin from the tagged commit, creates the GitHub release
-for the tag, and attaches four files:
+for the tag, and attaches four files. That number is read off the list below
+rather than kept beside it:
 
 - the plugin archive
 - the packaging metadata written beside it, `<archive>.zip.meta.json`
@@ -48,8 +49,8 @@ for the tag, and attaches four files:
 The `.md5` is the value a Jellyfin catalog serves as the plugin checksum. There is
 exactly one per release so that no generator can pair a checksum with the wrong
 file. Both the archive and the metadata are checked for existence by name before the
-release job runs, so a release with three of the four files is not a state this route
-can reach.
+release job runs, so a release missing one of them is not a state this route can
+reach.
 
 The run also signs a build provenance statement for the archive, in a separate job
 that downloads the archive and runs no build tooling. A downloaded archive can be
