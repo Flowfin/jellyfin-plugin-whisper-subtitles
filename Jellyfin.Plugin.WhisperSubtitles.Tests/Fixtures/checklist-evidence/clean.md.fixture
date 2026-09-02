@@ -1,0 +1,14 @@
+# A page with one reading of the tree on it
+
+## The matrix is green
+
+Nothing decides this yet, and what installs a sibling plugin is read rather than
+trusted:
+
+```
+git grep -nEi 'interoperab|jellyfin-plugin-(sso|requests|stats)' -- tree/
+tree/a.yml.fixture:5:      - run: ./scan interoperability/claims
+tree/b.yml.fixture:5:      - run: install jellyfin-plugin-sso
+```
+
+That is the whole of the reading.
