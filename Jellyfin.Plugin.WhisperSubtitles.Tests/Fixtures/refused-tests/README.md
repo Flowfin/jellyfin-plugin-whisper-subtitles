@@ -2,8 +2,9 @@
 
 Each file here is a version of the contributor guide's list of refused tests that
 somebody could plausibly write, and each one breaks exactly one thing
-`RefusedTestsTests` checks: a line naming a class the suite does not have, a line
-naming nothing at all, and a section with no lines left in it.
+`RefusedTestsTests` checks. Which ones exist is the listing of this directory
+rather than a sentence here, because a list in a document drifts against the
+thing it describes and this one already had.
 
 They carry the extension `.md.fixture` rather than `.md` because they are
 documents about this repository that are deliberately untrue, and a plain

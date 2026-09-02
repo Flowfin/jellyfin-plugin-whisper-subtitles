@@ -54,6 +54,63 @@ public class RefusedTestsTests
 
     private static readonly Regex _issue = new(@"#([0-9]+)", RegexOptions.None, TimeSpan.FromSeconds(5));
 
+    /// <summary>
+    /// The sentence the section states its own figures in: how many of its lines are
+    /// still owed, and how many lines there are.
+    /// </summary>
+    /// <remarks>
+    /// The gaps are whitespace rather than spaces, because the sentence is wrapped
+    /// and a reader that required a space would call the section silent for where
+    /// its line broke. It is looked for anywhere in the section rather than in the
+    /// paragraph after the list, because the section holds one such sentence and a
+    /// reader keyed on a position would move with the next edit that reflows it.
+    /// </remarks>
+    private static readonly Regex _stillOwed = new(
+        @"(?<owed>[A-Za-z]+)\s+of\s+the\s+(?<total>[A-Za-z]+)\s+lines\s+above\s+are\s+still\s+owed",
+        RegexOptions.CultureInvariant,
+        TimeSpan.FromSeconds(5));
+
+    /// <summary>
+    /// The number words this section may write its figures in.
+    /// </summary>
+    /// <remarks>
+    /// Bounded on purpose and short of every word English has, which is the shape
+    /// the release checklist's own figure reader already takes here. A figure this
+    /// table does not hold is unreadable rather than nought, so a sentence spelling
+    /// one in a word nothing here knows is refused by the leg that requires a figure
+    /// instead of being compared against a number nobody wrote. The ceiling is well
+    /// above the number of refused tests this list could carry and be read at all.
+    /// </remarks>
+    private static readonly Dictionary<string, int> _figures = new(StringComparer.Ordinal)
+    {
+        ["None"] = 0,
+        ["none"] = 0,
+        ["One"] = 1,
+        ["one"] = 1,
+        ["Two"] = 2,
+        ["two"] = 2,
+        ["Three"] = 3,
+        ["three"] = 3,
+        ["Four"] = 4,
+        ["four"] = 4,
+        ["Five"] = 5,
+        ["five"] = 5,
+        ["Six"] = 6,
+        ["six"] = 6,
+        ["Seven"] = 7,
+        ["seven"] = 7,
+        ["Eight"] = 8,
+        ["eight"] = 8,
+        ["Nine"] = 9,
+        ["nine"] = 9,
+        ["Ten"] = 10,
+        ["ten"] = 10,
+        ["Eleven"] = 11,
+        ["eleven"] = 11,
+        ["Twelve"] = 12,
+        ["twelve"] = 12
+    };
+
     public static TheoryData<string> EveryEntry =>
         new(Entries(Section(Guide())).ToArray());
 
@@ -132,6 +189,73 @@ public class RefusedTestsTests
     }
 
     [Fact]
+    public void The_figures_the_section_states_are_the_lines_this_list_holds()
+    {
+        // The section says how much of itself is a plan rather than a record, and a
+        // contributor reads that before deciding whether the coverage they are
+        // looking for exists somewhere. It was kept by hand and read by nothing, and
+        // it was wrong on the day it was written: the sentence said half while four
+        // of the six lines named an issue that owes a replacement.
+        var section = Section(Guide());
+        var stated = FiguresStated(section);
+        var entries = Entries(section);
+
+        Assert.True(
+            stated is not null,
+            "the section states no figure for how many of its lines are still owed, so what a contributor reads there is a word rather than a number this reader could compare");
+        Assert.True(
+            stated!.Value.Owed == entries.Count(entry => Owed(entry).Count > 0),
+            $"the guide says {stated.Value.Owed} of its lines are still owed and {entries.Count(entry => Owed(entry).Count > 0)} of them name an issue that owes a replacement");
+        Assert.True(
+            stated.Value.Total == entries.Count,
+            $"the guide says the list holds {stated.Value.Total} lines and this reader finds {entries.Count}");
+    }
+
+    [Fact]
+    public void The_reader_refuses_a_section_whose_owed_figure_is_not_the_number_of_such_lines()
+    {
+        // The failure the leg above exists against, in the direction that has already
+        // happened: a line's ending moves and the sentence goes on stating the figure
+        // somebody typed beside it.
+        var section = Section(Fixture("an-owed-figure-that-is-not-the-number-of-lines"));
+        var stated = FiguresStated(section);
+        var entries = Entries(section);
+
+        Assert.NotNull(stated);
+        Assert.NotEqual(entries.Count(entry => Owed(entry).Count > 0), stated!.Value.Owed);
+        Assert.Equal(entries.Count, stated.Value.Total);
+        Assert.All(entries, entry => Assert.True(Replacements(entry).Count > 0 || Owed(entry).Count > 0, "the fixture has to trip this leg and no other"));
+    }
+
+    [Fact]
+    public void The_reader_refuses_a_section_whose_total_is_not_the_number_of_lines()
+    {
+        // The other half of the same sentence. A line added or deleted moves the
+        // total, and a reader comparing only the owed count would pass a section that
+        // had lost one.
+        var section = Section(Fixture("a-total-that-is-not-the-number-of-lines"));
+        var stated = FiguresStated(section);
+        var entries = Entries(section);
+
+        Assert.NotNull(stated);
+        Assert.Equal(entries.Count(entry => Owed(entry).Count > 0), stated!.Value.Owed);
+        Assert.NotEqual(entries.Count, stated.Value.Total);
+        Assert.All(entries, entry => Assert.True(Replacements(entry).Count > 0 || Owed(entry).Count > 0, "the fixture has to trip this leg and no other"));
+    }
+
+    [Fact]
+    public void The_reader_refuses_a_section_that_speaks_of_lines_still_owed_and_states_no_figure()
+    {
+        // The cheaper mistake and the fail-closed direction: the sentence is
+        // rewritten, the figures fall out of it, and a leg comparing two numbers has
+        // one of them. An unreadable figure is no figure rather than nought.
+        var section = Section(Fixture("a-paragraph-that-states-no-figure"));
+
+        Assert.Null(FiguresStated(section));
+        Assert.All(Entries(section), entry => Assert.True(Replacements(entry).Count > 0 || Owed(entry).Count > 0, "the fixture has to trip this leg and no other"));
+    }
+
+    [Fact]
     public void The_reader_refuses_an_entry_that_names_a_class_the_suite_does_not_have()
     {
         var entry = Assert.Single(Entries(Section(Fixture("names-a-class-that-is-not-there"))));
@@ -186,6 +310,22 @@ public class RefusedTestsTests
 
         Assert.NotEmpty(fixtures);
         Assert.All(fixtures, path => Assert.EndsWith(".md.fixture", path, StringComparison.Ordinal));
+    }
+
+    /// <summary>
+    /// The figures the section states about itself.
+    /// </summary>
+    /// <param name="section">The section, as the reader above returns it.</param>
+    /// <returns>How many lines the sentence says are still owed and how many lines it says there are, or null where it states no figure this reader can name.</returns>
+    private static (int Owed, int Total)? FiguresStated(string section)
+    {
+        var stated = _stillOwed.Match(section);
+
+        return stated.Success
+            && _figures.TryGetValue(stated.Groups["owed"].Value, out var owed)
+            && _figures.TryGetValue(stated.Groups["total"].Value, out var total)
+                ? (owed, total)
+                : null;
     }
 
     private static List<string> Replacements(string entry) =>
