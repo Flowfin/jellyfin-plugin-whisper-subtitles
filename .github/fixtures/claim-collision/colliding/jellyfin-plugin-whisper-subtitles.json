@@ -1,0 +1,18 @@
+{
+  "plugin": "jellyfin-plugin-whisper-subtitles",
+  "pluginId": "30ed66e0-32fd-46a6-8a56-5cd95d8df10f",
+  "taskKeys": [
+    "WhisperSubtitlesGenerate"
+  ],
+  "taskNames": [
+    "Generate subtitles"
+  ],
+  "configurationPages": [
+    "Whisper Subtitles"
+  ],
+  "routes": [],
+  "paths": [],
+  "subtitleFileNames": [
+    "<media file base name>.<language>.Transcribed.<subtitle extension>"
+  ]
+}

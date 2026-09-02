@@ -59,8 +59,17 @@ installs a sibling plugin:
 
 ```
 git grep -nEi 'interoperab|jellyfin-plugin-(sso|requests|stats)' -- .github/workflows/
-exit=1
+.github/workflows/claim-collision.yml:44:        run: .github/scripts/refuse-a-claim-collision.sh interoperability/claims
+.github/workflows/claim-collision.yml:113:          jq 'del(.taskKeys)' interoperability/claims/jellyfin-plugin-whisper-subtitles.json > incomplete/whisper.json
+.github/workflows/claim-collision.yml:127:          jq 'del(.plugin)' interoperability/claims/jellyfin-plugin-whisper-subtitles.json > anonymous/whisper.json
 ```
+
+That command returned nothing until #64's recording half landed, and the three
+lines it returns now are one workflow reading this repository's own claim record
+out of `interoperability/claims/`. None of them installs a sibling, boots a
+server, or compares this plugin against anything but itself, so the sentence
+above is unchanged and only its evidence moved. What a matrix would look like
+here is a job that fetches a released sibling and installs it, and there is none.
 
 The harness that boots a server per line is #63, the collision scan is #64, and
 the wiring that makes the matrix a standing answer rather than an experiment

@@ -1,0 +1,20 @@
+{
+  "plugin": "jellyfin-plugin-a-sibling",
+  "pluginId": "0f7ec1c6-0a2c-4a7f-9f2b-6a2f0f4b1e51",
+  "taskKeys": [
+    "WhisperSubtitlesGenerate"
+  ],
+  "taskNames": [
+    "Tidy the library"
+  ],
+  "configurationPages": [
+    "A Sibling"
+  ],
+  "routes": [
+    "/Sibling/Status"
+  ],
+  "paths": [
+    "/config/data/a-sibling/state.json"
+  ],
+  "subtitleFileNames": []
+}
