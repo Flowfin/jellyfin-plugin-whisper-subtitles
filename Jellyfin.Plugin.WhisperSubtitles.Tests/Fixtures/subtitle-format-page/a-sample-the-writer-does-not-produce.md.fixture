@@ -1,0 +1,17 @@
+# The subtitle format this plugin writes
+
+This plugin writes SubRip, and nothing else, for the first release. Files carry
+the `.srt` extension.
+
+## What the files look like
+
+The index counts from zero here, which is what the writer does not do. Every
+other byte of the sample is what it produces.
+
+    0
+    00:00:00,000 --> 00:00:01,500
+    First line.
+
+    1
+    00:00:01,500 --> 01:02:03,456
+    Second line.
