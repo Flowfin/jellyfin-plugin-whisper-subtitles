@@ -89,6 +89,64 @@ public class ReleaseChecklistTests
         TimeSpan.FromSeconds(5));
 
     /// <summary>
+    /// The figure the closing section states about the items nothing decides yet.
+    /// </summary>
+    /// <remarks>
+    /// The page writes it as a count of the items above rather than as a bare word,
+    /// so the expression anchors on what the figure is a count OF. A sentence
+    /// elsewhere on the page carrying a number is not this figure and is not read as
+    /// one, because the closing section is the only place it is looked for. Both
+    /// verbs are accepted because a page with one such item writes the singular, and
+    /// a reader that took only the plural would call that page silent. The gaps are
+    /// whitespace rather than a space, because the sentence is wrapped and a reader
+    /// that required a space would call a page silent for where its line broke.
+    /// </remarks>
+    private static readonly Regex _itemsWithNoRoute = new(
+        @"(?<count>[A-Za-z]+)\s+of\s+the\s+items\s+above\s+ha(?:ve|s)\s+no\s+route",
+        RegexOptions.CultureInvariant,
+        TimeSpan.FromSeconds(5));
+
+    /// <summary>
+    /// The number words this page may write its figure in.
+    /// </summary>
+    /// <remarks>
+    /// Bounded on purpose and short of every word English has. A figure the table
+    /// does not hold is unreadable rather than nought, so a page spelling it in a
+    /// word nothing here knows is refused by the leg that requires one instead of
+    /// being compared against a number nobody wrote. The ceiling is well above the
+    /// number of conditions a release checklist could carry and be read at all.
+    /// </remarks>
+    private static readonly Dictionary<string, int> _figures = new(StringComparer.Ordinal)
+    {
+        ["None"] = 0,
+        ["none"] = 0,
+        ["One"] = 1,
+        ["one"] = 1,
+        ["Two"] = 2,
+        ["two"] = 2,
+        ["Three"] = 3,
+        ["three"] = 3,
+        ["Four"] = 4,
+        ["four"] = 4,
+        ["Five"] = 5,
+        ["five"] = 5,
+        ["Six"] = 6,
+        ["six"] = 6,
+        ["Seven"] = 7,
+        ["seven"] = 7,
+        ["Eight"] = 8,
+        ["eight"] = 8,
+        ["Nine"] = 9,
+        ["nine"] = 9,
+        ["Ten"] = 10,
+        ["ten"] = 10,
+        ["Eleven"] = 11,
+        ["eleven"] = 11,
+        ["Twelve"] = 12,
+        ["twelve"] = 12,
+    };
+
+    /// <summary>
     /// A status check named in prose: the context in backticks, on one line, then the
     /// word it is the name of. The same shape <see cref="NamedChecksTests"/> resolves
     /// against the jobs this tree declares, so an item satisfying this leg with an
@@ -176,6 +234,57 @@ public class ReleaseChecklistTests
 
         Assert.Contains(items, item => _decidedByARun.IsMatch(item.Body));
         Assert.Contains(items, item => _decidedByNothing.IsMatch(item.Body));
+    }
+
+    [Fact]
+    public void The_figure_the_closing_section_states_is_the_number_of_items_nothing_decides_yet()
+    {
+        // The page says how many of its conditions have no route at all, and a person
+        // cutting a release reads that figure before deciding whether the incompleteness
+        // is the one this repository already knows about. It was kept by hand until now,
+        // and this page has been wrong about a figure it stated about itself twice.
+        var stated = FigureStated(Page());
+        var counted = Items(Page()).Count(item => _decidedByNothing.IsMatch(item.Body));
+
+        Assert.True(
+            stated is not null,
+            "the closing section of the release checklist states no figure for the items nothing decides yet, so the count a releaser reads there is a word rather than a number this reader could compare");
+        Assert.True(
+            stated == counted,
+            $"the release checklist says {stated} of its items have no route that answers them and {counted} of them say nothing decides them yet");
+    }
+
+    [Fact]
+    public void The_reader_refuses_a_closing_section_whose_figure_is_not_the_number_of_such_items()
+    {
+        // The failure the leg above exists against: an item gains a route, or one is
+        // added with none, and the sentence a releaser reads goes on stating the figure
+        // it was right about on the day somebody typed it.
+        var page = Fixture("a-figure-that-is-not-the-number-of-items");
+
+        Assert.NotEqual(
+            Items(page).Count(item => _decidedByNothing.IsMatch(item.Body)),
+            FigureStated(page));
+        Assert.All(
+            Items(page),
+            item => Assert.True(
+                State(item.Body) is not null && !(_decidedByARun.IsMatch(item.Body) && _decidedByNothing.IsMatch(item.Body)),
+                "the fixture has to trip this leg and no other"));
+    }
+
+    [Fact]
+    public void The_reader_refuses_a_closing_section_that_speaks_of_such_items_and_states_no_figure()
+    {
+        // The other direction, and the cheaper mistake: the sentence is rewritten, the
+        // figure falls out of it, and a leg comparing two numbers has one of them.
+        var page = Fixture("a-closing-section-that-states-no-figure");
+
+        Assert.Null(FigureStated(page));
+        Assert.All(
+            Items(page),
+            item => Assert.True(
+                State(item.Body) is not null && !(_decidedByARun.IsMatch(item.Body) && _decidedByNothing.IsMatch(item.Body)),
+                "the fixture has to trip this leg and no other"));
     }
 
     [Theory]
@@ -394,6 +503,9 @@ public class ReleaseChecklistTests
         var running = ClassesThisSuiteRunsTestsIn();
 
         Assert.Equal(2, items.Count);
+        Assert.Equal(
+            items.Count(item => _decidedByNothing.IsMatch(item.Body)),
+            FigureStated(Fixture("clean")));
         Assert.All(items, item => Assert.True(State(item.Body) is not null));
         Assert.All(items, item => Assert.False(_decidedByARun.IsMatch(item.Body) && _decidedByNothing.IsMatch(item.Body)));
         Assert.All(
@@ -494,6 +606,33 @@ public class ReleaseChecklistTests
         }
 
         return _decidedByNothing.IsMatch(body) ? "decided by nothing yet" : null;
+    }
+
+    /// <summary>
+    /// The figure the closing section states, or nothing where it states none this
+    /// reader can turn into a number.
+    /// </summary>
+    /// <remarks>
+    /// Read out of the closing section rather than out of the page, because the
+    /// closing section is the one part that is about the list instead of a condition
+    /// in it, and a figure anywhere else is about something else.
+    /// </remarks>
+    /// <param name="page">The page text.</param>
+    /// <returns>The figure, or null.</returns>
+    private static int? FigureStated(string page)
+    {
+        var closing = Sections(page).LastOrDefault(section => section.Title.Equals(Closing, StringComparison.Ordinal));
+
+        if (closing is null)
+        {
+            return null;
+        }
+
+        var stated = _itemsWithNoRoute.Match(closing.Body);
+
+        return stated.Success && _figures.TryGetValue(stated.Groups["count"].Value, out var figure)
+            ? figure
+            : null;
     }
 
     private static Section Item(string title) =>

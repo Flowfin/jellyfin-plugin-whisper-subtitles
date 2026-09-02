@@ -208,10 +208,10 @@ and it is the one item here whose remaining half is a person's.
 
 ## When an item has no answer
 
-A release is not published while an item above is unanswered. Three of them have
-no route that answers them at all, so a release cut from this repository today is
-one whose checklist is incomplete by construction, and saying which three is the
-point of keeping two states rather than an apology for them.
+A release is not published while an item above is unanswered. Three of the items
+above have no route that answers them at all, so a release cut from this
+repository today is one whose checklist is incomplete by construction, and saying
+which ones is the point of keeping two states rather than an apology for them.
 
 Nothing enforces that. `.github/workflows/publish.yaml` creates the release from a
 pushed tag and reads none of this page, so the last condition of #62 - that a
@@ -225,3 +225,12 @@ the first state that names neither a command nor a status check, and an item tha
 points a reader at a file this tree does not have. It also refuses a page under
 `docs/` that speaks of the release checklist while no item here names that page,
 so a condition handed to this list arrives rather than being remembered.
+
+The figure this section opens with is held as well, and that is why it is written
+as a count of the items above rather than as a word in passing. That reader counts
+the items in that state and refuses a count naming a different figure, and refuses
+a closing section that speaks of them and states no figure at all, so an item that
+gains a route and an item added with none are both a red suite. A figure this page
+states about itself is the shape this page has already been wrong in twice, both
+times in the item above about documentation, and both times the figure was right
+on the day it was written.

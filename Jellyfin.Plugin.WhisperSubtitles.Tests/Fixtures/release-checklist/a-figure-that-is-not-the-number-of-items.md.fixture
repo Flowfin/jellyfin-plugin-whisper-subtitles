@@ -1,6 +1,8 @@
 # A release checklist for a repository that is not this one
 
-Two states are kept apart at every item, and neither item below breaks a rule.
+Two states are kept apart at every item, and every item below is filed under one
+of them. The closing section states a figure that is not the number of items in
+the second state.
 
 ## A condition a run answers
 
@@ -14,6 +16,6 @@ answers this by hand at every release.
 
 ## When an item has no answer
 
-One of the items above has no route that answers it at all. `LimitsPageTests` is
-named here so the leg that resolves a suite has something to resolve on a page
+Two of the items above have no route that answers them at all. `LimitsPageTests`
+is named here so the leg that resolves a suite has something to resolve on a page
 that is otherwise about nothing.
