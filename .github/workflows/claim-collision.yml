@@ -1,0 +1,144 @@
+# What this plugin claims from a server it shares, compared against what else is
+# installed there.
+#
+# Two plugins are each correct alone and wrong together when they claim one
+# scheduled task key, one dashboard page, one route or one file name. A test that
+# drives this plugin by itself can never see that, which is why the record of
+# what it claims lives in a file a program can read rather than only in the
+# assertions that hold each claim in place.
+#
+# What runs here is the comparison over the records this repository holds, which
+# today is one. The set that matters is this plugin beside its siblings on a
+# booted server, and neither the boot nor the sibling records exist yet: that is
+# #63 for the server and #66 for the matrix that installs them. So this job says
+# that the comparison works and that this repository's own record survives it,
+# and it says nothing about a collision with a sibling.
+name: Claim collision
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ "**" ]
+
+permissions: {}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  records:
+    name: This repository's own claim record survives the comparison
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: No value in it is claimed twice
+        run: .github/scripts/refuse-a-claim-collision.sh interoperability/claims
+
+  refuses:
+    name: And it refuses two plugins that claim one task key
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # The neighbour first. Without it every leg below is satisfied by a scan
+      # that refuses everything it is handed, which would be red on the record
+      # above as well and would be turned off within a week.
+      - name: The same two records with one key changed pass
+        run: .github/scripts/refuse-a-claim-collision.sh .github/fixtures/claim-collision/neighbouring
+
+      - name: The collision is refused, naming both claimants and the value
+        run: |
+          set -eu
+          if output=$(.github/scripts/refuse-a-claim-collision.sh .github/fixtures/claim-collision/colliding 2>&1); then
+            echo "$output"
+            echo "The scan passed two plugins claiming the scheduled task key WhisperSubtitlesGenerate." >&2
+            exit 1
+          fi
+
+          echo "$output"
+          echo "$output" | grep -q 'taskKeys "WhisperSubtitlesGenerate" is claimed by jellyfin-plugin-a-sibling, jellyfin-plugin-whisper-subtitles'
+          echo "refused, naming both claimants and the key"
+
+      # A run that compared nothing must not read as a set that was compared and
+      # found clean. Both of these are that failure, arriving by the two routes a
+      # harness reaches it: a directory that was never written, and one that was
+      # written empty.
+      - name: A directory holding no record is refused rather than passed
+        run: |
+          set -eu
+          mkdir no-records
+          if output=$(.github/scripts/refuse-a-claim-collision.sh no-records 2>&1); then
+            echo "$output"
+            echo "The scan read an empty directory as a clean set of plugins." >&2
+            exit 1
+          fi
+
+          echo "$output"
+          echo "$output" | grep -q 'holds no claim record, so this run compared nothing'
+
+      - name: A directory that does not exist is refused too
+        run: |
+          set -eu
+          if output=$(.github/scripts/refuse-a-claim-collision.sh never-written 2>&1); then
+            echo "$output"
+            echo "The scan read a missing directory as a clean set of plugins." >&2
+            exit 1
+          fi
+
+          echo "$output"
+          echo "$output" | grep -q 'so nothing was compared'
+
+      # A record missing a field says nothing about that kind of claim, which is
+      # the opposite of a plugin claiming nothing of that kind. It fails towards
+      # the one that cannot pass a collision.
+      - name: A record that leaves a kind of claim out is refused
+        run: |
+          set -eu
+          mkdir incomplete
+          jq 'del(.taskKeys)' interoperability/claims/jellyfin-plugin-whisper-subtitles.json > incomplete/whisper.json
+          if output=$(.github/scripts/refuse-a-claim-collision.sh incomplete 2>&1); then
+            echo "$output"
+            echo "The scan read a record with no taskKeys as a plugin claiming no task key." >&2
+            exit 1
+          fi
+
+          echo "$output"
+          echo "$output" | grep -q 'has no taskKeys, so it does not say what jellyfin-plugin-whisper-subtitles claims'
+
+      - name: A record naming no plugin is refused
+        run: |
+          set -eu
+          mkdir anonymous
+          jq 'del(.plugin)' interoperability/claims/jellyfin-plugin-whisper-subtitles.json > anonymous/whisper.json
+          if output=$(.github/scripts/refuse-a-claim-collision.sh anonymous 2>&1); then
+            echo "$output"
+            echo "The scan accepted a record that could not be named as a claimant." >&2
+            exit 1
+          fi
+
+          echo "$output"
+          echo "$output" | grep -q 'names no plugin'
+
+      - name: And it says how much it compared before it says anything else
+        run: |
+          set -eu
+          output=$(.github/scripts/refuse-a-claim-collision.sh .github/fixtures/claim-collision/neighbouring)
+          echo "$output"
+          echo "$output" | grep -q 'compared 2 taskKeys value(s)'
+          echo "$output" | grep -q 'compared 1 routes value(s)'
+          echo "$output" | grep -q 'compared 1 paths value(s)'
