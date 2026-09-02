@@ -1,0 +1,12 @@
+name: A publish run that refuses nothing
+
+on:
+  workflow_dispatch:
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Publish whatever arrived
+        run: |
+          echo "publishing"

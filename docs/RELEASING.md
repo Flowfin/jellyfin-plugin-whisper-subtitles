@@ -96,12 +96,34 @@ is gone and no catalog is fed until a manifest generator is added.
 
 All of these fail before anything is published.
 
-This list is kept by hand and nothing compares it against
-`.github/workflows/publish.yaml`, so a refusal added to the run reaches this page
-only if somebody writes it here as well. Three of the entries above arrived that
-way, found by reading the two side by side rather than by anything that runs, and
-the same reading is what would find the next one. No issue names a mechanism for
-it, and this sentence is the whole of the disclosure.
+The bullets above are kept by hand, and no reader matches a bullet to the refusal
+it describes. The messages the run prints carry no identifier a page could name,
+so giving them one is a change to the release route rather than to this page.
+Three of the entries above arrived by somebody reading the two files side by side
+rather than by anything that runs.
+
+What is read rather than trusted is how many refusals the run has. The count is
+pasted here with the command that produced it, and `ReleaseRefusalSitesTests`
+counts the same sites in the checkout and refuses this page for carrying a
+different number:
+
+```
+grep -c '::error::' .github/workflows/publish.yaml
+24
+```
+
+So a refusal added to the run is a red suite until somebody comes back to this
+list, and a refusal deleted from it is too. WHAT THAT BUYS IS THE ARRIVAL OF A
+REFUSAL AND NEVER ITS DESCRIPTION. A message rewritten in place, a bullet that
+says the wrong thing about the site it is about, and a bullet describing a refusal
+that has gone all move no count and are invisible to it. That half is the reading
+above and stays a person's.
+
+The number is larger than the list because a bullet can be one sentence about
+several refusals: the shape checks on `version`, `targetAbi`, `framework` and
+`guid` are four sites under one bullet, and the archive and metadata expectations
+are three under another. So the two numbers are not meant to agree with each
+other, and neither is read as the other.
 
 ## What the run notes without failing
 

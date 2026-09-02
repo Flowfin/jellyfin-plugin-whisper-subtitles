@@ -1,0 +1,21 @@
+name: A publish run that is not this repository's
+
+on:
+  workflow_dispatch:
+
+jobs:
+  refuse:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Refuse a tag this run does not publish from
+        run: |
+          if [ -z "${TAG}" ]; then
+            echo "::error::This workflow publishes from a tag only."
+            exit 1
+          fi
+      - name: Refuse a missing manifest
+        run: |
+          if [ ! -f manifest.yaml ]; then
+            echo "::error::manifest.yaml is missing from the repository root."
+            exit 1
+          fi

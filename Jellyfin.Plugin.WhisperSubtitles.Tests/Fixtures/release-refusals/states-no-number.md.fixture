@@ -1,0 +1,9 @@
+# Releasing a plugin that is not this one
+
+## What fails the run
+
+- The tag does not end in a suffix this run publishes from.
+- The manifest is missing from the repository root.
+
+This list is kept by hand and nothing compares it against the run, so a refusal
+added there reaches this page only if somebody writes it here as well.
