@@ -80,9 +80,9 @@ There is a floor on what this plugin will believe is a model at all:
     git grep -n 'SmallestPlausibleModelBytes =' -- Jellyfin.Plugin.WhisperSubtitles
     Jellyfin.Plugin.WhisperSubtitles/Backends/Local/LocalBackendOptions.cs:41:    public const long SmallestPlausibleModelBytes = 1024L * 1024;
 
-One mebibyte, which is three orders of magnitude below the smallest published
-model. It catches a download that was refused and saved anyway, a page of HTML
-from a proxy, or an empty file made by a shell redirect, each of which otherwise
+One mebibyte, and the smallest model in the table above is 75 times that. It
+catches a download that was refused and saved anyway, a page of HTML from a
+proxy, or an empty file made by a shell redirect, each of which otherwise
 reaches the operator as a tool that starts and fails on the first item.
 
 ## The remote backend
