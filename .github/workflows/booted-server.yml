@@ -117,14 +117,20 @@ jobs:
             --volume "${RUNNER_TEMP}/server/cache:/cache" \
             "${SERVER_IMAGE}"
 
+          # The health route answers before startup has finished, and every
+          # other route answers 503 until it has, so waiting on health alone
+          # loses a race the first boot on the runner happened to win and the
+          # second lost. The public system route sits behind the same startup
+          # gate as the wizard, so a 200 from it is the server ready to be
+          # asked, and the version it reports is printed as the reading.
           for attempt in $(seq 1 90); do
-            if curl -fsS "${SERVER_URL}/health" > /dev/null 2>&1; then
-              echo "healthy after ${attempt} attempt(s)"
+            if info=$(curl -fsS "${SERVER_URL}/System/Info/Public" 2>/dev/null); then
+              echo "ready after ${attempt} attempt(s): $(jq -r '"\(.ProductName) \(.Version)"' <<< "$info")"
               exit 0
             fi
             sleep 2
           done
-          echo "The server did not answer ${SERVER_URL}/health within three minutes." >&2
+          echo "The server did not answer ${SERVER_URL}/System/Info/Public within three minutes." >&2
           docker logs jellyfin >&2 || true
           exit 1
 
