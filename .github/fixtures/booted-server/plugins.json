@@ -1,0 +1,12 @@
+[
+  {
+    "Name": "Whisper Subtitles",
+    "Version": "@VERSION@",
+    "ConfigurationFileName": "Jellyfin.Plugin.WhisperSubtitles.xml",
+    "Description": "A fixture standing in for what a booted server lists.",
+    "Id": "30ed66e0-32fd-46a6-8a56-5cd95d8df10f",
+    "CanUninstall": true,
+    "HasImage": false,
+    "Status": "Active"
+  }
+]

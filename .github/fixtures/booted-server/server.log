@@ -1,0 +1,5 @@
+[03:14:15] [INF] [1] Main: Jellyfin version: 10.11.11
+[03:14:15] [INF] [1] Main: Arguments: ["/jellyfin/jellyfin.dll"]
+[03:14:16] [INF] [1] Emby.Server.Implementations.Plugins.PluginManager: Loaded assembly Jellyfin.Plugin.WhisperSubtitles, Version=@VERSION@, Culture=neutral, PublicKeyToken=null from /config/plugins/WhisperSubtitles_@VERSION@/Jellyfin.Plugin.WhisperSubtitles.dll
+[03:14:17] [WRN] [1] Emby.Server.Implementations.AppBase.BaseConfigurationManager: Configuration file not found, generating a default one
+[03:14:20] [INF] [1] Emby.Server.Implementations.ApplicationHost: Startup complete 0:00:05.1234567

@@ -1,0 +1,22 @@
+[
+  {
+    "Name": "Generate subtitles",
+    "State": "Idle",
+    "Id": "fixture-task-id",
+    "Triggers": [],
+    "Description": "A fixture standing in for what a booted server lists.",
+    "Category": "Library",
+    "IsHidden": false,
+    "Key": "WhisperSubtitlesGenerate"
+  },
+  {
+    "Name": "Scan Media Library",
+    "State": "Idle",
+    "Id": "fixture-scan-id",
+    "Triggers": [],
+    "Description": "One of the server's own tasks, so the listing is not this plugin alone.",
+    "Category": "Library",
+    "IsHidden": false,
+    "Key": "RefreshLibrary"
+  }
+]
