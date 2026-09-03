@@ -57,10 +57,31 @@ comes off the media file. `<media file base name>`, `<language>` and
 plugin decides, and the marker sitting between the language and the extension is
 the part a second plugin writing subtitles could claim.
 
-## What the scan does not answer
+## What the record scan does not answer, and what the server scan does
 
-It compares records. It does not derive one from a running server, which is the
-first condition of #64 and needs the boot in #63, so a plugin whose record says
-one thing and whose running behaviour says another passes every leg here. It
-sees no sibling until a record for that sibling is put in front of it, and this
-repository holds one record.
+`refuse-a-claim-collision.sh` compares records. It sees no sibling until a
+record for that sibling is put in front of it, and this repository holds one
+record.
+
+`.github/scripts/scan-a-booted-server.sh` is the other half, and it reads a
+server rather than a file. Handed what a booted server answered on its plugin
+listing, its task list, its configuration page listing and its route document,
+it refuses a value that server lists twice, naming both claimants and the value:
+a task key or a task name registered by two tasks, a page name registered by two
+plugins, a configuration file kept by two plugins, a plugin id listed twice, and
+a route document the server could not build, which is what a server holding two
+controllers on one path answers with. It also derives what this plugin claims
+from what the server attributes to it, and compares that against this record in
+both directions.
+
+Its bound is the server's own. The server attributes a page and a configuration
+file to a plugin, and attributes a task and a path to nobody, so the pages are
+derived and compared as a set while for task keys, task names and routes what is
+read is that nothing registered them twice and that every value this record
+claims is registered. A task this plugin registers that this record omits is not
+seen there; `ClaimRecordTests` holds that from the plugin's own type.
+
+Where it runs is the boot in #63. `.github/workflows/claim-collision.yml` proves
+it against captures under `.github/fixtures/booted-server-claims/` and
+`.github/fixtures/booted-server/`, and the comparison against a server carrying
+a sibling as well is the matrix in #66.
