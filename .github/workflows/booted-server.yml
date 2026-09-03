@@ -15,13 +15,23 @@
 # build stamped, the scheduled task is in the task list under its key, and the
 # configuration page comes back byte for byte as the resource the plugin ships.
 # .github/scripts/read-a-booted-server.sh is the reader, and the second job proves
-# it refuses each of those going wrong, one at a time.
+# it refuses each of those going wrong, one at a time, against fixtures.
+#
+# The first job boots twice, from one definition, and the two legs have to end
+# in opposite verdicts. One installs the build an operator receives and has to
+# be read as a clean boot. The other installs the same build with one line added
+# so its registrator throws on entry, and has to be refused by the reader with
+# the throw quoted back, on a server that finished starting and answered every
+# call before it. A fixture log can only say what a server is expected to write;
+# the second leg is where the server writes it. Both legs end by removing the
+# container and the directories the run made and refusing to leave anything
+# behind, which is a clause of the issue rather than tidiness.
 #
 # One line of the two this tree builds. The 10.11 line has a released server and a
 # manifest; the 12.0 line has neither, and build.yaml says why in its own first
-# paragraph. So this boots 10.11 and says so in its job name, and the 12.0 boot
-# arrives as a second job on the day that line has a server to pin. #63 is where
-# both halves are argued.
+# paragraph. So this boots 10.11 and says so in its job names, and the 12.0 boot
+# arrives as further legs of the same matrix on the day that line has a server to
+# pin. #63 is where both halves are argued.
 #
 # The image is pinned by digest as well as by tag, for the same reason every
 # action here is pinned to a commit: a tag moves and a digest does not, and a boot
@@ -43,17 +53,32 @@ concurrency:
 
 jobs:
   boots:
-    name: The plugin loads on a booted 10.11 server
+    name: ${{ matrix.name }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
       contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # The build an operator receives, and the verdict it has to get.
+          - build: shipped
+            name: The plugin loads on a booted 10.11 server
+          # The same build with its registrator made to throw, and the verdict
+          # that one has to get.
+          - build: throws-while-loading
+            name: And a build that throws while loading turns it red for that reason
     env:
       # jellyfin/jellyfin:10.11.11, read from the registry on 2026-09-03:
       #   curl -sS https://hub.docker.com/v2/repositories/jellyfin/jellyfin/tags/10.11.11 | jq -r .digest
       SERVER_IMAGE: jellyfin/jellyfin:10.11.11@sha256:aefb67e6a7ff1debdd154a78a7bbb780fd0c873d8639210a7f6a2016ad2b35db
       SERVER_URL: http://127.0.0.1:8096
       FRAMEWORK: net9.0
+      # What the poisoned registrator throws. The reader quotes the error entry
+      # it refuses on, so the refusing leg can require this sentence in the
+      # refusal and know it was read off the server's log and not off a fixture.
+      POISON: thrown on purpose while loading, so the harness can be watched going red for it rather than timing out
     steps:
       - name: Checkout Repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -66,6 +91,34 @@ jobs:
           dotnet-version: |
             9.0.x
             10.0.x
+
+      # One line added to the registrator, in the checkout on this runner and
+      # nowhere else, so what boots below is this plugin's own build with its
+      # registrator throwing on entry. The server catches that, logs it under the
+      # assembly's name and marks the plugin failed; that is read off the server's
+      # source on #71, and this leg is where it is watched rather than believed.
+      # The guard around the throw is there for the compiler: an unconditional
+      # throw makes every registration after it unreachable code, warnings are
+      # errors in this tree, and the build would fail before anything booted,
+      # which would turn this leg red for a reason that is not the one it names.
+      - name: Add one line so the registrator throws while loading
+        if: matrix.build == 'throws-while-loading'
+        run: |
+          set -eu
+          file=Jellyfin.Plugin.WhisperSubtitles/PluginServiceRegistrator.cs
+          anchor='ArgumentNullException.ThrowIfNull(serviceCollection);'
+          hits=$(grep -cF "$anchor" "$file" || true)
+          if [ "$hits" -ne 1 ]; then
+            echo "The line the throw is added after, \"${anchor}\", occurs ${hits} time(s) in ${file} rather than once, so this leg cannot say what it poisoned." >&2
+            exit 1
+          fi
+          printf '%s\n' \
+            '        if (serviceCollection.Count >= 0)' \
+            '        {' \
+            "            throw new InvalidOperationException(\"${POISON}\");" \
+            '        }' > "${RUNNER_TEMP}/poison.cs"
+          sed -i "/${anchor}/r ${RUNNER_TEMP}/poison.cs" "$file"
+          git --no-pager diff -- "$file"
 
       - name: Build what would ship for this line
         run: |
@@ -215,16 +268,63 @@ jobs:
           echo "log: $(wc -l < "${captures}/server.log") line(s)"
 
       - name: The plugin loaded, is listed, has its task, and served its page
+        if: matrix.build == 'shipped'
         run: .github/scripts/read-a-booted-server.sh "${RUNNER_TEMP}/captures"
 
-      - name: Stop the server
+      # Reaching this step is half of the verdict: the server behind the poisoned
+      # build answered its ping, finished starting, took the wizard, issued a
+      # token and served every capture, so whatever the reader says next is said
+      # about a boot that happened and not about one that timed out. The other
+      # half is that the reader refuses it, and for the throw: the sentence the
+      # added line throws has to be in the refusal, which puts it in the server's
+      # own log entry rather than in anything this workflow wrote.
+      - name: The reader refuses that boot for the throw, on a server that had started
+        if: matrix.build == 'throws-while-loading'
+        run: |
+          set -eu
+          if output=$(.github/scripts/read-a-booted-server.sh "${RUNNER_TEMP}/captures" 2>&1); then
+            echo "$output"
+            echo "A build whose registrator throws while loading was read as a clean boot." >&2
+            exit 1
+          fi
+          echo "$output"
+          echo "$output" | grep -q 'The log carries an error that names the plugin'
+          echo "$output" | grep -qF "${POISON}"
+
+      # The issue asks that the run leave behind no container and no temporary
+      # directory, and a step that removes them and swallows its own failure
+      # would satisfy that on every run whether or not anything was removed. So
+      # the removal is followed by a look. The server ran as root inside the
+      # container and owns what it wrote under the config and cache trees, which
+      # the runner's user cannot remove; the same image removes them as the same
+      # user, with nothing else pulled for it, and the runner removes the rest.
+      - name: Stop the server, and leave behind no container and no directory
         if: always()
         run: |
-          set +e
+          set -eu
           echo "::group::server log"
-          docker logs jellyfin 2>&1 | tail -n 200
+          docker logs jellyfin 2>&1 | tail -n 200 || true
           echo "::endgroup::"
-          docker rm -f jellyfin > /dev/null 2>&1 || true
+          docker rm -f -v jellyfin > /dev/null 2>&1 || true
+          if [ -d "${RUNNER_TEMP}/server" ]; then
+            docker run --rm --volume "${RUNNER_TEMP}/server:/server" --entrypoint /bin/sh "${SERVER_IMAGE}" \
+              -c 'rm -rf /server/config /server/cache'
+          fi
+          rm -rf "${RUNNER_TEMP}/server" "${RUNNER_TEMP}/captures" "${RUNNER_TEMP}/auth-header" "${RUNNER_TEMP}/reply" "${RUNNER_TEMP}/poison.cs"
+
+          containers=$(docker ps -aq | wc -l | tr -d ' ')
+          if [ "$containers" -ne 0 ]; then
+            echo "${containers} container(s) are still here after the run:" >&2
+            docker ps -a >&2
+            exit 1
+          fi
+          for path in "${RUNNER_TEMP}/server" "${RUNNER_TEMP}/captures"; do
+            if [ -e "$path" ]; then
+              echo "${path} is still here after the run." >&2
+              exit 1
+            fi
+          done
+          echo "no container and no directory of this run is left behind"
 
   refuses:
     name: And it refuses a boot that did not load the plugin
