@@ -54,27 +54,48 @@ what it waits on is written.
 The supported set of sibling plugins installed together, on each supported server
 line, with the collision scan over the result.
 
-Nothing decides this yet. No matrix exists in this repository, and nothing here
-installs a sibling plugin:
+Nothing decides this yet, and the reason has changed under this item without the
+state changing. A server boots here now, and the scan runs over it. What is
+absent is the sibling half:
 
 ```
-git grep -nEi 'interoperab|jellyfin-plugin-(sso|requests|stats)' -- .github/workflows/
+git grep -nEi 'interoperab|jellyfin-plugin-(sso|requests|stats)|jellyfin/jellyfin:' -- .github/workflows/
+.github/workflows/booted-server.yml:87:      # jellyfin/jellyfin:10.11.11, read from the registry on 2026-09-03:
+.github/workflows/booted-server.yml:89:      SERVER_IMAGE: jellyfin/jellyfin:10.11.11@sha256:aefb67e6a7ff1debdd154a78a7bbb780fd0c873d8639210a7f6a2016ad2b35db
 .github/workflows/claim-collision.yml:44:        run: .github/scripts/refuse-a-claim-collision.sh interoperability/claims
 .github/workflows/claim-collision.yml:113:          jq 'del(.taskKeys)' interoperability/claims/jellyfin-plugin-whisper-subtitles.json > incomplete/whisper.json
 .github/workflows/claim-collision.yml:127:          jq 'del(.plugin)' interoperability/claims/jellyfin-plugin-whisper-subtitles.json > anonymous/whisper.json
 ```
 
-That command returned nothing until #64's recording half landed, and the three
-lines it returns now are one workflow reading this repository's own claim record
-out of `interoperability/claims/`. None of them installs a sibling, boots a
-server, or compares this plugin against anything but itself, so the sentence
-above is unchanged and only its evidence moved. What a matrix would look like
-here is a job that fetches a released sibling and installs it, and there is none.
+The pattern is widened here, and that is the repair rather than a detail of it.
+It had no word for a server image, so it returned the last three lines alone
+after a workflow that boots a server had landed, and a reader took "nothing here
+boots a server" out of a reading that could not have shown one. The two lines it
+gains are the image `.github/workflows/booted-server.yml` pins. That workflow
+installs the built plugin into a stock 10.11 server, reads what the server says
+about it, and hands the listings to
+`.github/scripts/scan-a-booted-server.sh`, which is the collision scan #64 asked
+for reading a boot rather than a fixture. It runs on every push to `master` and
+on every pull request.
 
-The harness that boots a server per line is #63, the collision scan is #64, and
-the wiring that makes the matrix a standing answer rather than an experiment
-somebody once ran is #66. Until those land, this condition is answered by nobody
-rather than by hand, and a release cut today ships without it.
+None of the five lines fetches or installs another plugin. The only claim record
+read is this repository's own, in `interoperability/claims/`, and the scan
+compares the booted server against that one record. A matrix here is a job that
+installs a released sibling beside this plugin, and there is none, which is why
+this item is undecided rather than because nothing boots.
+
+The second supported line has no boot either, and it is the same wait packaging
+records rather than a second one. `.github/workflows/booted-server.yml` boots
+10.11 and says so in its job name, because the 12.0 pin in
+`Directory.Build.props` is a release candidate; `build.yaml` gives that reason in
+its own first paragraph for the manifest, and `SecondServerLineManifestTests`
+reads the pin rather than either page.
+
+So one line has a harness and the scan runs over it, and #63 is where the second
+line is owed. The sibling set, the schedule that makes the run standing rather
+than incidental, and the refusal that holds a release on a red run are #66. Until
+that lands, this condition is answered by nobody rather than by hand, and a
+release cut today ships without it.
 
 A red matrix holds the release until the collision is fixed or the
 incompatibility is written down as a known limitation with its reason. That is
