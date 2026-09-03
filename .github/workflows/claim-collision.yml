@@ -8,11 +8,11 @@
 # assertions that hold each claim in place.
 #
 # What runs here is the comparison over the records this repository holds, which
-# today is one. The set that matters is this plugin beside its siblings on a
-# booted server, and neither the boot nor the sibling records exist yet: that is
-# #63 for the server and #66 for the matrix that installs them. So this job says
-# that the comparison works and that this repository's own record survives it,
-# and it says nothing about a collision with a sibling.
+# today is one, and the proof of the scan over a booted server against captures
+# of one. The boot is booted-server.yml, and it hands that scan a real 10.11
+# server's captures on every run of the shipped build; the sibling records do
+# not exist yet, and installing siblings beside this plugin is the matrix in
+# #66. So nothing here says anything about a collision with a sibling.
 name: Claim collision
 
 on:

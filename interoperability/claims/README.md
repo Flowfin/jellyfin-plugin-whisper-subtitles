@@ -81,7 +81,9 @@ read is that nothing registered them twice and that every value this record
 claims is registered. A task this plugin registers that this record omits is not
 seen there; `ClaimRecordTests` holds that from the plugin's own type.
 
-Where it runs is the boot in #63. `.github/workflows/claim-collision.yml` proves
-it against captures under `.github/fixtures/booted-server-claims/` and
-`.github/fixtures/booted-server/`, and the comparison against a server carrying
-a sibling as well is the matrix in #66.
+Where it reads a server is `.github/workflows/booted-server.yml`, which hands it
+the captures of a booted 10.11 server carrying the shipped build, on every run.
+`.github/workflows/claim-collision.yml` proves it against captures under
+`.github/fixtures/booted-server-claims/` and `.github/fixtures/booted-server/`,
+and the comparison against a server carrying a sibling as well is the matrix in
+#66.

@@ -17,6 +17,18 @@
 # .github/scripts/read-a-booted-server.sh is the reader, and the second job proves
 # it refuses each of those going wrong, one at a time, against fixtures.
 #
+# Two more captures are taken for a second reader, the page listing and the
+# route document, and the shipped leg hands all four listings to
+# .github/scripts/scan-a-booted-server.sh. That is the scan of #64 reading a
+# server rather than a fixture: it refuses a value the server lists twice,
+# naming both claimants and the value, and derives what this plugin claims from
+# what the server attributes to it, compared in both directions against the
+# claim record this repository keeps. The server job in claim-collision.yml
+# proves each of its refusals against composed captures; this is where it reads
+# a boot. A server carrying this plugin alone has nothing to claim twice
+# against, so what the scan says here is the counts and the derivation, and a
+# server carrying a sibling as well is the matrix in #66.
+#
 # The first job boots twice, from one definition, and the two legs have to end
 # in opposite verdicts. One installs the build an operator receives and has to
 # be read as a clean boot. The other installs the same build with one line added
@@ -266,16 +278,43 @@ jobs:
           # throw. Whatever came back is the capture, the status is printed
           # beside its size, and the reader is what refuses it.
           page_status=$(curl -sS -o "${captures}/page.html" -w '%{http_code}' -H @"${RUNNER_TEMP}/auth-header" "${SERVER_URL}/web/ConfigurationPage?name=${encoded}")
+          # The page listing and the route document are the two captures the
+          # scan reads and the reader does not. The listing answers only an
+          # administrator, which the wizard's account is. Both are captured
+          # whatever their status, for the reason the page is: on the throwing
+          # leg the plugin is disabled and what the server lists then is a
+          # reading of that, and the route document not being a document is
+          # the reading the scan makes of a route claimed twice.
+          pages_status=$(curl -sS -o "${captures}/pages.json" -w '%{http_code}' -H @"${RUNNER_TEMP}/auth-header" "${SERVER_URL}/web/ConfigurationPages")
+          routes_status=$(curl -sS -o "${captures}/openapi.json" -w '%{http_code}' -H @"${RUNNER_TEMP}/auth-header" "${SERVER_URL}/api-docs/openapi.json")
           docker logs jellyfin > "${captures}/server.log" 2>&1
 
           echo "plugins:"; jq -r '.[] | "  \(.Name) \(.Version) \(.Status)"' "${captures}/plugins.json"
           echo "tasks:"; jq -r '.[] | "  \(.Key) \(.Name)"' "${captures}/tasks.json"
           echo "page: $(wc -c < "${captures}/page.html") byte(s), status ${page_status}"
+          echo "pages listed: $(wc -c < "${captures}/pages.json") byte(s), status ${pages_status}"
+          jq -r '.[] | "  \(.Name) by \(.PluginId)"' "${captures}/pages.json" 2>/dev/null || true
+          echo "routes: $(wc -c < "${captures}/openapi.json") byte(s), status ${routes_status}"
           echo "log: $(wc -l < "${captures}/server.log") line(s)"
 
       - name: The plugin loaded, is listed, has its task, and served its page
         if: matrix.build == 'shipped'
         run: .github/scripts/read-a-booted-server.sh "${RUNNER_TEMP}/captures"
+
+      # The scan over the same boot, which is the first condition of #64: its
+      # sets come from what the server registered rather than from the source.
+      # It says how much it read, then what it derived for this plugin, then
+      # that nothing the server lists is claimed twice. The first line is held
+      # to the shape a real server produces, so a scan handed the composed
+      # fixtures by mistake, which read five routes, cannot pass as one that
+      # read a server answering some three hundred.
+      - name: And the scan derives what the plugin claims from that server, and finds nothing claimed twice
+        if: matrix.build == 'shipped'
+        run: |
+          set -eu
+          output=$(.github/scripts/scan-a-booted-server.sh "${RUNNER_TEMP}/captures")
+          echo "$output"
+          echo "$output" | head -n 1 | grep -qE '^read 1 plugin\(s\), [0-9]+ task\(s\), 1 page\(s\) and [0-9]{3,} route\(s\) from the booted server$'
 
       # Reaching this step is half of the verdict: the server behind the poisoned
       # build answered its ping, finished starting, took the wizard, issued a
