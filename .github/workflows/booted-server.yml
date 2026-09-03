@@ -220,6 +220,16 @@ jobs:
           echo "$output"
           echo "$output" | head -n 1 | grep -q '^read 1 plugin(s), 2 task(s), a page of [0-9][0-9]* byte(s) and 5 log entries$'
 
+      # The server writes the id without its dashes and build.yaml with them,
+      # and the first boot on the runner was refused on exactly that. This is
+      # the listing as the server writes it.
+      - name: The id in the spelling the server uses is the same id
+        run: |
+          set -eu
+          cp -r clean bare-id
+          jq '(.[0].Id) = "30ed66e032fd46a68a565cd95d8df10f"' clean/plugins.json > bare-id/plugins.json
+          .github/scripts/read-a-booted-server.sh bare-id
+
       - name: An error naming some other plugin is not an error naming this one
         run: |
           set -eu
