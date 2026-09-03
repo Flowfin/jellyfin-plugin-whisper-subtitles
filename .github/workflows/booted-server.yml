@@ -117,20 +117,39 @@ jobs:
             --volume "${RUNNER_TEMP}/server/cache:/cache" \
             "${SERVER_IMAGE}"
 
-          # The health route answers before startup has finished, and every
-          # other route answers 503 until it has, so waiting on health alone
-          # loses a race the first boot on the runner happened to win and the
-          # second lost. The public system route sits behind the same startup
-          # gate as the wizard, so a 200 from it is the server ready to be
-          # asked, and the version it reports is printed as the reading.
+          # Two servers answer this port in turn, and both answer 200 on a route
+          # a naive wait would use. While the real host is being built, a
+          # setup server holds the port: it answers /health as degraded, which
+          # is still a 200, answers /System/Info/Public with a public info of
+          # its own, and answers everything else 503. Then the real host takes
+          # the port and answers 503 on everything but /System/Ping until its
+          # startup has completed. The second and third boots on the runner
+          # reached the wizard between those two states and got a 503 on its
+          # first call. So the wait is in two halves that only the finished
+          # real host satisfies together: the ping, which the setup server
+          # never answers with a 200, and then the public route, which the real
+          # host answers with a 200 only once startup is complete.
+          status() { curl -s -o /dev/null -w '%{http_code}' "${SERVER_URL}$1" 2>/dev/null || echo 000; }
           for attempt in $(seq 1 90); do
-            if info=$(curl -fsS "${SERVER_URL}/System/Info/Public" 2>/dev/null); then
-              echo "ready after ${attempt} attempt(s): $(jq -r '"\(.ProductName) \(.Version)"' <<< "$info")"
+            if [ "$(status /System/Ping)" = "200" ]; then
+              echo "the server host answers its ping after ${attempt} attempt(s)"
+              break
+            fi
+            if [ "${attempt}" -eq 90 ]; then
+              echo "The server host did not answer ${SERVER_URL}/System/Ping within three minutes." >&2
+              docker logs jellyfin >&2 || true
+              exit 1
+            fi
+            sleep 2
+          done
+          for attempt in $(seq 1 90); do
+            if [ "$(status /System/Info/Public)" = "200" ]; then
+              echo "startup complete after ${attempt} more attempt(s): $(curl -fsS "${SERVER_URL}/System/Info/Public" | jq -r '"\(.ProductName) \(.Version)"')"
               exit 0
             fi
             sleep 2
           done
-          echo "The server did not answer ${SERVER_URL}/System/Info/Public within three minutes." >&2
+          echo "The server answered its ping and then did not finish starting within three minutes." >&2
           docker logs jellyfin >&2 || true
           exit 1
 
@@ -141,26 +160,39 @@ jobs:
       - name: Finish the first-run wizard and sign in
         run: |
           set -eu
-          json='Content-Type: application/json'
-          curl -fsS -X POST -H "$json" "${SERVER_URL}/Startup/Configuration" \
-            -d '{"UICulture":"en-US","MetadataCountryCode":"US","PreferredMetadataLanguage":"en"}'
-          curl -fsS "${SERVER_URL}/Startup/User" > /dev/null
-          curl -fsS -X POST -H "$json" "${SERVER_URL}/Startup/User" \
-            -d '{"Name":"harness","Password":"harness-only-and-thrown-away"}'
-          curl -fsS -X POST -H "$json" "${SERVER_URL}/Startup/RemoteAccess" \
-            -d '{"EnableRemoteAccess":false,"EnableAutomaticPortMapping":false}'
-          curl -fsS -X POST "${SERVER_URL}/Startup/Complete"
+          # Each call prints its route and the status it got, and the first one
+          # outside the 2xx range ends the step with the body the server sent,
+          # so a wizard that changes shape names the call that changed.
+          call() {
+            verb=$1; route=$2; body=${3:-}
+            if [ -n "$body" ]; then
+              code=$(curl -s -o "${RUNNER_TEMP}/reply" -w '%{http_code}' -X "$verb" -H 'Content-Type: application/json' "${SERVER_URL}${route}" -d "$body")
+            else
+              code=$(curl -s -o "${RUNNER_TEMP}/reply" -w '%{http_code}' -X "$verb" "${SERVER_URL}${route}")
+            fi
+            echo "${verb} ${route} -> ${code}"
+            case "$code" in
+              2*) ;;
+              *) echo "The server answered ${verb} ${route} with ${code}:" >&2; head -c 2000 "${RUNNER_TEMP}/reply" >&2; echo >&2; exit 1 ;;
+            esac
+          }
+          call POST /Startup/Configuration '{"UICulture":"en-US","MetadataCountryCode":"US","PreferredMetadataLanguage":"en"}'
+          call GET /Startup/User
+          call POST /Startup/User '{"Name":"harness","Password":"harness-only-and-thrown-away"}'
+          call POST /Startup/RemoteAccess '{"EnableRemoteAccess":false,"EnableAutomaticPortMapping":false}'
+          call POST /Startup/Complete
 
-          token=$(curl -fsS -X POST -H "$json" \
-            -H 'Authorization: MediaBrowser Client="booted-server", Device="runner", DeviceId="booted-server-runner", Version="0"' \
-            "${SERVER_URL}/Users/AuthenticateByName" \
-            -d '{"Username":"harness","Pw":"harness-only-and-thrown-away"}' | jq -r '.AccessToken // empty')
+          code=$(curl -s -o "${RUNNER_TEMP}/reply" -w '%{http_code}' -X POST -H 'Content-Type: application/json'             -H 'Authorization: MediaBrowser Client="booted-server", Device="runner", DeviceId="booted-server-runner", Version="0"'             "${SERVER_URL}/Users/AuthenticateByName"             -d '{"Username":"harness","Pw":"harness-only-and-thrown-away"}')
+          echo "POST /Users/AuthenticateByName -> ${code}"
+          token=$(jq -r '.AccessToken // empty' "${RUNNER_TEMP}/reply" 2>/dev/null || true)
           if [ -z "$token" ]; then
             echo "The server issued no access token, so nothing below can ask it what it loaded." >&2
             exit 1
           fi
           echo "::add-mask::${token}"
-          printf 'Authorization: MediaBrowser Token="%s"\n' "$token" > "${RUNNER_TEMP}/auth-header"
+          printf 'Authorization: MediaBrowser Token="%s"
+' "$token" > "${RUNNER_TEMP}/auth-header"
+          rm -f "${RUNNER_TEMP}/reply"
           echo "signed in"
 
       - name: Capture what the server says about the plugin
