@@ -25,9 +25,11 @@
 # what the server attributes to it, compared in both directions against the
 # claim record this repository keeps. The server job in claim-collision.yml
 # proves each of its refusals against composed captures; this is where it reads
-# a boot. A server carrying this plugin alone has nothing to claim twice
-# against, so what the scan says here is the counts and the derivation, and a
-# server carrying a sibling as well is the matrix in #66.
+# a boot. The image is not a server carrying this plugin alone: the stock 10.11
+# image ships five bundled plugins, each with a page of its own, and the first
+# run of this step read six plugins and six pages. So what the scan says here
+# is a comparison against those five as well as the derivation, and a server
+# carrying a sibling of this plugin's own family is the matrix in #66.
 #
 # The first job boots twice, from one definition, and the two legs have to end
 # in opposite verdicts. One installs the build an operator receives and has to
@@ -305,16 +307,20 @@ jobs:
       # sets come from what the server registered rather than from the source.
       # It says how much it read, then what it derived for this plugin, then
       # that nothing the server lists is claimed twice. The first line is held
-      # to the shape a real server produces, so a scan handed the composed
-      # fixtures by mistake, which read five routes, cannot pass as one that
-      # read a server answering some three hundred.
+      # to the one count that separates a real server from the composed
+      # fixtures, which is the routes: the fixtures read five and a 10.11
+      # server answered 315 on the first run of this step, so a scan handed the
+      # fixtures by mistake cannot pass as one that read a server. The plugin
+      # and page counts are not held, because the image decides them: the first
+      # version of this line required one of each and was refused by a server
+      # listing six, five of them bundled with the image.
       - name: And the scan derives what the plugin claims from that server, and finds nothing claimed twice
         if: matrix.build == 'shipped'
         run: |
           set -eu
           output=$(.github/scripts/scan-a-booted-server.sh "${RUNNER_TEMP}/captures")
           echo "$output"
-          echo "$output" | head -n 1 | grep -qE '^read 1 plugin\(s\), [0-9]+ task\(s\), 1 page\(s\) and [0-9]{3,} route\(s\) from the booted server$'
+          echo "$output" | head -n 1 | grep -qE '^read [0-9]+ plugin\(s\), [0-9]+ task\(s\), [0-9]+ page\(s\) and [0-9]{3,} route\(s\) from the booted server$'
 
       # Reaching this step is half of the verdict: the server behind the poisoned
       # build answered its ping, finished starting, took the wizard, issued a

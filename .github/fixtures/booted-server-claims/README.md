@@ -7,11 +7,16 @@ under `.github/fixtures/booted-server/`, written from what a server answered,
 and the job that proves this scan reads them from there rather than keeping a
 second copy. The two here are the captures that job adds.
 
-`pages.json` is what `GET /web/ConfigurationPages` answers on a server carrying
-this plugin alone: one page, attributed to this plugin's id. The server lists
-plugin pages and no page of its own on that route, which is read off
-`DashboardController` at the pinned server tag rather than assumed, so a listing
-of one is the shape a clean boot produces.
+`pages.json` is what `GET /web/ConfigurationPages` answers for this plugin: one
+page, attributed to this plugin's id. The server lists plugin pages and no page
+of its own on that route, which is read off `DashboardController` at the pinned
+server tag rather than assumed. A listing of one is not what a clean boot
+produces, though, and this sentence said it was until the boot read otherwise:
+the stock 10.11 image ships five bundled plugins with a page each, so the boot
+in `booted-server.yml` read six pages by six plugins on its first run of the
+scan. The fixture keeps the one page that is this plugin's, which is the shape
+the derivation is proved against, and the scan says how many it read either
+way.
 
 `openapi.json` is the route document cut down to what the scan reads, which is
 the set of paths. A real server answers some three hundred; five is enough to be
