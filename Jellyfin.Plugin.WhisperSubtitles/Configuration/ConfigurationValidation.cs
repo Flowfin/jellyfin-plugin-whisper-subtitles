@@ -4,6 +4,7 @@ using System.Globalization;
 using System.Linq;
 using Jellyfin.Plugin.WhisperSubtitles.Attempts;
 using Jellyfin.Plugin.WhisperSubtitles.Backends;
+using Jellyfin.Plugin.WhisperSubtitles.Backends.Remote;
 using Jellyfin.Plugin.WhisperSubtitles.Detection;
 using Jellyfin.Plugin.WhisperSubtitles.Scheduling;
 using Jellyfin.Plugin.WhisperSubtitles.Selection;
@@ -72,6 +73,18 @@ public static class ConfigurationValidation
     public const string NoPathNamed = "";
 
     /// <summary>
+    /// The default for a remote backend setting nobody has typed: none named.
+    /// </summary>
+    /// <remarks>
+    /// Blank, and for the URL the reason is the sharpest of the three: it is where
+    /// the audio of every selected item is sent, and a default naming any host
+    /// would be a plugin sending audio somewhere nobody chose. For the key, blank
+    /// is also what an endpoint that wants no key is given, so it is a working
+    /// state rather than only an absence.
+    /// </remarks>
+    public const string NoRemoteSettingNamed = "";
+
+    /// <summary>
     /// The value a resource limit carries when nobody has chosen one.
     /// </summary>
     /// <remarks>
@@ -111,6 +124,9 @@ public static class ConfigurationValidation
         nameof(PluginConfiguration.ThreadsPerItem),
         nameof(PluginConfiguration.LocalToolPath),
         nameof(PluginConfiguration.LocalModelPath),
+        nameof(PluginConfiguration.RemoteBaseUrl),
+        nameof(PluginConfiguration.RemoteApiKey),
+        nameof(PluginConfiguration.RemoteModel),
         nameof(PluginConfiguration.FailuresBeforeQuarantine),
     ];
 
@@ -179,10 +195,25 @@ public static class ConfigurationValidation
         var threads = ThreadsPerItem(configuration.ThreadsPerItem, processorCount, complaints);
         var tool = BackendPath(nameof(PluginConfiguration.LocalToolPath), configuration.LocalToolPath, complaints);
         var model = BackendPath(nameof(PluginConfiguration.LocalModelPath), configuration.LocalModelPath, complaints);
+        var remoteUrl = RemoteBaseUrl(configuration.RemoteBaseUrl, complaints);
+        var remoteKey = RemoteSetting(nameof(PluginConfiguration.RemoteApiKey), configuration.RemoteApiKey, complaints);
+        var remoteModel = RemoteSetting(nameof(PluginConfiguration.RemoteModel), configuration.RemoteModel, complaints);
         var failures = FailuresBeforeQuarantine(configuration.FailuresBeforeQuarantine, complaints);
 
         return new ConfigurationLoad(
-            new SettingsInForce(version, backend, target, byLibrary, items, threads, tool, model, failures),
+            new SettingsInForce(
+                version,
+                backend,
+                target,
+                byLibrary,
+                items,
+                threads,
+                tool,
+                model,
+                remoteUrl,
+                remoteKey,
+                remoteModel,
+                failures),
             complaints);
     }
 
@@ -243,6 +274,9 @@ public static class ConfigurationValidation
             ThreadCount.DefaultFor(processorCount),
             NoPathNamed,
             NoPathNamed,
+            NoRemoteSettingNamed,
+            NoRemoteSettingNamed,
+            NoRemoteSettingNamed,
             RetryPolicy.DefaultFailureLimit);
 
     private static ConfigurationLoad Defaults(List<SettingComplaint> complaints, int processorCount) =>
@@ -377,6 +411,81 @@ public static class ConfigurationValidation
             "No path is named, so the local backend reports that it is not configured."));
 
         return NoPathNamed;
+    }
+
+    /// <remarks>
+    /// The same trim and the same refusal of a control character as
+    /// <see cref="BackendPath"/>, for the same reasons, and one rule more, which is
+    /// not this file's own: whether the value is a URL the remote backend could post
+    /// to is decided by <see cref="RemoteBackendOptions.TryParseEndpoint"/>, which
+    /// is the rule the backend applies before it posts, asked here on the value
+    /// alone and without building a backend's settings to ask it, so the one place
+    /// this plugin builds those stays the composition root. A URL that is relative or that is not http or https
+    /// is refused with that type's own sentence, so the value an operator may save
+    /// and the value the backend would send audio to cannot come apart, and the
+    /// fallback is no endpoint at all rather than a repaired one, because guessing
+    /// at a host is guessing at where the audio goes.
+    ///
+    /// Nothing here reaches the network. Whether the host resolves or answers is the
+    /// readiness probe's question and is #15.
+    /// </remarks>
+    /// <param name="declared">The URL the file carried.</param>
+    /// <param name="complaints">Where a refused value is recorded.</param>
+    /// <returns>The base URL the remote backend is given, or none named.</returns>
+    private static string RemoteBaseUrl(string? declared, List<SettingComplaint> complaints)
+    {
+        var typed = RemoteSetting(nameof(PluginConfiguration.RemoteBaseUrl), declared, complaints);
+
+        if (typed.Length == 0)
+        {
+            return NoRemoteSettingNamed;
+        }
+
+        if (RemoteBackendOptions.TryParseEndpoint(typed, out _, out var problem))
+        {
+            return typed;
+        }
+
+        complaints.Add(new SettingComplaint(
+            nameof(PluginConfiguration.RemoteBaseUrl),
+            problem ?? "the URL is not one the remote backend can post to.",
+            "No endpoint is named, so the remote backend reports that it is not configured."));
+
+        return NoRemoteSettingNamed;
+    }
+
+    /// <remarks>
+    /// The trim and the control-character refusal the paths get, applied to the
+    /// three text settings of the remote backend. For the key the refusal is what
+    /// stands between a pasted line break and a request the HTTP client refuses to
+    /// send, with the key printed in the failure. Nothing else is decided: whether a
+    /// key is accepted or a model is served is the endpoint's answer, which is the
+    /// probe's to ask.
+    /// </remarks>
+    /// <param name="field">The setting being read, for the complaint.</param>
+    /// <param name="declared">The value the file carried.</param>
+    /// <param name="complaints">Where a refused value is recorded.</param>
+    /// <returns>The value the remote backend is given, or none named.</returns>
+    private static string RemoteSetting(string field, string? declared, List<SettingComplaint> complaints)
+    {
+        if (string.IsNullOrWhiteSpace(declared))
+        {
+            return NoRemoteSettingNamed;
+        }
+
+        var trimmed = declared.Trim();
+
+        if (!trimmed.Any(char.IsControl))
+        {
+            return trimmed;
+        }
+
+        complaints.Add(new SettingComplaint(
+            field,
+            "the value holds a line break or another control character, which nothing typed on the page does.",
+            "Nothing is named for it, so the remote backend reports what it is missing."));
+
+        return NoRemoteSettingNamed;
     }
 
     private static Dictionary<Guid, string> LibraryTargets(

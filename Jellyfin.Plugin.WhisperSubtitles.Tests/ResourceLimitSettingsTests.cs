@@ -372,6 +372,9 @@ public class ResourceLimitSettingsTests
             threads,
             ConfigurationValidation.NoPathNamed,
             ConfigurationValidation.NoPathNamed,
+            ConfigurationValidation.NoRemoteSettingNamed,
+            ConfigurationValidation.NoRemoteSettingNamed,
+            ConfigurationValidation.NoRemoteSettingNamed,
             RetryPolicy.DefaultFailureLimit));
     }
 

@@ -29,6 +29,9 @@ public sealed class SettingsInForce
     /// <param name="threadsPerItem">How many threads one transcription may use.</param>
     /// <param name="localToolPath">The Whisper program the local backend runs, or none named.</param>
     /// <param name="localModelPath">The model file it is handed, or none named.</param>
+    /// <param name="remoteBaseUrl">The endpoint the remote backend posts to, or none named.</param>
+    /// <param name="remoteApiKey">The key it sends, or none, which is a working state.</param>
+    /// <param name="remoteModel">The model it asks the endpoint for, or none named.</param>
     /// <param name="failuresBeforeQuarantine">How many counted failures an item gets before it is quarantined.</param>
     public SettingsInForce(
         int schemaVersion,
@@ -39,6 +42,9 @@ public sealed class SettingsInForce
         int threadsPerItem,
         string localToolPath,
         string localModelPath,
+        string remoteBaseUrl,
+        string remoteApiKey,
+        string remoteModel,
         int failuresBeforeQuarantine)
     {
         ArgumentOutOfRangeException.ThrowIfLessThan(itemsAtOnce, 1);
@@ -55,6 +61,9 @@ public sealed class SettingsInForce
         ThreadsPerItem = threadsPerItem;
         LocalToolPath = localToolPath;
         LocalModelPath = localModelPath;
+        RemoteBaseUrl = remoteBaseUrl;
+        RemoteApiKey = remoteApiKey;
+        RemoteModel = remoteModel;
         FailuresBeforeQuarantine = failuresBeforeQuarantine;
     }
 
@@ -133,6 +142,29 @@ public sealed class SettingsInForce
     /// is one somebody typed and not one that opens.
     /// </remarks>
     public string LocalModelPath { get; }
+
+    /// <summary>
+    /// Gets the endpoint the remote backend posts audio to, or none named.
+    /// </summary>
+    /// <remarks>
+    /// Not refused at construction, for the reason <see cref="LocalToolPath"/> is
+    /// not: none named is the state a fresh install is in, and selection reporting
+    /// that the remote backend is not configured is the sentence that repairs it. A
+    /// value in this property has been through the same rule the backend applies
+    /// before it posts, so it is a URL the backend could post to, and not one
+    /// anything has reached.
+    /// </remarks>
+    public string RemoteBaseUrl { get; }
+
+    /// <summary>
+    /// Gets the key the remote backend sends, or none, which is a working state.
+    /// </summary>
+    public string RemoteApiKey { get; }
+
+    /// <summary>
+    /// Gets the model the remote backend asks the endpoint for, or none named.
+    /// </summary>
+    public string RemoteModel { get; }
 
     /// <summary>
     /// Gets how many counted failures an item gets before it is quarantined.

@@ -159,9 +159,9 @@ something that works, and the sentence disappearing while nothing runs, which
 would leave the same impression more quietly. The join is #183.
 
 Four things this page would otherwise tell an operator to do follow from that,
-and they are in three states rather than two. Two have arrived as far as a field
-on a page and no further, which is worth naming rather than filing under either of
-the others. One is absent. One does not exist to be run.
+and they are in two states rather than one. Three have arrived as far as a field
+on a page and no further, which is worth naming rather than filing under done.
+One does not exist to be run.
 
 **Where the tool path and the model path are typed.** On the configuration page,
 under the backend chooser, and they appear there only while `Local` is the backend
@@ -172,20 +172,29 @@ chosen. They are the first two settings a backend owns rather than the plugin:
     Jellyfin.Plugin.WhisperSubtitles/Configuration/PluginConfiguration.cs:45:    public string Backend { get; set; } = ConfigurationValidation.NoBackendChosen;
     Jellyfin.Plugin.WhisperSubtitles/Configuration/PluginConfiguration.cs:63:    public string LocalToolPath { get; set; } = ConfigurationValidation.NoPathNamed;
     Jellyfin.Plugin.WhisperSubtitles/Configuration/PluginConfiguration.cs:76:    public string LocalModelPath { get; set; } = ConfigurationValidation.NoPathNamed;
-    Jellyfin.Plugin.WhisperSubtitles/Configuration/PluginConfiguration.cs:89:    public string TargetLanguage { get; set; } = string.Empty;
-    Jellyfin.Plugin.WhisperSubtitles/Configuration/PluginConfiguration.cs:110:    public int ItemsAtOnce { get; set; } = ConfigurationValidation.LetTheMachineDecide;
-    Jellyfin.Plugin.WhisperSubtitles/Configuration/PluginConfiguration.cs:128:    public int ThreadsPerItem { get; set; } = ConfigurationValidation.LetTheMachineDecide;
-    Jellyfin.Plugin.WhisperSubtitles/Configuration/PluginConfiguration.cs:148:    public LibraryLanguageTarget[] LibraryTargets { get; set; } = [];
-    Jellyfin.Plugin.WhisperSubtitles/Configuration/PluginConfiguration.cs:175:    public int FailuresBeforeQuarantine { get; set; } = ConfigurationValidation.LetThePolicyDecide;
+    Jellyfin.Plugin.WhisperSubtitles/Configuration/PluginConfiguration.cs:97:    public string RemoteBaseUrl { get; set; } = ConfigurationValidation.NoRemoteSettingNamed;
+    Jellyfin.Plugin.WhisperSubtitles/Configuration/PluginConfiguration.cs:115:    public string RemoteApiKey { get; set; } = ConfigurationValidation.NoRemoteSettingNamed;
+    Jellyfin.Plugin.WhisperSubtitles/Configuration/PluginConfiguration.cs:128:    public string RemoteModel { get; set; } = ConfigurationValidation.NoRemoteSettingNamed;
+    Jellyfin.Plugin.WhisperSubtitles/Configuration/PluginConfiguration.cs:141:    public string TargetLanguage { get; set; } = string.Empty;
+    Jellyfin.Plugin.WhisperSubtitles/Configuration/PluginConfiguration.cs:162:    public int ItemsAtOnce { get; set; } = ConfigurationValidation.LetTheMachineDecide;
+    Jellyfin.Plugin.WhisperSubtitles/Configuration/PluginConfiguration.cs:180:    public int ThreadsPerItem { get; set; } = ConfigurationValidation.LetTheMachineDecide;
+    Jellyfin.Plugin.WhisperSubtitles/Configuration/PluginConfiguration.cs:200:    public LibraryLanguageTarget[] LibraryTargets { get; set; } = [];
+    Jellyfin.Plugin.WhisperSubtitles/Configuration/PluginConfiguration.cs:227:    public int FailuresBeforeQuarantine { get; set; } = ConfigurationValidation.LetThePolicyDecide;
 
 Typing a path does not check it. Whether a file is there, whether it runs and
 whether it is a model are the readiness probe's questions, which is #15, so what
 these two fields buy today is that the values a run would use are values an
 operator chose rather than values nobody could set.
 
-**Where the URL and the key are typed.** Nowhere yet. The remote endpoint's own
-settings are not on the page, and choosing `Remote` reaches selection, which
-reports which settings are not filled in and transcribes nothing. The page is #36.
+**Where the URL and the key are typed.** On the configuration page, under the
+backend chooser, and they appear there only while `Remote` is the backend chosen,
+with the model name beside them and a statement of where the audio goes that
+names the host out of the URL typed. Typing them checks one thing, which is that
+the URL is one the backend could post to; whether the host answers, accepts the
+key and serves the model are the readiness probe's questions, which is #15. As
+with the paths, nothing carries the three values to the backend yet, so choosing
+`Remote` reaches selection, which reports which settings are not filled in and
+transcribes nothing.
 
 **How to run the calibration so the estimate is about this machine.** There is no
 calibration to run. The arithmetic that folds measured items into a factor exists
@@ -204,8 +213,8 @@ what the file says rather than what a server does.
 The two fields on the page:
 
     git grep -n 'public int ItemsAtOnce\|public int ThreadsPerItem' -- Jellyfin.Plugin.WhisperSubtitles/Configuration/PluginConfiguration.cs
-    Jellyfin.Plugin.WhisperSubtitles/Configuration/PluginConfiguration.cs:110:    public int ItemsAtOnce { get; set; } = ConfigurationValidation.LetTheMachineDecide;
-    Jellyfin.Plugin.WhisperSubtitles/Configuration/PluginConfiguration.cs:128:    public int ThreadsPerItem { get; set; } = ConfigurationValidation.LetTheMachineDecide;
+    Jellyfin.Plugin.WhisperSubtitles/Configuration/PluginConfiguration.cs:162:    public int ItemsAtOnce { get; set; } = ConfigurationValidation.LetTheMachineDecide;
+    Jellyfin.Plugin.WhisperSubtitles/Configuration/PluginConfiguration.cs:180:    public int ThreadsPerItem { get; set; } = ConfigurationValidation.LetTheMachineDecide;
 
 Zero on either means nobody has chosen and the machine decides. A number above
 one per processor is refused rather than quietly reduced, and what is in force

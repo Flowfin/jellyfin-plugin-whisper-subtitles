@@ -39,12 +39,17 @@ namespace Jellyfin.Plugin.WhisperSubtitles.Tests;
 /// policy is held by nothing until it has been re-read. Neither state passes both
 /// legs while the text is wrong.
 ///
+/// THE REMOTE BACKEND'S SETTINGS ARE IN THE SAME POSITION SINCE THEY LANDED. A
+/// URL, a key and a model name are declared by the schema and dropped at the line
+/// that builds the remote backend's settings out of nothing, so the registrator
+/// has to name each of those too, and the policy pastes that construction under a
+/// second command held the same way as the first.
+///
 /// WHAT THIS DOES NOT DO. It compares a paste and a set of names, and it has no
 /// opinion about the prose around either: a paste that reproduces exactly, under a
 /// sentence drawing the wrong conclusion from it, passes here. It reads the schema
 /// file rather than the type, so a property added by a partial class elsewhere is
-/// not seen. And it says nothing about the remote backend's settings, which have no
-/// field in the schema to be left behind by yet.
+/// not seen.
 /// </remarks>
 public sealed class BackendSettingsClaimTests
 {
@@ -56,8 +61,13 @@ public sealed class BackendSettingsClaimTests
 
     private const string Construction = "new LocalBackendOptions";
 
+    private const string RemoteConstruction = "new RemoteBackendOptions";
+
     private const string PolicyCommand =
         "$ git grep 'new LocalBackendOptions' -- 'Jellyfin.Plugin.WhisperSubtitles/*.cs'";
+
+    private const string RemotePolicyCommand =
+        "$ git grep 'new RemoteBackendOptions' -- 'Jellyfin.Plugin.WhisperSubtitles/*.cs'";
 
     private const string Policy = "SECURITY.md";
 
@@ -73,6 +83,13 @@ public sealed class BackendSettingsClaimTests
     // makes a third one this file's business on the day it lands.
     private static readonly Regex _backendPath = new(
         @"^Local\w*Path$",
+        RegexOptions.CultureInvariant,
+        TimeSpan.FromSeconds(5));
+
+    // The settings the remote backend is built out of, by the prefix the schema
+    // gives every one of them, for the same reason.
+    private static readonly Regex _remoteSetting = new(
+        @"^Remote\w+$",
         RegexOptions.CultureInvariant,
         TimeSpan.FromSeconds(5));
 
@@ -95,17 +112,29 @@ public sealed class BackendSettingsClaimTests
         Assert.True(
             pasted.Count > 0,
             $"the security policy pastes {pasted.Count} lines under \"{PolicyCommand}\"");
+
+        var remote = RemoteSettings();
+
+        Assert.True(
+            remote.Count > 1,
+            $"the schema declares {remote.Count} remote backend setting or settings, so the registrator leg below has nothing to look for");
+
+        Assert.True(
+            PastedUnder(Read(Policy), RemotePolicyCommand).Count > 0,
+            $"the security policy pastes nothing under \"{RemotePolicyCommand}\"");
     }
 
-    [Fact]
-    public void The_policy_paste_prints_what_the_command_prints()
+    [Theory]
+    [InlineData(PolicyCommand, Construction, "tool path")]
+    [InlineData(RemotePolicyCommand, RemoteConstruction, "endpoint URL or key")]
+    public void The_policy_paste_prints_what_the_command_prints(string command, string construction, string setting)
     {
-        var found = ConstructionsInThePlugin();
-        var pasted = PastedUnderPolicyCommand();
+        var found = ConstructionsInThePlugin(construction);
+        var pasted = PastedUnder(Read(Policy), command);
 
         Assert.True(
             pasted.SequenceEqual(found, StringComparer.Ordinal),
-            $"{Policy} pastes {Show(pasted)} under \"{PolicyCommand}\" and the plugin answers {Show(found)}. The paragraph around that paste tells a reporter what a saved tool path reaches, so the two disagreeing is that paragraph describing a different tree from the one it is in.");
+            $"{Policy} pastes {Show(pasted)} under \"{command}\" and the plugin answers {Show(found)}. The paragraph around that paste tells a reporter what a saved {setting} reaches, so the two disagreeing is that paragraph describing a different tree from the one it is in.");
     }
 
     [Fact]
@@ -126,6 +155,26 @@ public sealed class BackendSettingsClaimTests
             Assert.True(
                 registrator.Contains(name, StringComparison.Ordinal),
                 $"the schema declares {name} and {Registrator} builds the local backend's settings out of nothing without naming it, so a path an operator saves is dropped there and the file beside the line that drops it does not say so.");
+        }
+    }
+
+    [Fact]
+    public void The_registrator_names_every_remote_setting_the_schema_declares_while_it_carries_none_of_them()
+    {
+        var registrator = Read(Path.Combine(PluginProject, Registrator));
+
+        if (!registrator.Contains(RemoteConstruction + "(null, null, null)", StringComparison.Ordinal))
+        {
+            // Carried through, so nothing is owed here and the policy's remote paste
+            // is what goes red until its paragraph has been re-read.
+            return;
+        }
+
+        foreach (var name in RemoteSettings())
+        {
+            Assert.True(
+                registrator.Contains(name, StringComparison.Ordinal),
+                $"the schema declares {name} and {Registrator} builds the remote backend's settings out of nothing without naming it, so a value an operator saves is dropped there and the file beside the line that drops it does not say so.");
         }
     }
 
@@ -163,6 +212,13 @@ public sealed class BackendSettingsClaimTests
         [.. DeclaredSettings().Where(name => _backendPath.IsMatch(name)).Order(StringComparer.Ordinal)];
 
     /// <summary>
+    /// The settings the remote backend would be built out of.
+    /// </summary>
+    /// <returns>The names, sorted, so a message reads the same on every machine.</returns>
+    private static List<string> RemoteSettings() =>
+        [.. DeclaredSettings().Where(name => _remoteSetting.IsMatch(name)).Order(StringComparer.Ordinal)];
+
+    /// <summary>
     /// What the command the policy quotes returns, as that command prints it.
     /// </summary>
     /// <remarks>
@@ -172,7 +228,7 @@ public sealed class BackendSettingsClaimTests
     /// is already written on the README's own comparison.
     /// </remarks>
     /// <returns>One entry per matching line, path first.</returns>
-    private static List<string> ConstructionsInThePlugin()
+    private static List<string> ConstructionsInThePlugin(string construction)
     {
         var root = Path.Combine(RepositoryRoot(), PluginProject);
 
@@ -188,7 +244,7 @@ public sealed class BackendSettingsClaimTests
                 && !file.Relative.Contains("/obj/", StringComparison.Ordinal))
             .SelectMany(file => File
                 .ReadAllLines(file.Path)
-                .Where(line => line.Contains(Construction, StringComparison.Ordinal))
+                .Where(line => line.Contains(construction, StringComparison.Ordinal))
                 .Select(line => PluginProject + "/" + file.Relative + ":" + line.TrimEnd()))
             .Order(StringComparer.Ordinal)];
     }

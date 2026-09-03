@@ -199,19 +199,36 @@ public sealed class RemoteBackendOptions
     /// is relative, or that is not http or https, is refused rather than repaired,
     /// because guessing there is guessing where the audio goes.
     /// </remarks>
-    public bool TryGetEndpoint(out Uri? endpoint, out string? problem)
+    public bool TryGetEndpoint(out Uri? endpoint, out string? problem) =>
+        TryParseEndpoint(BaseUrl, out endpoint, out problem);
+
+    /// <summary>
+    /// Works out the URL a base URL would be posted to, or says why it cannot be used.
+    /// </summary>
+    /// <param name="baseUrl">The base URL, as an operator typed it.</param>
+    /// <param name="endpoint">The URL to post to, when there is one.</param>
+    /// <param name="problem">What is wrong with the URL, when something is.</param>
+    /// <returns>Whether a URL could be worked out.</returns>
+    /// <remarks>
+    /// The rule <see cref="TryGetEndpoint"/> applies, reachable without an
+    /// instance, so the configuration can hold a typed URL to the same rule at load
+    /// without building a backend's settings to ask it. One rule in one place is
+    /// what keeps the value an operator may save and the value this backend would
+    /// post to from coming apart.
+    /// </remarks>
+    public static bool TryParseEndpoint(string? baseUrl, out Uri? endpoint, out string? problem)
     {
         endpoint = null;
         problem = null;
 
-        if (string.IsNullOrWhiteSpace(BaseUrl))
+        if (string.IsNullOrWhiteSpace(baseUrl))
         {
             problem = "No endpoint URL is configured.";
 
             return false;
         }
 
-        if (!Uri.TryCreate(BaseUrl.Trim(), UriKind.Absolute, out var parsed))
+        if (!Uri.TryCreate(baseUrl.Trim(), UriKind.Absolute, out var parsed))
         {
             problem = "The configured endpoint URL is not a complete URL. It has to start with https:// or http:// and name a host.";
 

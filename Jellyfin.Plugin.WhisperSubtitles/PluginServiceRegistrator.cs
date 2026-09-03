@@ -59,13 +59,16 @@ public sealed class PluginServiceRegistrator : IPluginServiceRegistrator
         // The two backends that do work need settings, and these two lines are
         // where they arrive. Nothing here reads the configuration, so a
         // LocalToolPath and a LocalModelPath an operator has typed are validated
-        // on load and then dropped at this line, and no setting holds a remote
-        // endpoint or a key at all. Every candidate built from these reports what
-        // it is missing rather than pretending to be ready, so what this costs is
-        // not a wrong answer: it is two path fields on the page that change
-        // nothing. The remark said the schema held none of this and went on
-        // saying it after the fields landed, which is why BackendSettingsClaimTests
-        // now refuses this file falling silent about a path the schema declares.
+        // on load and then dropped at the first line, and a RemoteBaseUrl, a
+        // RemoteApiKey and a RemoteModel are validated on load and dropped at the
+        // second. Every candidate built from these reports what it is missing
+        // rather than pretending to be ready, so what this costs is not a wrong
+        // answer: it is five fields on the page that change nothing, and what
+        // would carry them here is the composition root reading the
+        // configuration, which is #71. The remark said the schema held none of
+        // this and went on saying it after the fields landed, which is why
+        // BackendSettingsClaimTests now refuses this file falling silent about a
+        // setting the schema declares for either backend.
         serviceCollection.AddSingleton(_ => new LocalBackendOptions(null, null));
         serviceCollection.AddSingleton(_ => new RemoteBackendOptions(null, null, null));
 

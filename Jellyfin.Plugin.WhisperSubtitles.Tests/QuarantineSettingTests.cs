@@ -359,6 +359,9 @@ public class QuarantineSettingTests
             ThreadCount.DefaultFor(8),
             ConfigurationValidation.NoPathNamed,
             ConfigurationValidation.NoPathNamed,
+            ConfigurationValidation.NoRemoteSettingNamed,
+            ConfigurationValidation.NoRemoteSettingNamed,
+            ConfigurationValidation.NoRemoteSettingNamed,
             failures));
     }
 

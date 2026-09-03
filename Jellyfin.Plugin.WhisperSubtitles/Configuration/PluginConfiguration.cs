@@ -76,6 +76,58 @@ public class PluginConfiguration : BasePluginConfiguration
     public string LocalModelPath { get; set; } = ConfigurationValidation.NoPathNamed;
 
     /// <summary>
+    /// Gets or sets the base URL of the endpoint the remote backend posts audio to,
+    /// or empty when the operator has named none.
+    /// </summary>
+    /// <remarks>
+    /// Empty out of the box, and empty means the remote backend cannot run. There
+    /// is no default worth writing: a URL is where the audio of every selected item
+    /// goes, and a guess at one would be a plugin sending audio to a host nobody
+    /// typed. The page states beside this field what leaves the machine and where,
+    /// naming the host out of whatever is typed here, so the disclosure and the
+    /// value cannot describe two different endpoints.
+    ///
+    /// Trimmed, refused for a control character, and refused when it is not an
+    /// absolute http or https URL, by the rule
+    /// <see cref="Backends.Remote.RemoteBackendOptions.TryGetEndpoint"/> already
+    /// applies to the same value, so what an operator may save and what the backend
+    /// would post to cannot come apart. Whether the host answers is the readiness
+    /// probe's question and is #15.
+    /// </remarks>
+    public string RemoteBaseUrl { get; set; } = ConfigurationValidation.NoRemoteSettingNamed;
+
+    /// <summary>
+    /// Gets or sets the key the remote backend sends, or empty when the endpoint
+    /// needs none.
+    /// </summary>
+    /// <remarks>
+    /// Empty out of the box, and empty is a working state rather than a missing
+    /// one: an endpoint an operator runs themselves commonly wants no key, which is
+    /// the reason <see cref="Backends.Remote.RemoteBackendOptions.ApiKey"/> is
+    /// optional. It is a secret, stored where the server stores every plugin's
+    /// settings, and this plugin puts it into one request header and nowhere else;
+    /// the page never writes it into the disclosure beside it, and
+    /// <c>RemoteBackendSettingsTests</c> refuses a page that does.
+    ///
+    /// Trimmed and refused for a control character, because a key holding a line
+    /// break is a request header the client refuses to send.
+    /// </remarks>
+    public string RemoteApiKey { get; set; } = ConfigurationValidation.NoRemoteSettingNamed;
+
+    /// <summary>
+    /// Gets or sets the model name the remote backend asks the endpoint for, or
+    /// empty when the operator has named none.
+    /// </summary>
+    /// <remarks>
+    /// A name and not a choice from a list, for the reason
+    /// <see cref="Backends.Remote.RemoteBackendOptions.Model"/> gives: which models
+    /// an endpoint serves is the endpoint's business. Empty means the remote
+    /// backend cannot run, which is what that type's own completeness rule says
+    /// about the same value. Trimmed and refused for a control character.
+    /// </remarks>
+    public string RemoteModel { get; set; } = ConfigurationValidation.NoRemoteSettingNamed;
+
+    /// <summary>
     /// Gets or sets the language a library gets when it names none: a language
     /// code, or the reserved word for detection.
     /// </summary>
