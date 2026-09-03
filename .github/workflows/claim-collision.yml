@@ -142,3 +142,228 @@ jobs:
           echo "$output" | grep -q 'compared 2 taskKeys value(s)'
           echo "$output" | grep -q 'compared 1 routes value(s)'
           echo "$output" | grep -q 'compared 1 paths value(s)'
+
+  # The scan over a booted server, proved against captures of one. Two of the
+  # four captures are the ones booted-server.yml's own fixtures stand in for, read
+  # from there rather than copied; the page listing and the route document are
+  # under .github/fixtures/booted-server-claims/, where the README says what each
+  # one is. The neighbour runs first, for the reason the job above gives.
+  server:
+    name: And the scan over a booted server refuses what is claimed twice on it
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    env:
+      # An invented plugin for the legs that need a second claimant. Not one of
+      # this family, and its id is nobody's.
+      SIBLING: '{"Name":"A Sibling","Version":"2.0.0.0","ConfigurationFileName":"Jellyfin.Plugin.ASibling.xml","Description":"fixture","Id":"0f7ec1c6-0a2c-4a7f-9f2b-6a2f0f4b1e51","CanUninstall":true,"HasImage":false,"Status":"Active"}'
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Captures of a boot that went right
+        run: |
+          set -eu
+          version=$(sed -n 's/^version: *"\([^"]*\)".*/\1/p' build.yaml | head -n 1)
+          mkdir clean
+          for f in plugins.json tasks.json; do
+            sed "s/@VERSION@/${version}/g" ".github/fixtures/booted-server/${f}" > "clean/${f}"
+          done
+          cp .github/fixtures/booted-server-claims/pages.json .github/fixtures/booted-server-claims/openapi.json clean/
+
+      - name: It passes, says how much it read, and says what it derived
+        run: |
+          set -eu
+          output=$(.github/scripts/scan-a-booted-server.sh clean)
+          echo "$output"
+          echo "$output" | head -n 1 | grep -q '^read 1 plugin(s), 2 task(s), 1 page(s) and 5 route(s) from the booted server$'
+          echo "$output" | grep -q '^derived for jellyfin-plugin-whisper-subtitles from the server: it is listed as "Whisper Subtitles", keeps its configuration in "Jellyfin.Plugin.WhisperSubtitles.xml", and is attributed 1 page(s): Whisper Subtitles$'
+          echo "$output" | tail -n 1 | grep -q 'and none is claimed twice; the page(s) the server attributes to jellyfin-plugin-whisper-subtitles are the page(s) the record claims'
+
+      # The server writes an id without its dashes, on the plugin listing and on
+      # the page listing alike. Both spellings are the same id.
+      - name: The ids in the spelling the server uses are the same ids
+        run: |
+          set -eu
+          cp -r clean bare-ids
+          jq '(.[0].Id) = "30ed66e032fd46a68a565cd95d8df10f"' clean/plugins.json > bare-ids/plugins.json
+          jq '(.[0].PluginId) = "30ed66e032fd46a68a565cd95d8df10f"' clean/pages.json > bare-ids/pages.json
+          .github/scripts/scan-a-booted-server.sh bare-ids
+
+      - name: One task key registered twice is refused, naming both tasks and the key
+        run: |
+          set -eu
+          cp -r clean key-twice
+          jq '. + [.[0] | .Name = "Also generating subtitles" | .Id = "fixture-second-task-id"]' clean/tasks.json > key-twice/tasks.json
+          if output=$(.github/scripts/scan-a-booted-server.sh key-twice 2>&1); then
+            echo "$output"; echo "A task key registered twice was read as a server with nothing claimed twice." >&2; exit 1
+          fi
+          echo "$output"
+          echo "$output" | grep -qF 'taskKeys "WhisperSubtitlesGenerate" is registered 2 times, by "Generate subtitles" (fixture-task-id) and "Also generating subtitles" (fixture-second-task-id)'
+
+      - name: One task name registered twice is refused, naming both keys and the name
+        run: |
+          set -eu
+          cp -r clean name-twice
+          jq '. + [.[0] | .Key = "SomebodyElsesGenerate" | .Id = "fixture-second-task-id"]' clean/tasks.json > name-twice/tasks.json
+          if output=$(.github/scripts/scan-a-booted-server.sh name-twice 2>&1); then
+            echo "$output"; echo "A task name registered twice was read as a server with nothing claimed twice." >&2; exit 1
+          fi
+          echo "$output"
+          echo "$output" | grep -qF 'taskNames "Generate subtitles" is registered 2 times, under WhisperSubtitlesGenerate (fixture-task-id) and SomebodyElsesGenerate (fixture-second-task-id)'
+
+      - name: One page name registered by two plugins is refused, naming both plugins and the page
+        run: |
+          set -eu
+          cp -r clean page-twice
+          jq --argjson sibling "$SIBLING" '. + [$sibling]' clean/plugins.json > page-twice/plugins.json
+          jq '. + [.[0] | .PluginId = "0f7ec1c6-0a2c-4a7f-9f2b-6a2f0f4b1e51" | .DisplayName = "A Sibling"]' clean/pages.json > page-twice/pages.json
+          if output=$(.github/scripts/scan-a-booted-server.sh page-twice 2>&1); then
+            echo "$output"; echo "A page name registered by two plugins was read as a server with nothing claimed twice." >&2; exit 1
+          fi
+          echo "$output"
+          echo "$output" | grep -qF 'configurationPages "Whisper Subtitles" is listed 2 times, by Whisper Subtitles and A Sibling'
+
+      - name: One configuration file kept by two plugins is refused, naming both plugins and the file
+        run: |
+          set -eu
+          cp -r clean file-twice
+          jq --argjson sibling "$SIBLING" '. + [$sibling | .ConfigurationFileName = "Jellyfin.Plugin.WhisperSubtitles.xml"]' clean/plugins.json > file-twice/plugins.json
+          if output=$(.github/scripts/scan-a-booted-server.sh file-twice 2>&1); then
+            echo "$output"; echo "Two plugins keeping one configuration file were read as a server with nothing claimed twice." >&2; exit 1
+          fi
+          echo "$output"
+          echo "$output" | grep -qF 'configurationFileNames "Jellyfin.Plugin.WhisperSubtitles.xml" is kept by "Whisper Subtitles" and "A Sibling"'
+
+      - name: One plugin id listed twice is refused
+        run: |
+          set -eu
+          cp -r clean id-twice
+          jq '. + [.[0] | .Version = "0.9.0.0"]' clean/plugins.json > id-twice/plugins.json
+          if output=$(.github/scripts/scan-a-booted-server.sh id-twice 2>&1); then
+            echo "$output"; echo "A plugin id listed twice was read as a server with nothing claimed twice." >&2; exit 1
+          fi
+          echo "$output"
+          echo "$output" | grep -qF 'pluginId "30ed66e0-32fd-46a6-8a56-5cd95d8df10f" is listed 2 times'
+
+      # The derivation, in both directions. A page the server attributes to this
+      # plugin that the record does not claim is a claim that arrived in silence;
+      # a page the record claims that the server attributes elsewhere is a record
+      # describing a plugin that is not the one running.
+      - name: A page the server attributes to this plugin and the record does not claim is refused
+        run: |
+          set -eu
+          cp -r clean unrecorded-page
+          jq '. + [.[0] | .Name = "Whisper Subtitles Advanced"]' clean/pages.json > unrecorded-page/pages.json
+          if output=$(.github/scripts/scan-a-booted-server.sh unrecorded-page 2>&1); then
+            echo "$output"; echo "A page the record does not claim was read as the record agreeing with the server." >&2; exit 1
+          fi
+          echo "$output"
+          echo "$output" | grep -qF 'attributes a page to "Whisper Subtitles" that the record for jellyfin-plugin-whisper-subtitles does not claim'
+          echo "$output" | grep -qF 'Whisper Subtitles Advanced'
+
+      - name: A page the record claims that the server attributes to another plugin is refused
+        run: |
+          set -eu
+          cp -r clean unattributed-page
+          jq '(.[0].PluginId) = "0f7ec1c6-0a2c-4a7f-9f2b-6a2f0f4b1e51"' clean/pages.json > unattributed-page/pages.json
+          if output=$(.github/scripts/scan-a-booted-server.sh unattributed-page 2>&1); then
+            echo "$output"; echo "A page attributed to another plugin was read as this plugin's." >&2; exit 1
+          fi
+          echo "$output"
+          echo "$output" | grep -qF 'claims a page that the server attributes to no plugin with the id 30ed66e032fd46a68a565cd95d8df10f'
+
+      - name: A recorded task key the server registers no task under is refused
+        run: |
+          set -eu
+          cp -r clean no-key
+          jq 'map(select(.Key != "WhisperSubtitlesGenerate"))' clean/tasks.json > no-key/tasks.json
+          if output=$(.github/scripts/scan-a-booted-server.sh no-key 2>&1); then
+            echo "$output"; echo "A task list without the recorded key was read as the record agreeing with the server." >&2; exit 1
+          fi
+          echo "$output"
+          echo "$output" | grep -qF 'claims a task key the server registers no task under'
+
+      - name: A recorded task name the server registers no task under is refused
+        run: |
+          set -eu
+          cp -r clean no-task-name
+          jq '(.[0].Name) = "Generate the subtitles"' clean/tasks.json > no-task-name/tasks.json
+          if output=$(.github/scripts/scan-a-booted-server.sh no-task-name 2>&1); then
+            echo "$output"; echo "A task list without the recorded name was read as the record agreeing with the server." >&2; exit 1
+          fi
+          echo "$output"
+          echo "$output" | grep -qF 'claims a task name the server registers no task under'
+
+      - name: A recorded route the server answers no path under is refused
+        run: |
+          set -eu
+          if output=$(.github/scripts/scan-a-booted-server.sh clean .github/fixtures/booted-server-claims/record-claiming-a-route.json 2>&1); then
+            echo "$output"; echo "A record claiming a route the server does not answer was read as agreeing with the server." >&2; exit 1
+          fi
+          echo "$output"
+          echo "$output" | grep -qF 'claims a route the server answers no path under, out of 5 it does answer'
+          echo "$output" | grep -qF '/WhisperSubtitles/Status'
+
+      # A server holding two controllers on one path cannot build its route
+      # document and answers an error page instead. That page is the collision,
+      # read as one rather than skipped as a capture that is not JSON.
+      - name: A route document the server could not build is refused as the collision it is
+        run: |
+          set -eu
+          cp -r clean no-document
+          printf '<html><body>Internal Server Error</body></html>\n' > no-document/openapi.json
+          if output=$(.github/scripts/scan-a-booted-server.sh no-document 2>&1); then
+            echo "$output"; echo "An error page in place of the route document was read as a scanned server." >&2; exit 1
+          fi
+          echo "$output"
+          echo "$output" | grep -qF 'not a route document the server could build'
+          echo "$output" | grep -qF 'Internal Server Error'
+
+      # A run that read nothing must not read as a server with nothing claimed
+      # twice. Each of these is that failure by a different route, and each is
+      # required to be refused for the reason it is about rather than any other.
+      - name: A server listing no page, no plugin or no task at all is refused rather than read as clean
+        run: |
+          set -eu
+          refused_for() {
+            cp -r clean "empty-$1"
+            echo '[]' > "empty-$1/$1"
+            if output=$(.github/scripts/scan-a-booted-server.sh "empty-$1" 2>&1); then
+              echo "$output"; echo "An empty $1 was read as a scanned server." >&2; exit 1
+            fi
+            echo "$output"
+            echo "$output" | grep -qF "$2"
+          }
+          refused_for pages.json 'lists no configuration page at all'
+          refused_for plugins.json 'listed no plugin at all'
+          refused_for tasks.json 'listed no scheduled task at all'
+
+      - name: A server that does not carry this plugin is refused, naming what it does carry
+        run: |
+          set -eu
+          cp -r clean unlisted
+          jq --argjson sibling "$SIBLING" '[$sibling]' clean/plugins.json > unlisted/plugins.json
+          if output=$(.github/scripts/scan-a-booted-server.sh unlisted 2>&1); then
+            echo "$output"; echo "A server without this plugin was read as one it was derived from." >&2; exit 1
+          fi
+          echo "$output"
+          echo "$output" | grep -qF 'none carries the id 30ed66e032fd46a68a565cd95d8df10f'
+          echo "$output" | grep -qF 'A Sibling'
+
+      - name: A capture that is missing, and captures never taken, are refused rather than read as clean
+        run: |
+          set -eu
+          cp -r clean no-capture
+          rm no-capture/pages.json
+          if output=$(.github/scripts/scan-a-booted-server.sh no-capture 2>&1); then
+            echo "$output"; echo "A missing capture was read as a scanned server." >&2; exit 1
+          fi
+          echo "$output"; echo "$output" | grep -qF 'There is no pages.json'
+          if output=$(.github/scripts/scan-a-booted-server.sh never-captured 2>&1); then
+            echo "$output"; echo "A missing directory was read as a scanned server." >&2; exit 1
+          fi
+          echo "$output"; echo "$output" | grep -qF 'nothing a server said was scanned'

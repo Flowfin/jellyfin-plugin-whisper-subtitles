@@ -1,0 +1,14 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "A fixture standing in for the route document a booted server builds",
+    "version": "10.11.11"
+  },
+  "paths": {
+    "/System/Ping": {},
+    "/System/Info/Public": {},
+    "/Plugins": {},
+    "/ScheduledTasks": {},
+    "/web/ConfigurationPages": {}
+  }
+}
