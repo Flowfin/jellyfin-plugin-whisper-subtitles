@@ -259,12 +259,18 @@ jobs:
 
           curl -fsS -H @"${RUNNER_TEMP}/auth-header" "${SERVER_URL}/Plugins" > "${captures}/plugins.json"
           curl -fsS -H @"${RUNNER_TEMP}/auth-header" "${SERVER_URL}/ScheduledTasks" > "${captures}/tasks.json"
-          curl -fsS -H @"${RUNNER_TEMP}/auth-header" "${SERVER_URL}/web/ConfigurationPage?name=${encoded}" > "${captures}/page.html"
+          # The page is captured whatever its status. A plugin the server has
+          # disabled has no page to serve and answers 404, which the first run of
+          # the throwing leg met as a curl failure one step before the reader,
+          # so the leg was red for the capture stopping rather than for the
+          # throw. Whatever came back is the capture, the status is printed
+          # beside its size, and the reader is what refuses it.
+          page_status=$(curl -sS -o "${captures}/page.html" -w '%{http_code}' -H @"${RUNNER_TEMP}/auth-header" "${SERVER_URL}/web/ConfigurationPage?name=${encoded}")
           docker logs jellyfin > "${captures}/server.log" 2>&1
 
           echo "plugins:"; jq -r '.[] | "  \(.Name) \(.Version) \(.Status)"' "${captures}/plugins.json"
           echo "tasks:"; jq -r '.[] | "  \(.Key) \(.Name)"' "${captures}/tasks.json"
-          echo "page: $(wc -c < "${captures}/page.html") byte(s)"
+          echo "page: $(wc -c < "${captures}/page.html") byte(s), status ${page_status}"
           echo "log: $(wc -l < "${captures}/server.log") line(s)"
 
       - name: The plugin loaded, is listed, has its task, and served its page
@@ -277,7 +283,11 @@ jobs:
       # about a boot that happened and not about one that timed out. The other
       # half is that the reader refuses it, and for the throw: the sentence the
       # added line throws has to be in the refusal, which puts it in the server's
-      # own log entry rather than in anything this workflow wrote.
+      # own log entry rather than in anything this workflow wrote. What 10.11
+      # does with such a build, read on the first run of this leg: it logs the
+      # throw at ERR under the assembly's full name, disables the plugin, fails
+      # to build the scheduled task for the argument the registrator never
+      # registered, completes startup, and answers 404 for the page.
       - name: The reader refuses that boot for the throw, on a server that had started
         if: matrix.build == 'throws-while-loading'
         run: |
