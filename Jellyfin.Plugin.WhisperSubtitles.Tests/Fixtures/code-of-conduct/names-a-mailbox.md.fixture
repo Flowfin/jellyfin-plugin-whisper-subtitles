@@ -1,0 +1,10 @@
+# Code of conduct
+
+## Where a report goes
+
+This repository keeps one private channel, and it is for vulnerabilities:
+`SECURITY.md` names it. A report about conduct goes to conduct@example.invalid,
+which is read every day.
+
+The decision on #8 is quoted here so the fixture carries the same pointers as
+the page and differs from it in the one line above.
