@@ -182,7 +182,10 @@ jobs:
           call POST /Startup/RemoteAccess '{"EnableRemoteAccess":false,"EnableAutomaticPortMapping":false}'
           call POST /Startup/Complete
 
-          code=$(curl -s -o "${RUNNER_TEMP}/reply" -w '%{http_code}' -X POST -H 'Content-Type: application/json'             -H 'Authorization: MediaBrowser Client="booted-server", Device="runner", DeviceId="booted-server-runner", Version="0"'             "${SERVER_URL}/Users/AuthenticateByName"             -d '{"Username":"harness","Pw":"harness-only-and-thrown-away"}')
+          code=$(curl -s -o "${RUNNER_TEMP}/reply" -w '%{http_code}' -X POST -H 'Content-Type: application/json' \
+            -H 'Authorization: MediaBrowser Client="booted-server", Device="runner", DeviceId="booted-server-runner", Version="0"' \
+            "${SERVER_URL}/Users/AuthenticateByName" \
+            -d '{"Username":"harness","Pw":"harness-only-and-thrown-away"}')
           echo "POST /Users/AuthenticateByName -> ${code}"
           token=$(jq -r '.AccessToken // empty' "${RUNNER_TEMP}/reply" 2>/dev/null || true)
           if [ -z "$token" ]; then
@@ -190,8 +193,7 @@ jobs:
             exit 1
           fi
           echo "::add-mask::${token}"
-          printf 'Authorization: MediaBrowser Token="%s"
-' "$token" > "${RUNNER_TEMP}/auth-header"
+          printf 'Authorization: MediaBrowser Token="%s"\n' "$token" > "${RUNNER_TEMP}/auth-header"
           rm -f "${RUNNER_TEMP}/reply"
           echo "signed in"
 
