@@ -1,0 +1,335 @@
+# The plugin, installed into a real server of a supported line, on a machine
+# nobody wrote it on.
+#
+# Every test in the suite drives this plugin through doubles, and the one moment
+# the suite cannot see is the plugin meeting a server: the server loads the
+# assembly under its own rules, builds the scheduled task out of its own
+# container, and lists what it loaded on its own routes. A task that compiles is
+# not a task a server listed, and a registrator that resolves in a test is not one
+# a server ran. So this boots a server with the built plugin installed and reads
+# what it says, the way an operator would find out.
+#
+# Four things are read, and each is compared against what this tree says rather
+# than against a value typed here: the log carries no error naming the plugin and
+# does say the assembly loaded, the plugin is listed as active at the version the
+# build stamped, the scheduled task is in the task list under its key, and the
+# configuration page comes back byte for byte as the resource the plugin ships.
+# .github/scripts/read-a-booted-server.sh is the reader, and the second job proves
+# it refuses each of those going wrong, one at a time.
+#
+# One line of the two this tree builds. The 10.11 line has a released server and a
+# manifest; the 12.0 line has neither, and build.yaml says why in its own first
+# paragraph. So this boots 10.11 and says so in its job name, and the 12.0 boot
+# arrives as a second job on the day that line has a server to pin. #63 is where
+# both halves are argued.
+#
+# The image is pinned by digest as well as by tag, for the same reason every
+# action here is pinned to a commit: a tag moves and a digest does not, and a boot
+# against a server that quietly changed under the same name is a reading of
+# something other than what this comment says.
+name: Booted server
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ "**" ]
+
+permissions: {}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  boots:
+    name: The plugin loads on a booted 10.11 server
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    env:
+      # jellyfin/jellyfin:10.11.11, read from the registry on 2026-09-03:
+      #   curl -sS https://hub.docker.com/v2/repositories/jellyfin/jellyfin/tags/10.11.11 | jq -r .digest
+      SERVER_IMAGE: jellyfin/jellyfin:10.11.11@sha256:aefb67e6a7ff1debdd154a78a7bbb780fd0c873d8639210a7f6a2016ad2b35db
+      SERVER_URL: http://127.0.0.1:8096
+      FRAMEWORK: net9.0
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install the SDKs both server lines are built against
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          dotnet-version: |
+            9.0.x
+            10.0.x
+
+      - name: Build what would ship for this line
+        run: |
+          set -eu
+          dotnet publish Jellyfin.Plugin.WhisperSubtitles/Jellyfin.Plugin.WhisperSubtitles.csproj \
+            --configuration Release \
+            --framework "${FRAMEWORK}" \
+            --output package-out \
+            --nologo
+
+      # The folder an operator ends up with: the assembly beside a meta.json that
+      # says what it is, under the server's plugin directory. The four scalars
+      # come out of build.yaml, which is the one place they are written, so the
+      # server is told the same identity and version the release would carry.
+      - name: Install the plugin the way an operator receives it
+        run: |
+          set -eu
+          scalar() { sed -n "s/^$1: *\"\([^\"]*\)\".*/\1/p" build.yaml | head -n 1; }
+          name=$(scalar name)
+          guid=$(scalar guid)
+          version=$(scalar version)
+          target_abi=$(scalar targetAbi)
+          for pair in "name=$name" "guid=$guid" "version=$version" "targetAbi=$target_abi"; do
+            if [ -z "${pair#*=}" ]; then
+              echo "build.yaml carries no ${pair%%=*}, so the plugin cannot be described to the server." >&2
+              exit 1
+            fi
+          done
+
+          folder="${RUNNER_TEMP}/server/config/plugins/WhisperSubtitles_${version}"
+          mkdir -p "${folder}" "${RUNNER_TEMP}/server/cache" "${RUNNER_TEMP}/captures"
+          cp package-out/Jellyfin.Plugin.WhisperSubtitles.dll "${folder}/"
+          jq -n --arg name "$name" --arg guid "$guid" --arg version "$version" --arg abi "$target_abi" \
+            '{name: $name, guid: $guid, version: $version, targetAbi: $abi, status: "Active", autoUpdate: false}' \
+            > "${folder}/meta.json"
+
+          # The server runs as root inside the container and writes into this
+          # tree, so it is opened up rather than owned by anybody in particular.
+          chmod -R a+rwX "${RUNNER_TEMP}/server"
+          ls -l "${folder}"
+          cat "${folder}/meta.json"
+
+      - name: Start the server with the plugin installed
+        run: |
+          set -eu
+          docker run --detach --name jellyfin \
+            --publish 127.0.0.1:8096:8096 \
+            --volume "${RUNNER_TEMP}/server/config:/config" \
+            --volume "${RUNNER_TEMP}/server/cache:/cache" \
+            "${SERVER_IMAGE}"
+
+          for attempt in $(seq 1 90); do
+            if curl -fsS "${SERVER_URL}/health" > /dev/null 2>&1; then
+              echo "healthy after ${attempt} attempt(s)"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "The server did not answer ${SERVER_URL}/health within three minutes." >&2
+          docker logs jellyfin >&2 || true
+          exit 1
+
+      # A fresh server answers its plugin and task routes only to an
+      # administrator, and it has none until the first-run wizard has made one.
+      # The wizard is driven the way the web client drives it, and the account it
+      # makes lives as long as this container and no longer.
+      - name: Finish the first-run wizard and sign in
+        run: |
+          set -eu
+          json='Content-Type: application/json'
+          curl -fsS -X POST -H "$json" "${SERVER_URL}/Startup/Configuration" \
+            -d '{"UICulture":"en-US","MetadataCountryCode":"US","PreferredMetadataLanguage":"en"}'
+          curl -fsS "${SERVER_URL}/Startup/User" > /dev/null
+          curl -fsS -X POST -H "$json" "${SERVER_URL}/Startup/User" \
+            -d '{"Name":"harness","Password":"harness-only-and-thrown-away"}'
+          curl -fsS -X POST -H "$json" "${SERVER_URL}/Startup/RemoteAccess" \
+            -d '{"EnableRemoteAccess":false,"EnableAutomaticPortMapping":false}'
+          curl -fsS -X POST "${SERVER_URL}/Startup/Complete"
+
+          token=$(curl -fsS -X POST -H "$json" \
+            -H 'Authorization: MediaBrowser Client="booted-server", Device="runner", DeviceId="booted-server-runner", Version="0"' \
+            "${SERVER_URL}/Users/AuthenticateByName" \
+            -d '{"Username":"harness","Pw":"harness-only-and-thrown-away"}' | jq -r '.AccessToken // empty')
+          if [ -z "$token" ]; then
+            echo "The server issued no access token, so nothing below can ask it what it loaded." >&2
+            exit 1
+          fi
+          echo "::add-mask::${token}"
+          printf 'Authorization: MediaBrowser Token="%s"\n' "$token" > "${RUNNER_TEMP}/auth-header"
+          echo "signed in"
+
+      - name: Capture what the server says about the plugin
+        run: |
+          set -eu
+          captures="${RUNNER_TEMP}/captures"
+          page=$(sed -n 's/^name: *"\([^"]*\)".*/\1/p' build.yaml | head -n 1)
+          encoded=$(jq -rn --arg page "$page" '$page | @uri')
+
+          curl -fsS -H @"${RUNNER_TEMP}/auth-header" "${SERVER_URL}/Plugins" > "${captures}/plugins.json"
+          curl -fsS -H @"${RUNNER_TEMP}/auth-header" "${SERVER_URL}/ScheduledTasks" > "${captures}/tasks.json"
+          curl -fsS -H @"${RUNNER_TEMP}/auth-header" "${SERVER_URL}/web/ConfigurationPage?name=${encoded}" > "${captures}/page.html"
+          docker logs jellyfin > "${captures}/server.log" 2>&1
+
+          echo "plugins:"; jq -r '.[] | "  \(.Name) \(.Version) \(.Status)"' "${captures}/plugins.json"
+          echo "tasks:"; jq -r '.[] | "  \(.Key) \(.Name)"' "${captures}/tasks.json"
+          echo "page: $(wc -c < "${captures}/page.html") byte(s)"
+          echo "log: $(wc -l < "${captures}/server.log") line(s)"
+
+      - name: The plugin loaded, is listed, has its task, and served its page
+        run: .github/scripts/read-a-booted-server.sh "${RUNNER_TEMP}/captures"
+
+      - name: Stop the server
+        if: always()
+        run: |
+          set +e
+          echo "::group::server log"
+          docker logs jellyfin 2>&1 | tail -n 200
+          echo "::endgroup::"
+          docker rm -f jellyfin > /dev/null 2>&1 || true
+
+  refuses:
+    name: And it refuses a boot that did not load the plugin
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # The fixtures are written against the version build.yaml carries, so a
+      # version bump moves them with it rather than turning this job red.
+      - name: A capture of a boot that went right
+        run: |
+          set -eu
+          version=$(sed -n 's/^version: *"\([^"]*\)".*/\1/p' build.yaml | head -n 1)
+          mkdir clean
+          for f in plugins.json tasks.json server.log; do
+            sed "s/@VERSION@/${version}/g" ".github/fixtures/booted-server/${f}" > "clean/${f}"
+          done
+          cp Jellyfin.Plugin.WhisperSubtitles/Configuration/configPage.html clean/page.html
+
+      # The neighbour first. Without it every leg below is satisfied by a reader
+      # that refuses everything it is handed, which would be red on the real boot
+      # as well and would be turned off within a week.
+      - name: It passes, and says how much it read before saying so
+        run: |
+          set -eu
+          output=$(.github/scripts/read-a-booted-server.sh clean)
+          echo "$output"
+          echo "$output" | head -n 1 | grep -q '^read 1 plugin(s), 2 task(s), a page of [0-9][0-9]* byte(s) and 5 log entries$'
+
+      - name: An error naming some other plugin is not an error naming this one
+        run: |
+          set -eu
+          cp -r clean other-error
+          printf '%s\n' '[03:14:18] [ERR] [1] Emby.Server.Implementations.Plugins.PluginManager: Failed to load assembly /config/plugins/Somebody.Elses.Plugin.dll. Disabling plugin' >> other-error/server.log
+          .github/scripts/read-a-booted-server.sh other-error
+
+      - name: A log never saying the assembly loaded is refused, whatever else it says
+        run: |
+          set -eu
+          cp -r clean never-loaded
+          grep -v 'Loaded assembly' clean/server.log > never-loaded/server.log
+          if output=$(.github/scripts/read-a-booted-server.sh never-loaded 2>&1); then
+            echo "$output"; echo "A log that never mentions the assembly was read as a clean boot." >&2; exit 1
+          fi
+          echo "$output"; echo "$output" | grep -q 'The log never says'
+
+      - name: An error naming the plugin is refused, and quoted
+        run: |
+          set -eu
+          cp -r clean errored
+          printf '%s\n%s\n' \
+            '[03:14:18] [ERR] [1] Emby.Server.Implementations.Plugins.PluginManager: Error registering plugin services from Jellyfin.Plugin.WhisperSubtitles, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null.' \
+            'System.InvalidOperationException: a fixture exception' >> errored/server.log
+          if output=$(.github/scripts/read-a-booted-server.sh errored 2>&1); then
+            echo "$output"; echo "A log carrying an error naming the plugin was read as a clean boot." >&2; exit 1
+          fi
+          echo "$output"
+          echo "$output" | grep -q 'The log carries an error that names the plugin'
+          echo "$output" | grep -q 'a fixture exception'
+
+      - name: A server listing no plugin at all is refused rather than read as a clean one
+        run: |
+          set -eu
+          cp -r clean nothing-listed
+          echo '[]' > nothing-listed/plugins.json
+          if output=$(.github/scripts/read-a-booted-server.sh nothing-listed 2>&1); then
+            echo "$output"; echo "An empty plugin listing was read as a server that loaded the plugin." >&2; exit 1
+          fi
+          echo "$output"; echo "$output" | grep -q 'listed no plugin at all'
+
+      - name: A server that did not load the plugin is refused, naming what it did load
+        run: |
+          set -eu
+          cp -r clean unlisted
+          jq '[{"Name":"Some Other Plugin","Version":"2.0.0.0","Id":"11111111-2222-3333-4444-555555555555","Status":"Active"}]' \
+            clean/plugins.json > unlisted/plugins.json
+          if output=$(.github/scripts/read-a-booted-server.sh unlisted 2>&1); then
+            echo "$output"; echo "A listing without the plugin was read as a server that loaded it." >&2; exit 1
+          fi
+          echo "$output"
+          echo "$output" | grep -q 'none carries the id 30ed66e0-32fd-46a6-8a56-5cd95d8df10f'
+          echo "$output" | grep -q 'Some Other Plugin'
+
+      - name: A plugin the server disabled is refused, naming the status
+        run: |
+          set -eu
+          cp -r clean disabled
+          jq '(.[0].Status) = "Malfunctioned"' clean/plugins.json > disabled/plugins.json
+          if output=$(.github/scripts/read-a-booted-server.sh disabled 2>&1); then
+            echo "$output"; echo "A malfunctioned plugin was read as an active one." >&2; exit 1
+          fi
+          echo "$output"; echo "$output" | grep -q 'status "Malfunctioned" rather than Active'
+
+      - name: A version other than the one the build stamped is refused, naming both
+        run: |
+          set -eu
+          cp -r clean wrong-version
+          jq '(.[0].Version) = "0.9.9.9"' clean/plugins.json > wrong-version/plugins.json
+          if output=$(.github/scripts/read-a-booted-server.sh wrong-version 2>&1); then
+            echo "$output"; echo "A plugin at another version was read as the one this tree built." >&2; exit 1
+          fi
+          echo "$output"; echo "$output" | grep -q 'version "0.9.9.9" and build.yaml says'
+
+      - name: A task list without this plugin's task is refused, naming what is listed
+        run: |
+          set -eu
+          cp -r clean no-task
+          jq 'map(select(.Key != "WhisperSubtitlesGenerate"))' clean/tasks.json > no-task/tasks.json
+          if output=$(.github/scripts/read-a-booted-server.sh no-task 2>&1); then
+            echo "$output"; echo "A task list without the plugin's task was read as a server that built it." >&2; exit 1
+          fi
+          echo "$output"
+          echo "$output" | grep -q 'no task carries the key WhisperSubtitlesGenerate'
+          echo "$output" | grep -q 'RefreshLibrary'
+
+      - name: A page that is not the one the plugin ships is refused
+        run: |
+          set -eu
+          cp -r clean other-page
+          printf '\n<!-- one more line than the resource has -->\n' >> other-page/page.html
+          if output=$(.github/scripts/read-a-booted-server.sh other-page 2>&1); then
+            echo "$output"; echo "A page differing from the shipped resource was read as the page having loaded." >&2; exit 1
+          fi
+          echo "$output"; echo "$output" | grep -q 'differs from the one this tree ships'
+
+      - name: A page with no bytes is refused
+        run: |
+          set -eu
+          cp -r clean empty-page
+          : > empty-page/page.html
+          if output=$(.github/scripts/read-a-booted-server.sh empty-page 2>&1); then
+            echo "$output"; echo "An empty page was read as the page having loaded." >&2; exit 1
+          fi
+          echo "$output"; echo "$output" | grep -q 'with no bytes'
+
+      - name: A capture that was never taken is refused rather than read as clean
+        run: |
+          set -eu
+          if output=$(.github/scripts/read-a-booted-server.sh never-captured 2>&1); then
+            echo "$output"; echo "A missing directory was read as a clean boot." >&2; exit 1
+          fi
+          echo "$output"; echo "$output" | grep -q 'nothing a server said was read'
