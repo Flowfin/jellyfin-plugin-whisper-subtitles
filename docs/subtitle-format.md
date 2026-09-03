@@ -52,3 +52,22 @@ The writer takes cues and returns bytes, behind `ISubtitleFormatWriter`, so a
 second format is a second implementation and not a rewrite of the first. Nothing
 above is a reason a second format cannot be added; it is the reason there is one
 today.
+
+## What reads this page
+
+`SubtitleFormatPageTests` reads three of the claims above against the tree
+rather than leaving them to be believed. The extension the opening paragraph
+names is compared against the one the writer reports. The claim that there is
+one format and nothing else is compared against the number of format writers the
+shipped assembly carries, in both directions, so a second writer arriving makes
+this page red rather than quietly wrong. And the sample is not asserted: the
+cues are parsed out of it, handed to the writer, and what comes back has to be
+the block printed here.
+
+Two things it does not read. The byte properties above are held by
+`SubRipWriterTests` and not a second time here, because the comparison
+normalises line endings: a tracked text file in this repository may not carry a
+carriage return, so this page could not print the ending it describes. And the
+first two claims are read in the paragraph before the first heading, which is
+where they are made; the same words further down this page are outside what it
+looks at, including in this section.
