@@ -15,10 +15,10 @@
                             <option value="">Not chosen yet, and nothing runs</option>
                         </select>
                         <div class="fieldDescription">
-                            The local backend's own two settings appear below when it is
-                            chosen. The remote endpoint's are not on this page yet, so
-                            choosing it leaves a run reporting which setting is missing
-                            and transcribing nothing.
+                            Each backend's own settings appear below while it is the one
+                            chosen, and a backend whose settings are not filled in leaves
+                            a run reporting which setting is missing and transcribing
+                            nothing.
                         </div>
                     </div>
                     <div class="selectContainer">
@@ -54,6 +54,50 @@
                         <div class="fieldDescription">
                             Neither path is checked here. Whether a file is there, whether
                             it runs and whether it is a model are answered when the
+                            backend is asked, and nothing on this page asks it yet.
+                        </div>
+                    </div>
+                    <div id="WhisperSubtitlesRemoteSettings">
+                        <div class="inputContainer">
+                            <label class="inputLabel inputLabelUnfocused" for="RemoteBaseUrl">Endpoint the audio is sent to</label>
+                            <input is="emby-input" type="text" id="RemoteBaseUrl" class="emby-input">
+                            <div class="fieldDescription">
+                                The base URL of an endpoint speaking the OpenAI audio
+                                transcription request shape, starting with https:// or
+                                http://. A URL that is not one is refused when the
+                                configuration is loaded, and no endpoint is named instead.
+                            </div>
+                        </div>
+                        <div class="inputContainer">
+                            <label class="inputLabel inputLabelUnfocused" for="RemoteApiKey">Key the endpoint wants, if any</label>
+                            <input is="emby-input" type="password" id="RemoteApiKey" class="emby-input" autocomplete="off">
+                            <div class="fieldDescription">
+                                Sent in one request header and nowhere else. Leave it
+                                empty for an endpoint that wants none.
+                            </div>
+                        </div>
+                        <div class="inputContainer">
+                            <label class="inputLabel inputLabelUnfocused" for="RemoteModel">Model to ask the endpoint for</label>
+                            <input is="emby-input" type="text" id="RemoteModel" class="emby-input">
+                            <div class="fieldDescription">
+                                A name the endpoint serves. Which names it serves is the
+                                endpoint's business, and this plugin never lists them.
+                            </div>
+                        </div>
+                        <div class="fieldDescription" id="WhisperSubtitlesRemoteDisclosure">
+                            With this backend the extracted audio of every item a run
+                            selects leaves this server, whole, as the body of one request
+                            per item. It goes to
+                            <strong id="WhisperSubtitlesRemoteHost">the host in the URL above</strong>,
+                            and to nothing else. What that host does with the audio after
+                            it arrives, whether it keeps it, logs it, or uses it for
+                            anything else, is something this plugin cannot know and
+                            cannot ask. If you are answerable to somebody else for that
+                            audio, you are answerable for this setting.
+                        </div>
+                        <div class="fieldDescription">
+                            None of the three is checked here. Whether the host answers,
+                            accepts the key and serves the model are answered when the
                             backend is asked, and nothing on this page asks it yet.
                         </div>
                     </div>
@@ -130,7 +174,10 @@
                 letTheMachineDecide: 0,
                 letThePolicyDecide: 0,
                 localBackend: 'Local',
+                remoteBackend: 'Remote',
                 noPathNamed: '',
+                noRemoteSettingNamed: '',
+                noHostNamed: 'the host in the URL above',
                 backends: [
                     { name: 'None', label: 'None, and nothing is transcribed' },
                     { name: 'Local', label: 'Local, a Whisper program on this machine' },
@@ -237,13 +284,41 @@
                 });
             };
 
-            WhisperSubtitlesConfig.showLocalSettings = function (chosen) {
+            WhisperSubtitlesConfig.showBackendSettings = function (chosen) {
                 // Hidden rather than shown disabled. A disabled field an operator
                 // cannot use still asks them for a model path while they are
                 // configuring an endpoint somewhere else, and it reads as a setting
-                // that broke rather than as one that does not apply.
+                // that broke rather than as one that does not apply. The remote
+                // container carries the disclosure of where audio goes, so hiding
+                // it with the fields is what keeps that disclosure in front of
+                // whoever has the remote backend chosen and out of the way of
+                // whoever has not; there is no control that dismisses it.
                 document.querySelector('#WhisperSubtitlesLocalSettings').style.display =
                     chosen === WhisperSubtitlesConfig.localBackend ? '' : 'none';
+                document.querySelector('#WhisperSubtitlesRemoteSettings').style.display =
+                    chosen === WhisperSubtitlesConfig.remoteBackend ? '' : 'none';
+            };
+
+            WhisperSubtitlesConfig.hostOf = function (url) {
+                // The host and nothing else, read out of whatever is typed, so the
+                // disclosure names where audio would go rather than restating the
+                // field. A value that is not a URL yields the placeholder rather
+                // than a guess, because guessing at a host is guessing at where the
+                // audio goes.
+                try {
+                    var parsed = new URL(url);
+                    return parsed.host || WhisperSubtitlesConfig.noHostNamed;
+                } catch (notAUrl) {
+                    return WhisperSubtitlesConfig.noHostNamed;
+                }
+            };
+
+            WhisperSubtitlesConfig.renderDisclosure = function () {
+                // Only the URL field is read here. The key field is never read into
+                // the disclosure or into anything else the page displays; it goes
+                // into the configuration and nowhere else.
+                document.querySelector('#WhisperSubtitlesRemoteHost').textContent =
+                    WhisperSubtitlesConfig.hostOf(document.querySelector('#RemoteBaseUrl').value);
             };
 
             WhisperSubtitlesConfig.pathValue = function (field, stored) {
@@ -255,6 +330,15 @@
                 // other value from this file is checked, and a second trim here would
                 // be the same rule in two places with nothing keeping them equal.
                 return field.value || WhisperSubtitlesConfig.noPathNamed;
+            };
+
+            WhisperSubtitlesConfig.remoteValue = function (field, stored) {
+                field.value = stored || WhisperSubtitlesConfig.noRemoteSettingNamed;
+            };
+
+            WhisperSubtitlesConfig.remoteTyped = function (field) {
+                // Sent as typed, for the reason the paths are.
+                return field.value || WhisperSubtitlesConfig.noRemoteSettingNamed;
             };
 
             WhisperSubtitlesConfig.limitValue = function (field, stored, whenUnchosen) {
@@ -309,9 +393,9 @@
                         WhisperSubtitlesConfig.fillLanguages(target, false);
                         target.value = config.TargetLanguage || WhisperSubtitlesConfig.followsTheDefault;
 
-                        WhisperSubtitlesConfig.showLocalSettings(chosen);
+                        WhisperSubtitlesConfig.showBackendSettings(chosen);
                         backend.addEventListener('change', function () {
-                            WhisperSubtitlesConfig.showLocalSettings(
+                            WhisperSubtitlesConfig.showBackendSettings(
                                 document.querySelector('#Backend').value);
                         });
 
@@ -319,6 +403,17 @@
                             document.querySelector('#LocalToolPath'), config.LocalToolPath);
                         WhisperSubtitlesConfig.pathValue(
                             document.querySelector('#LocalModelPath'), config.LocalModelPath);
+
+                        WhisperSubtitlesConfig.remoteValue(
+                            document.querySelector('#RemoteBaseUrl'), config.RemoteBaseUrl);
+                        WhisperSubtitlesConfig.remoteValue(
+                            document.querySelector('#RemoteApiKey'), config.RemoteApiKey);
+                        WhisperSubtitlesConfig.remoteValue(
+                            document.querySelector('#RemoteModel'), config.RemoteModel);
+                        WhisperSubtitlesConfig.renderDisclosure();
+                        document.querySelector('#RemoteBaseUrl').addEventListener('input', function () {
+                            WhisperSubtitlesConfig.renderDisclosure();
+                        });
 
                         WhisperSubtitlesConfig.limitValue(
                             document.querySelector('#ItemsAtOnce'), config.ItemsAtOnce,
@@ -353,6 +448,12 @@
                         document.querySelector('#LocalToolPath'));
                     config.LocalModelPath = WhisperSubtitlesConfig.pathTyped(
                         document.querySelector('#LocalModelPath'));
+                    config.RemoteBaseUrl = WhisperSubtitlesConfig.remoteTyped(
+                        document.querySelector('#RemoteBaseUrl'));
+                    config.RemoteApiKey = WhisperSubtitlesConfig.remoteTyped(
+                        document.querySelector('#RemoteApiKey'));
+                    config.RemoteModel = WhisperSubtitlesConfig.remoteTyped(
+                        document.querySelector('#RemoteModel'));
                     config.ItemsAtOnce = WhisperSubtitlesConfig.limitTyped(
                         document.querySelector('#ItemsAtOnce'),
                         WhisperSubtitlesConfig.letTheMachineDecide);

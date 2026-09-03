@@ -92,8 +92,10 @@ A remote endpoint speaking the OpenAI audio transcription API is in the tree, in
 `Jellyfin.Plugin.WhisperSubtitles/Backends/Remote/RemoteWhisperBackend.cs`, and
 the composition root offers it under a name an operator can select. Audio leaves
 the machine when that is used, which is something an operator has to be told
-before they switch it on rather than afterwards, and saying so in the interface
-is #81 and is not built. No audio leaves the machine from this plugin today,
+before they switch it on rather than afterwards, and the configuration page says
+so beside the endpoint field, naming the host out of the URL typed, for as long
+as that backend is the one chosen. The log line carrying the same facts when a
+run first uses it is the half of #81 not built. No audio leaves the machine from this plugin today,
 because nothing joins a backend to a transcription, which is #183. What does
 reach the configured URL is the readiness probe, which sends one GET and no
 audio.
@@ -140,12 +142,13 @@ and finishes, reaching no part of the pipeline. That joining is #183.
    archive, which is #60.
 2. Open the plugin's page in the dashboard and choose a backend. What the page
    carries today is `Backend`, `TargetLanguage`, `LibraryTargets`,
-   `LocalToolPath`, `LocalModelPath`, `ItemsAtOnce`, `ThreadsPerItem` and
-   `FailuresBeforeQuarantine`. That list is compared against the page itself on
-   every run rather than kept by hand, so a setting that arrives on the page and
-   a setting that leaves it are both a red suite here. What is still not on it is
-   what a remote endpoint needs, held in #36, and the answer the readiness probe
-   gives, which says whether the choice works before a run starts, held in #15.
+   `LocalToolPath`, `LocalModelPath`, `RemoteBaseUrl`, `RemoteApiKey`,
+   `RemoteModel`, `ItemsAtOnce`, `ThreadsPerItem` and `FailuresBeforeQuarantine`.
+   That list is compared against the page itself on every run rather than kept
+   by hand, so a setting that arrives on the page and a setting that leaves it
+   are both a red suite here. What is still not on it is the answer the
+   readiness probe gives, which says whether the choice works before a run
+   starts, held in #15.
 3. Set the target language per library, in #30, or leave it to detection, in #31.
 4. Run the scheduled task by hand from the dashboard, in #17. It ships with no
    trigger, so nothing starts on its own on a server whose operator did not ask

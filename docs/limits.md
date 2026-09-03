@@ -213,10 +213,12 @@ Held today, in the sense that this is what the code does when the remote backend
 is configured: `Backends/Remote/RemoteWhisperBackend.cs` posts the extracted
 audio to the configured endpoint and reaches nothing else, and the key the
 operator configures goes into one request header and into no message, URL or
-form field, which `RemoteWhisperBackendTests` holds. Decided and not yet built is
-the other half, which is the same three facts stated to the operator before the
-backend can be selected and in the log line written when a run first uses it.
-That is #81, and the page it belongs on is #36.
+form field, which `RemoteWhisperBackendTests` holds. The same three facts are
+stated to the operator on the configuration page, beside the endpoint field,
+naming the host out of the URL typed and shown for as long as the remote backend
+is the one chosen, which `RemoteBackendSettingsTests` holds. Decided and not yet
+built is the log line carrying them when a run first uses that backend, which is
+#81 and waits on the first logger, in #73.
 
 ## What it writes, and where
 
