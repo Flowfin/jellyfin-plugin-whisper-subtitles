@@ -188,7 +188,10 @@ if [ "$plugin_count" -eq 0 ]; then
   exit 1
 fi
 
-listed=$(jq --arg id "$guid" '[.[] | select(((.Id // "") | ascii_downcase) == $id)]' "$captures/plugins.json")
+# The server writes the id without its dashes, build.yaml with them, so both are
+# read without before they are compared.
+bare_guid=$(printf '%s' "$guid" | tr -d '-')
+listed=$(jq --arg id "$bare_guid" '[.[] | select(((.Id // "") | ascii_downcase | gsub("-"; "")) == $id)]' "$captures/plugins.json")
 listed_count=$(printf '%s' "$listed" | jq 'length')
 
 if [ "$listed_count" -eq 0 ]; then
