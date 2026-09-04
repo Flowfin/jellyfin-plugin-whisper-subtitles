@@ -1,0 +1,160 @@
+# Every code-scanning rule open on this board ends somewhere.
+#
+# The alert count here rises with the suite rather than with the risk: most
+# guards in this repository are document readers, and each one mints alerts of
+# the same shape. Dismissing them was tried three times and lost, and repairing
+# the call sites was priced three times, each price larger than the last. What
+# ends a count nobody reads any more is a register - one entry per rule id, with
+# the reason and the population it covers - and a register nobody compares is a
+# badge, which is the thing this repository is trying not to have.
+#
+# So this workflow is the comparison. It is not a judgement of any alert and it
+# does not change the state of one: it asks whether every rule the scan reports
+# has an entry, and whether every entry is about a rule the scan still reports.
+#
+# It is deliberately not the analysis. `scan-codeql.yaml` produces the alerts and
+# its job name is a required context; this reads what the platform holds open
+# afterwards, which is repository state rather than the state of one head, and
+# putting it in that workflow would make one context answer for two questions.
+name: Code-scanning dispositions
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+  # A weekly run so a rule that arrives with nothing landing here - a query pack
+  # that learned something new - is refused against a tree nobody has touched.
+  schedule:
+    - cron: "17 3 * * 4"
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  records:
+    name: Every open rule was decided about
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      # The open alert set, which is the whole input this job reads.
+      security-events: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # The fetch is here rather than in the script because the script is also
+      # run against fixtures, offline, in the job below. The page prints this
+      # same call for a reader who wants the set in front of them.
+      - name: Read the open alerts
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+        run: |
+          set -eu
+          gh api "repos/${REPOSITORY}/code-scanning/alerts?state=open&per_page=100" \
+            --paginate --slurp | jq 'add' > alerts.json
+          echo "$(jq 'length' alerts.json) open alert(s) read."
+
+      - name: Every rule it reports has a disposition
+        run: .github/scripts/refuse-an-undisposed-alert.sh alerts.json docs/code-scanning-dispositions.md
+
+  refuses:
+    name: And a rule nobody decided about is refused
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # The neighbour first. Without it every leg below passes for a check that
+      # refuses everything, which would be red on the real register too.
+      - name: The fixture pair agrees and is accepted
+        run: |
+          set -eu
+          cd .github/fixtures/code-scanning-dispositions
+          ../../scripts/refuse-an-undisposed-alert.sh alerts.json register.md
+
+      # The direction this exists for: a rule id nobody has decided about is
+      # invisible in a count, and the register reads as complete without it.
+      - name: A rule with no entry is refused
+        run: |
+          set -eu
+          cd .github/fixtures/code-scanning-dispositions
+          sed '/^## cs\/example-second, dismissal owed$/s/.*/## cs\/example-second/' register.md > no-entry.md
+          if output=$(../../scripts/refuse-an-undisposed-alert.sh alerts.json no-entry.md 2>&1); then
+            echo "$output"
+            echo "The check passed a scan reporting a rule the register does not decide about." >&2
+            exit 1
+          fi
+          echo "$output"
+          echo "$output" | grep -q 'the scan reports cs/example-second and no-entry.md records no disposition for it'
+
+      - name: An entry for a rule nothing reports is refused
+        run: |
+          set -eu
+          cd .github/fixtures/code-scanning-dispositions
+          { cat register.md; printf '\n## cs/example-third, set aside\n\nAccepted for the fixture.\n'; } > stale-entry.md
+          if output=$(../../scripts/refuse-an-undisposed-alert.sh alerts.json stale-entry.md 2>&1); then
+            echo "$output"
+            echo "The check passed a register recording a rule this scan does not report." >&2
+            exit 1
+          fi
+          echo "$output"
+          echo "$output" | grep -q 'stale-entry.md records cs/example-third and this scan reports no open alert of it'
+
+      # An entry saying nothing about what was decided is a heading rather than a
+      # decision, and a fifth state is a decision nobody took here.
+      - name: A state the register does not declare is refused
+        run: |
+          set -eu
+          cd .github/fixtures/code-scanning-dispositions
+          sed 's/^## cs\/example-first, set aside$/## cs\/example-first, noted/' register.md > undeclared-state.md
+          if output=$(../../scripts/refuse-an-undisposed-alert.sh alerts.json undeclared-state.md 2>&1); then
+            echo "$output"
+            echo "The check passed an entry in a state this register does not declare." >&2
+            exit 1
+          fi
+          echo "$output"
+          echo "$output" | grep -q 'records cs/example-first as "noted", which is not one of the four states'
+
+      # A fetch that failed and a board with nothing left to decide about look
+      # identical from here, and reading the first as the second is how a
+      # register goes quiet without anybody deciding anything.
+      - name: A fetch that returned nothing is refused rather than read as a clean board
+        run: |
+          set -eu
+          cd .github/fixtures/code-scanning-dispositions
+          echo '[]' > nothing.json
+          if output=$(../../scripts/refuse-an-undisposed-alert.sh nothing.json register.md 2>&1); then
+            echo "$output"
+            echo "The check read a fetch reporting no alert as a board with nothing to decide about." >&2
+            exit 1
+          fi
+          echo "$output"
+          echo "$output" | grep -q 'reports no open alert'
+
+      - name: A register recording nothing is refused
+        run: |
+          set -eu
+          cd .github/fixtures/code-scanning-dispositions
+          printf '# Nothing decided\n' > empty.md
+          if output=$(../../scripts/refuse-an-undisposed-alert.sh alerts.json empty.md 2>&1); then
+            echo "$output"
+            echo "The check compared a register with no entry in it and said nothing." >&2
+            exit 1
+          fi
+          echo "$output"
+          echo "$output" | grep -q 'records no disposition, so this run compared nothing'

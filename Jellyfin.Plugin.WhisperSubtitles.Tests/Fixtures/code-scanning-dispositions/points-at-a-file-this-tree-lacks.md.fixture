@@ -1,0 +1,17 @@
+# A register pointing at a file this tree lacks
+
+`set aside` is a rule read to its end and accepted as it stands.
+
+## cs/example-first, set aside
+
+One search this tree answers:
+
+```
+git grep -n 'Code-scanning rules' -- docs/code-scanning-dispositions.md
+```
+
+and one it cannot, because the page it names was renamed and nothing said so:
+
+```
+git grep -n 'the reason that used to be here' -- docs/a-page-this-tree-does-not-have.md
+```

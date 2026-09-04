@@ -1,0 +1,20 @@
+[
+  {
+    "number": 1,
+    "state": "open",
+    "rule": { "id": "cs/example-first", "severity": "note" },
+    "most_recent_instance": { "location": { "path": "Fixture.Tests/FirstTests.cs", "start_line": 12 } }
+  },
+  {
+    "number": 2,
+    "state": "open",
+    "rule": { "id": "cs/example-first", "severity": "note" },
+    "most_recent_instance": { "location": { "path": "Fixture.Tests/SecondTests.cs", "start_line": 40 } }
+  },
+  {
+    "number": 3,
+    "state": "open",
+    "rule": { "id": "cs/example-second", "severity": "warning" },
+    "most_recent_instance": { "location": { "path": "Fixture.Tests/SecondTests.cs", "start_line": 71 } }
+  }
+]
