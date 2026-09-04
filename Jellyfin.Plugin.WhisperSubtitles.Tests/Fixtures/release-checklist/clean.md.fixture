@@ -12,6 +12,9 @@ promises an operator is written in `docs/limits.md` rather than here.
 Nothing decides this yet. The route is owed by #1, and until it lands somebody
 answers this by hand at every release.
 
+Answered as a known limitation: the release ships without this condition, and the
+reason is that the route owed above does not exist yet.
+
 ## When an item has no answer
 
 One of the items above has no route that answers it at all. `LimitsPageTests` is

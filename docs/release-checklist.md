@@ -16,6 +16,12 @@ A decided item can still carry a bound, and where it does the bound is written a
 the item rather than left for a reader to discover. The two states are about who
 produces the answer, not about how much the answer covers.
 
+An item in the second state carries its answer in the page instead, as a paragraph
+opening `Answered as a known limitation:` that says what the release ships without
+and why. That is what the publish run reads, and the reading it takes is the one
+#62 records: an answer is required and green is not, because a limitation written
+down with its reason is an answer and an empty item is not.
+
 Where an item writes `<commit>`, that is the commit the tag points at.
 
 ## The full merge gate is green on the release commit
@@ -102,6 +108,14 @@ incompatibility is written down as a known limitation with its reason. That is
 the condition the Interoperability milestone states, and #66 is where the refusal
 belongs.
 
+Answered as a known limitation: the release ships with no interoperability matrix
+behind it, and nothing here has run this plugin beside a sibling on either line.
+The reason is that eight of the eleven siblings publish nothing to install and the
+second line has no released server to boot, so a matrix written today would install
+a set no operator has and boot one line of two. What ends it is #66 for the sibling
+half and #63 for the second line. An operator running this plugin beside another of
+the family is running a combination this repository has not tested.
+
 ## The coverage floor is held
 
 The pure logic named in `.github/coverage/pure-logic.txt` is above the line and
@@ -160,6 +174,14 @@ Which of the two it is belongs in #62, because an item naming the weaker one whi
 its words promise the stronger one is the failure this checklist is written
 against.
 
+Answered as a known limitation: the release ships with the weaker reading, and this
+item says so rather than letting its words promise the stronger one. Nothing here
+compares a page against the archive an operator installs; what is compared is a
+page against the tree the archive was built from, by the readers named above, on
+the release commit. The reason is that the stronger comparison needs a published
+artefact to compare against and this plugin has published none. A reader who takes
+this item for a check on the archive is reading past what it does.
+
 ## The changelog is not the placeholder
 
 The manifest the catalogue reads carries a changelog describing this release.
@@ -210,9 +232,14 @@ that explains it, so the day the pin stops being a candidate is the day that
 explanation goes red instead of quietly going stale.
 
 The second manifest is #51 and the second artefact is #60. What ends the wait is a
-released 12.0 server, which is outside this repository, so this item is answered
-by hand at every release until then and the answer is that the release ships one
-line.
+released 12.0 server, which is outside this repository.
+
+Answered as a known limitation: the release describes and ships the 10.11 line
+only. The reason is that a 12.0 manifest would promise servers from 12.0.0.0
+upward while the build compiles against a release candidate, which
+`.github/scripts/read-abi-floor.sh` refuses, and no 12.0 server has been released
+to compile against. This answer stands at every release until that pin stops being
+a candidate. An operator on the 12.0 line has no build here.
 
 ## The limits page has been re-read against the code
 
@@ -243,18 +270,30 @@ above have no route that answers them at all, so a release cut from this
 repository today is one whose checklist is incomplete by construction, and saying
 which ones is the point of keeping two states rather than an apology for them.
 
-Nothing enforces that. `.github/workflows/publish.yaml` creates the release from a
-pushed tag and reads none of this page, so the last condition of #62 - that a
-release cannot be published without every item having a recorded result - is not
-built, and this page is a list somebody follows rather than a gate.
+THIS PARAGRAPH SAID NOTHING ENFORCED THAT. Something does.
+`.github/workflows/publish.yaml` reads this page before it builds anything, through
+`.github/scripts/refuse-a-release-with-an-unanswered-item.sh`, and the run stops
+before an archive exists if an item above is unanswered. So the tag is pushed and
+no release appears, which is the only refusal shape available here: a release
+cannot be unpublished without burning its tag, and a check that ran after the
+release existed would be a report rather than a gate.
+
+WHAT IT ASKS FOR IS AN ANSWER AND NOT A GREEN ITEM, which is the reading #62
+records and is the half to read carefully. An item a run decides passes because the
+run's verdict is its answer. An item nothing decides passes on the paragraph
+opening `Answered as a known limitation:` that it carries, and fails without one.
+A limitation written down with its reason is an answer; an empty item is not. So
+this page can hold a release for silence and never for bad news, and an item whose
+answer is wrong reads exactly like one whose answer is right.
 
 What is held on every run is smaller and is worth having separately.
 `ReleaseChecklistTests` reads this page and refuses an item that is in neither of
-the two states above, an item in the second state that names no issue, an item in
-the first state that names neither a command nor a status check, and an item that
-points a reader at a file this tree does not have. It also refuses a page under
-`docs/` that speaks of the release checklist while no item here names that page,
-so a condition handed to this list arrives rather than being remembered.
+the two states above, an item in the second state that names no issue or carries no
+recorded answer, an item in the first state that names neither a command nor a
+status check, and an item that points a reader at a file this tree does not have.
+It also refuses a page under `docs/` that speaks of the release checklist while no
+item here names that page, so a condition handed to this list arrives rather than
+being remembered.
 
 The figure this section opens with is held as well, and that is why it is written
 as a count of the items above rather than as a word in passing. That reader counts
