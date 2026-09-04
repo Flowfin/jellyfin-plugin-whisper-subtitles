@@ -109,9 +109,21 @@ proxy that streams without stopping.
 
 The cost of this backend is the one an operator has to decide about rather than
 configure: the audio of the item being transcribed is sent to that endpoint. The
-disclosure this plugin owes before the remote backend can be switched on is #81,
-and it is not written yet, so an operator choosing `Remote` today is choosing it
-with less in front of them than this repository intends to put there.
+configuration page says the same thing where the choice is made, in a block it
+shows and hides with the remote fields, so it stands in front of whoever has this
+backend selected and nowhere else:
+
+    git grep -n 'id="WhisperSubtitlesRemoteDisclosure"' -- Jellyfin.Plugin.WhisperSubtitles/Configuration/configPage.html
+    Jellyfin.Plugin.WhisperSubtitles/Configuration/configPage.html:87:                        <div class="fieldDescription" id="WhisperSubtitlesRemoteDisclosure">
+
+It names what leaves the server, the host it goes to, read out of the URL typed
+above it rather than out of anything else, and what this plugin cannot know about
+what happens to the audio afterwards. `RemoteBackendSettingsTests` holds those.
+
+What #81 still owes is the other half of the same three facts: the log line
+written the first time a run uses this backend, so that somebody reading logs
+later sees the backend was in use without opening the configuration. Nothing in
+this plugin writes to a log at all, and the first logger is #73.
 
 ## Which of the two
 
