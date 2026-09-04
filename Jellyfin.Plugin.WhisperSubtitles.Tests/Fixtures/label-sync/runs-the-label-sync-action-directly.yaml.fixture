@@ -1,0 +1,20 @@
+name: 'Labels'
+
+on:
+  schedule:
+    - cron: '0 0 1 * *'
+
+permissions: {}
+
+jobs:
+  labels:
+    name: Labels
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+    steps:
+      - uses: EndBug/label-sync@52074158190acb45f3077f9099fea818aa43f97a # v2.3.3
+        with:
+          config-file: https://raw.githubusercontent.com/jellyfin/jellyfin-meta-plugins/master/.github/labels.yaml
+          delete-other-labels: true
+          token: ${{ secrets.GITHUB_TOKEN }}
