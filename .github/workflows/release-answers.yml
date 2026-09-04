@@ -1,0 +1,113 @@
+# The release gate refuses an unanswered checklist, proven on every change.
+#
+# `.github/workflows/publish.yaml` runs that gate, and it runs on a pushed tag and
+# on nothing else. A guard whose only route is the release itself is a guard nobody
+# watches: the first time anybody learns whether it bites is the moment a release is
+# being cut, which is the worst moment on this repository, because a published
+# release cannot be unpublished without burning its tag permanently.
+#
+# So the proof lives here, on the route every change takes. What runs is the same
+# script the publish run calls, against a fixture checklist that is deliberately
+# wrong in one place at a time.
+name: Release answers
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  refuses:
+    name: A checklist item nobody answered stops a release
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # The neighbour first. Without it every leg below passes for a check that
+      # refuses everything, which would hold every release this repository ever cuts.
+      - name: The fixture checklist is accepted
+        run: |
+          set -eu
+          cd .github/fixtures/release-answers
+          ../../scripts/refuse-a-release-with-an-unanswered-item.sh checklist.md
+
+      # And the real page, because the fixture proves the script and this proves the
+      # page. A release cut from this tree today has to pass exactly this call.
+      - name: The real checklist is accepted
+        run: .github/scripts/refuse-a-release-with-an-unanswered-item.sh docs/release-checklist.md
+
+      # The direction the gate exists for: an item nothing decides that says nothing
+      # about what the release ships without.
+      - name: An item that lost its answer is refused
+        run: |
+          set -eu
+          cd .github/fixtures/release-answers
+          grep -v '^Answered as a known limitation: the release ships without this condition, and the$' checklist.md \
+            | grep -v '^reason is that the thing that would decide it does not exist in the fixture\.$' > unanswered.md
+          if output=$(../../scripts/refuse-a-release-with-an-unanswered-item.sh unanswered.md 2>&1); then
+            echo "$output"
+            echo "The gate published a release whose checklist carries an unanswered item." >&2
+            exit 1
+          fi
+          echo "$output"
+          echo "$output" | grep -q 'the item "A condition nothing decides" is decided by no run and carries no paragraph'
+
+      # The other state, because an item that stops being decided by a run has lost
+      # its answer just as completely and reads on the page as though it had not.
+      - name: An item no run decides any more is refused
+        run: |
+          set -eu
+          cd .github/fixtures/release-answers
+          sed 's/^Decided by a run\.$/Somebody checks this before the tag./' checklist.md > unrouted.md
+          if output=$(../../scripts/refuse-a-release-with-an-unanswered-item.sh unrouted.md 2>&1); then
+            echo "$output"
+            echo "The gate published a release whose checklist carries an item with no route and no answer." >&2
+            exit 1
+          fi
+          echo "$output"
+          echo "$output" | grep -q 'the item "A condition a run decides" is decided by no run and carries no paragraph'
+
+      # A page that parses to nothing and a page every item of which is answered are
+      # opposite states, and reading the first as the second is how a gate goes quiet.
+      - name: A checklist with no item in it is refused rather than read as complete
+        run: |
+          set -eu
+          cd .github/fixtures/release-answers
+          sed -n '/^## When an item has no answer$/,$p' checklist.md > no-items.md
+          if output=$(../../scripts/refuse-a-release-with-an-unanswered-item.sh no-items.md 2>&1); then
+            echo "$output"
+            echo "The gate read a checklist with no item in it as one every item of which is answered." >&2
+            exit 1
+          fi
+          echo "$output"
+          echo "$output" | grep -q 'carries no item before'
+
+      # The stop is not a detail. The closing section is about the list rather than a
+      # condition in it, so without the stop this refuses every release for a section
+      # that decides nothing - on the real page as readily as on this one.
+      - name: Without the stop the section about the list holds the release
+        run: |
+          set -eu
+          cd .github/fixtures/release-answers
+          sed 's/^## When an item has no answer$/## A section that is about the list/' checklist.md > no-stop.md
+          if output=$(../../scripts/refuse-a-release-with-an-unanswered-item.sh no-stop.md 2>&1); then
+            echo "$output"
+            echo "The section about the list passed as an item, so the stop above it is doing nothing." >&2
+            exit 1
+          fi
+          echo "$output"
+          echo "$output" | grep -q 'the item "A section that is about the list" is decided by no run'
