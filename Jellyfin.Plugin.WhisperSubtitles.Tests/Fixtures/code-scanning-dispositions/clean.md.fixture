@@ -1,0 +1,22 @@
+# A register that is right
+
+`set aside` is a rule read to its end and accepted as it stands.
+
+`repair owed` is a rule whose pattern is to be changed in this tree.
+
+## cs/example-first, set aside
+
+The set is read rather than pasted:
+
+```
+gh api "repos/owner/repository/code-scanning/alerts?state=open&per_page=100" \
+  --paginate --jq '.[] | .rule.id' | sort | uniq -c
+```
+
+## cs/example-second, repair owed
+
+A search this tree answers:
+
+```
+git grep -n 'Code-scanning rules' -- docs/code-scanning-dispositions.md
+```

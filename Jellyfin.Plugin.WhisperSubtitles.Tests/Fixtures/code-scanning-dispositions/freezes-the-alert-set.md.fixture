@@ -1,0 +1,13 @@
+# A register that froze the alert set
+
+`set aside` is a rule read to its end and accepted as it stands.
+
+## cs/example-first, set aside
+
+The count as it stood on the day this was written:
+
+```
+gh api "repos/owner/repository/code-scanning/alerts?state=open&per_page=100" \
+  --paginate --jq '.[] | .rule.id' | sort | uniq -c
+    121 cs/example-first
+```

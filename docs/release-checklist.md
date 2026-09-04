@@ -134,9 +134,10 @@ Nothing decides this yet, and what is missing is a decision rather than a check.
 
 The pages read against the tree on every run rather than trusted are
 `docs/RELEASING.md`, `docs/backend-interface.md`, `docs/choosing-a-backend.md`,
-`docs/limits.md`, `docs/logging.md`, `docs/release-checklist.md`,
-`docs/scorecard-dispositions.md`, `docs/subtitle-format.md`,
-`docs/troubleshooting.md` and `docs/untrusted-input.md`.
+`docs/code-scanning-dispositions.md`, `docs/limits.md`, `docs/logging.md`,
+`docs/release-checklist.md`, `docs/scorecard-dispositions.md`,
+`docs/subtitle-format.md`, `docs/troubleshooting.md` and
+`docs/untrusted-input.md`.
 
 That list is compared against what this repository's test project reads, in both
 directions, by `PagesReadOnEveryRunTests`, so a page that gains a reader and a
