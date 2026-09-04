@@ -24,7 +24,15 @@ namespace Jellyfin.Plugin.WhisperSubtitles.Backends.Remote;
 ///
 /// What leaves the machine is the extracted audio of every selected item, and
 /// where it goes is the host in that URL. That is a decision only an operator can
-/// make, and saying so before the backend can be chosen is #81.
+/// make, and the configuration page states it before this backend can be chosen,
+/// in the block it carries as WhisperSubtitlesRemoteDisclosure: shown and hidden
+/// with the remote settings, naming the host read out of the URL an operator
+/// typed and never the key beside it.
+///
+/// What #81 still owes is the same three facts in the log line written the first
+/// time a run uses this backend, so that somebody reading logs afterwards sees it
+/// was in use without opening the configuration. Nothing in this plugin logs at
+/// all, and the first logger is #73.
 ///
 /// TLS verification is not something this class turns off, and there is no option
 /// for it. The bound worth stating rather than implying: the handler is injected,

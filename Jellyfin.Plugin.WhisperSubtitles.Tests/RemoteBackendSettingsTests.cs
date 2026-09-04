@@ -1,7 +1,9 @@
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 using System.Xml.Serialization;
 using Jellyfin.Plugin.WhisperSubtitles.Backends.Remote;
@@ -49,6 +51,17 @@ public class RemoteBackendSettingsTests
     /// The element the disclosure names the host in.
     /// </summary>
     private const string HostElement = "WhisperSubtitlesRemoteHost";
+
+    /// <summary>
+    /// The block the disclosure is written in. It is named here because the
+    /// backend's own remark names it too, and the two are compared.
+    /// </summary>
+    private const string DisclosureElement = "WhisperSubtitlesRemoteDisclosure";
+
+    /// <summary>
+    /// The issue that owes the disclosure and the log line carrying the same facts.
+    /// </summary>
+    private const string DisclosureIssue = "#81";
 
     [Fact]
     public void A_fresh_install_names_no_endpoint_rather_than_guessing_one()
@@ -378,6 +391,92 @@ public class RemoteBackendSettingsTests
 
         Assert.Contains("None of the three is checked here.", text, StringComparison.Ordinal);
     }
+
+    [Fact]
+    public void The_backend_points_at_the_block_the_page_carries_rather_than_at_an_issue()
+    {
+        // The remark on the class whose requests carry the audio is where somebody
+        // reading that code meets this. It handed the saying-so to an issue while the
+        // page already said it, which reads as a plugin that has told an operator
+        // nothing yet, and the block it names is compared against the page rather
+        // than taken on trust.
+        var remark = BackendRemark();
+
+        Assert.Contains(DisclosureElement, remark, StringComparison.Ordinal);
+        Assert.Contains(
+            "id=\"" + DisclosureElement + "\"",
+            ConfigurationPageSource.Markup(),
+            StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void The_backend_names_the_disclosure_issue_only_beside_the_half_it_still_owes()
+    {
+        // That issue is two halves of the same three facts and one of them is built.
+        // A paragraph handing it the whole of them is the sentence this leg keeps out
+        // of the source, and the half that is left is the log line, so a paragraph
+        // naming the issue says so.
+        var naming = Paragraphs(BackendRemark())
+            .Where(paragraph => paragraph.Contains(DisclosureIssue, StringComparison.Ordinal))
+            .ToList();
+
+        Assert.NotEmpty(naming);
+
+        Assert.All(
+            naming,
+            paragraph => Assert.Contains("log line", paragraph, StringComparison.Ordinal));
+    }
+
+    /// <summary>
+    /// The remark on the remote backend, out of the checkout rather than out of a
+    /// copy beside the assembly, which the neighbouring scanners read the same way.
+    /// </summary>
+    /// <returns>The remark, with its comment markers taken off.</returns>
+    private static string BackendRemark()
+    {
+        var source = File.ReadAllText(Path.Combine(
+            Path.GetDirectoryName(Path.GetDirectoryName(ThisFile())!)!,
+            "Jellyfin.Plugin.WhisperSubtitles",
+            "Backends",
+            "Remote",
+            "RemoteWhisperBackend.cs"));
+
+        var start = source.IndexOf("/// <remarks>", StringComparison.Ordinal);
+        var end = source.IndexOf("/// </remarks>", StringComparison.Ordinal);
+
+        Assert.True(start >= 0 && end > start, "the remote backend carries no remark");
+
+        return source.Substring(start, end - start);
+    }
+
+    /// <summary>
+    /// The paragraphs of a remark, which are what a separator line divides.
+    /// </summary>
+    /// <param name="remark">The remark.</param>
+    /// <returns>One entry per paragraph, as one line each.</returns>
+    private static List<string> Paragraphs(string remark) =>
+        remark
+            .Split('\n')
+            .Select(line => line.Trim().TrimStart('/').Trim())
+            .Aggregate(
+                new List<string> { string.Empty },
+                (paragraphs, line) =>
+                {
+                    if (line.Length == 0)
+                    {
+                        paragraphs.Add(string.Empty);
+                    }
+                    else
+                    {
+                        paragraphs[^1] = (paragraphs[^1] + " " + line).Trim();
+                    }
+
+                    return paragraphs;
+                })
+            .Where(paragraph => paragraph.Length > 0)
+            .ToList();
+
+    private static string ThisFile([CallerFilePath] string path = "") => path;
 
     private static string Disclosure(string page)
     {
