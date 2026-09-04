@@ -18,7 +18,13 @@
 name: "Whisper Subtitles"
 guid: "30ed66e0-32fd-46a6-8a56-5cd95d8df10f"
 imageUrl: "https://raw.githubusercontent.com/Flowfin/jellyfin-plugin-whisper-subtitles/master/img/logo.png"
-version: "1.0.0.0"
+# 0.x on purpose, and the number is a claim somebody stands behind rather than a
+# default. This plugin has published no release, so 1.0.0.0 said that its
+# interfaces were settled and that an operator could upgrade within the major
+# line without reading anything - neither of which anybody here has stood behind.
+# #130 decided 0.1.0.0 on 2026-09-04, which is the same floor the sibling boards
+# release at.
+version: "0.1.0.0"
 targetAbi: "10.11.0.0"
 framework: "net9.0"
 overview: "Transcribes library items that have no subtitle, using Whisper."
@@ -35,4 +41,15 @@ owner: "Flowfin"
 artifacts:
 - "Jellyfin.Plugin.WhisperSubtitles.dll"
 changelog: >
-  changelog
+  First release. Generates subtitles for library items that have none, by
+  transcribing their audio with Whisper outside the server process, through a
+  command line tool on the same machine or through a remote transcription
+  endpoint. What it produces is marked as machine made.
+
+
+  This release ships for the 10.11 server line only, and it goes out with two
+  conditions of docs/release-checklist.md answered as known limitations rather
+  than by a run: there is no interoperability matrix behind it, so no combination
+  of this plugin with a sibling has been tested; and the comparison of the
+  documentation against the archive an operator installs is not made, only the
+  comparison of the documentation against the tree the archive was built from.
