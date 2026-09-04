@@ -84,13 +84,19 @@ public class GuidePasteTests
     {
         // An empty population passes every theory under it while claiming nothing,
         // and it is what a page rewritten into fenced blocks, or a page renamed,
-        // would produce. The floor is what the page carried when this was written,
-        // so a paste deleted is a red rather than a quieter suite.
+        // would produce. The floor is what the page carries, so a paste deleted is a
+        // red rather than a quieter suite.
+        //
+        // It moves with the page, and it has to be moved by hand. It stood at ten
+        // while the page grew to eleven, and for that long any one of the eleven
+        // could have been deleted with every leg here green - which is the property
+        // the comment above claims, lost by an addition that had no reason to open
+        // this file.
         var searches = Searches(Page());
 
         Assert.True(
-            searches.Count >= 10,
-            $"{PageName} quotes {searches.Count} search(es) of tracked files and this was written against ten. A paste that stopped being recognised is held by nothing.");
+            searches.Count >= 11,
+            $"{PageName} quotes {searches.Count} search(es) of tracked files and this was written against eleven. A paste that stopped being recognised is held by nothing.");
     }
 
     [Theory]
