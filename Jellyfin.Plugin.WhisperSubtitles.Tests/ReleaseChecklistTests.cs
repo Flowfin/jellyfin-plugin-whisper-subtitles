@@ -89,6 +89,26 @@ public class ReleaseChecklistTests
         TimeSpan.FromSeconds(5));
 
     /// <summary>
+    /// The recorded answer an item nothing decides carries instead of a run's verdict.
+    /// </summary>
+    /// <remarks>
+    /// #62 decided on 2026-09-04 that the publish gate asks for an answer rather than
+    /// for a green item, and that a limitation written down with its reason is one
+    /// while an empty item is not. The paragraph opens the line, because a page that
+    /// mentioned the phrase inside a sentence about the rule - which the closing
+    /// section does - would otherwise answer for an item that says nothing.
+    ///
+    /// The same shape is read one route over, by
+    /// <c>.github/scripts/refuse-a-release-with-an-unanswered-item.sh</c> in the
+    /// publish run. That one holds the release; this one holds the page on every
+    /// change, so an item that loses its answer is red here rather than at the tag.
+    /// </remarks>
+    private static readonly Regex _answered = new(
+        @"^Answered as a known limitation:",
+        RegexOptions.Multiline | RegexOptions.CultureInvariant,
+        TimeSpan.FromSeconds(5));
+
+    /// <summary>
     /// The figure the closing section states about the items nothing decides yet.
     /// </summary>
     /// <remarks>
@@ -321,6 +341,31 @@ public class ReleaseChecklistTests
     }
 
     [Theory]
+    [MemberData(nameof(EveryItemNothingDecidesYet))]
+    public void Every_item_nothing_decides_yet_carries_the_answer_the_release_goes_out_under(string title)
+    {
+        var item = Item(title);
+
+        Assert.True(
+            _answered.IsMatch(item.Body),
+            $"the item \"{title}\" on the release checklist says nothing decides it yet and carries no paragraph opening \"Answered as a known limitation:\", so a release cut today goes out with that condition unanswered and the page does not say what it ships without");
+    }
+
+    [Fact]
+    public void The_reader_refuses_an_item_nothing_decides_that_carries_no_answer()
+    {
+        // The shape every such item on this page had until the publish gate landed:
+        // an issue named, a route owed, and nothing said about what a release cut
+        // before that route arrives is missing.
+        var item = Assert.Single(Items(Fixture("an-item-nothing-decides-that-carries-no-answer")));
+
+        Assert.DoesNotMatch(_answered, item.Body);
+        Assert.True(
+            _decidedByNothing.IsMatch(item.Body) && _issue.IsMatch(item.Body),
+            "the fixture has to trip this leg and no other");
+    }
+
+    [Theory]
     [MemberData(nameof(EveryItemARunDecides))]
     public void Every_item_a_run_decides_names_the_command_or_the_check_that_decides_it(string title)
     {
@@ -511,6 +556,9 @@ public class ReleaseChecklistTests
         Assert.All(
             items.Where(item => _decidedByNothing.IsMatch(item.Body)),
             item => Assert.Matches(_issue, item.Body));
+        Assert.All(
+            items.Where(item => _decidedByNothing.IsMatch(item.Body)),
+            item => Assert.Matches(_answered, item.Body));
         Assert.All(
             items.Where(item => _decidedByARun.IsMatch(item.Body)),
             item => Assert.True(NamesSomethingThatAnswers(item.Body)));

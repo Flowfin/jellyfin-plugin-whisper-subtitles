@@ -66,6 +66,10 @@ is gone and no catalog is fed until a manifest generator is added.
 
 ## What fails the run
 
+- An item on `docs/release-checklist.md` is decided by no run and carries no
+  paragraph opening `Answered as a known limitation:`. This one runs before
+  anything is built, so a tag pushed against an unanswered checklist produces no
+  release at all rather than one that has to be taken back.
 - The tag does not end in `-stable`, or the workflow was started from something
   other than a tag.
 - The numeric part of the tag differs from `version` in `build.yaml`.
@@ -110,7 +114,7 @@ different number:
 
 ```
 grep -c '::error::' .github/workflows/publish.yaml
-24
+25
 ```
 
 So a refusal added to the run is a red suite until somebody comes back to this

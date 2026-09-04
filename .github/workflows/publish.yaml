@@ -87,6 +87,31 @@ jobs:
           }
           AWK
 
+      - name: Every item on the release checklist is answered
+        # #62's last condition, and it runs here rather than later on purpose. A
+        # published release cannot be unpublished without burning its tag
+        # permanently, so the only refusal shape available is one that stops the tag
+        # producing a release at all - before an archive exists, before anything is
+        # signed. What it asks for is an answer and not a green item: an item a run
+        # decides is answered by that run's verdict, and an item nothing decides is
+        # answered by a paragraph saying what the release ships without and why. It
+        # therefore holds a release for silence and never for bad news, which the
+        # page's own closing section states in its own words.
+        run: |
+          set -euo pipefail
+
+          # The annotation is written here rather than in the script, because the
+          # script is also run against fixtures where a GitHub annotation would be
+          # noise, and because the count of refusals in this file is what
+          # `docs/RELEASING.md` states and `ReleaseRefusalSitesTests` compares. A
+          # refusal that exits without one is a refusal that page cannot see.
+          if ! output=$(.github/scripts/refuse-a-release-with-an-unanswered-item.sh docs/release-checklist.md 2>&1); then
+            echo "${output}"
+            echo "::error::The release checklist carries an item that no run decides and that carries no answer. Nothing was built and no release exists for this tag."
+            exit 1
+          fi
+          echo "${output}"
+
       - name: Check the tag and build.yaml agree
         id: metadata
         env:
