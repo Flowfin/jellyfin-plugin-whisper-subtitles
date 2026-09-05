@@ -85,9 +85,9 @@ public class ReleaseDrafterConfigTests
 
         foreach (var key in new[] { "name-template", "tag-template" })
         {
-            Assert.True(keys.ContainsKey(key), $"{Config} carries no {key}");
-            Assert.EndsWith("-stable", keys[key], StringComparison.Ordinal);
-            Assert.Contains("$RESOLVED_VERSION", keys[key], StringComparison.Ordinal);
+            Assert.True(keys.TryGetValue(key, out var template), $"{Config} carries no {key}");
+            Assert.EndsWith("-stable", template, StringComparison.Ordinal);
+            Assert.Contains("$RESOLVED_VERSION", template, StringComparison.Ordinal);
         }
 
         Assert.All(
@@ -115,9 +115,9 @@ public class ReleaseDrafterConfigTests
         // argument for the change.
         var keys = Keys();
 
-        Assert.True(keys.ContainsKey("change-template"), $"{Config} carries no change-template");
-        Assert.Contains("$TITLE", keys["change-template"], StringComparison.Ordinal);
-        Assert.Contains("#$NUMBER", keys["change-template"], StringComparison.Ordinal);
+        Assert.True(keys.TryGetValue("change-template", out var line), $"{Config} carries no change-template");
+        Assert.Contains("$TITLE", line, StringComparison.Ordinal);
+        Assert.Contains("#$NUMBER", line, StringComparison.Ordinal);
     }
 
     [Fact]
