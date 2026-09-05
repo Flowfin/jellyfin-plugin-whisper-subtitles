@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 using Xunit;
@@ -7,122 +8,128 @@ using Xunit;
 namespace Jellyfin.Plugin.WhisperSubtitles.Tests;
 
 /// <summary>
-/// The changelog workflow calls a shared workflow whose one job is guarded by
-/// <c>github.repository == inputs.repository-name</c>, so the name handed to it
-/// decides whether anything runs at all.
+/// The changelog workflow drafts the release notes out of the merged pull
+/// requests and does nothing else. This holds the shape #59 decided on
+/// 2026-09-05: one pinned drafter reading this repository's own configuration,
+/// on a merge to the mainline, and no release-prep half.
 /// </summary>
 /// <remarks>
-/// The failure this is written against is silent at every gate this repository
-/// has. A name belonging to another repository does not fail the call, does not
-/// fail the workflow audit and does not fail a build: the guard is false, the job
-/// is skipped, and a skipped job reports green. Every run of this workflow here
-/// concluded skipped for months for exactly that reason, and what said so was a
-/// person reading the run list rather than anything that refuses.
+/// Until that decision this file held a different workflow to a different
+/// property: a shared workflow guarded by the repository name handed to it,
+/// which skipped in silence for months when the name was the template's. That
+/// shared workflow drafted and then pushed a branch that rewrote the version
+/// into two files, which is the first clause of #59 undone by the route meant to
+/// serve its fourth, and it is gone from this tree. What is held now is the
+/// other failure the same file can have: a step arriving beside the drafter that
+/// writes into the tree again, or a drafter reading a configuration this
+/// repository does not carry, or one pinned to nothing.
 ///
-/// What is lost while it is wrong is the release draft and the release-prep pull
-/// request, neither of which anybody looks for until a release is being made.
-///
-/// WHAT THIS DOES NOT DO. It compares two declarations in this tree against each
-/// other and neither of them is the live repository name: nothing offline can
-/// read that. So this refuses a workflow that disagrees with the manifest the
-/// plugin is published from, and a tree where both were changed to the same wrong
-/// value passes. The manifest is the better of the two anchors because a
-/// catalogue reads it and an operator's server fetches it, so a wrong name there
-/// is a wrong name somebody meets.
-///
-/// It is a line reader and not a YAML parser, the same bound the manifest reader
-/// in <c>PluginIdentityTests</c> carries: a key whose value is a plain scalar on
-/// the same line. A block scalar or an anchor would defeat it, and both files are
-/// written flat.
+/// WHAT THIS DOES NOT DO. It reads the workflow as text and runs nothing, so what
+/// the drafter writes for a set of pull requests is not measured here. It
+/// matches the tokens a bump step is written with, so a step that rewrites the
+/// tree through a tool this vocabulary does not name walks past it, which is the
+/// bound every token scanner in this directory states about itself.
 /// </remarks>
-public sealed class ChangelogWorkflowTests
+public class ChangelogWorkflowTests
 {
-    // The name passed to the called workflow. Anchored on the key rather than on
-    // the value, so a value that changed is read and compared rather than missed
-    // and reported as an absent key.
-    private static readonly Regex _repositoryName = new(
-        @"(?m)^\s*repository-name:\s*""?(?<value>[^""\r\n]+?)""?\s*$",
+    private const string Workflow = ".github/workflows/changelog.yaml";
+
+    private const string Config = ".github/release-drafter.yml";
+
+    private static readonly Regex _pinnedDrafter = new(
+        @"uses:\s+release-drafter/release-drafter@(?<sha>[0-9a-f]{40})\s+#\s+v\d+\.\d+\.\d+",
         RegexOptions.CultureInvariant,
         TimeSpan.FromSeconds(5));
 
-    // The owner and name this plugin is published from, out of the manifest's
-    // image URL. That field is the one machine-read place in this tree that names
-    // the repository as a slug; the rest are in commands inside comments.
-    private static readonly Regex _manifestSlug = new(
-        @"(?m)^imageUrl:\s*""?https://raw\.githubusercontent\.com/(?<value>[^/""]+/[^/""]+)/",
+    private static readonly Regex _anyUses = new(
+        @"uses:\s+(?<action>\S+)",
         RegexOptions.CultureInvariant,
         TimeSpan.FromSeconds(5));
 
-    private static readonly string _workflowPath = Path.Combine(".github", "workflows", "changelog.yaml");
+    /// <summary>
+    /// The shapes a release-prep half is written with: a checkout the tree is
+    /// then edited in, an in-place edit, a commit, a push.
+    /// </summary>
+    private static readonly string[] _writesTheTree =
+    [
+        "actions/" + "checkout",
+        "sed " + "-i",
+        "git " + "commit",
+        "git " + "push",
+        "yq " + "eval",
+        "prepare-" + "$",
+    ];
 
     [Fact]
-    public void The_changelog_workflow_hands_the_called_workflow_this_repository()
+    public void The_drafter_is_the_one_action_and_it_is_pinned_to_a_commit_with_its_version_beside_it()
     {
-        Assert.Equal(RepositoryTheManifestIsPublishedFrom(), RepositoryTheWorkflowNames());
-    }
+        var workflow = Read(Workflow);
+        var actions = _anyUses.Matches(workflow).Select(match => match.Groups["action"].Value).ToList();
 
-    [Fact]
-    public void Each_reader_returns_an_owner_and_a_name_rather_than_half_of_one()
-    {
-        // The guard the called workflow applies compares against `owner/name`, so
-        // a capture that had narrowed to one half of that would compare two
-        // fragments that agree while the workflow hands over a name no repository
-        // has. The leg above would redden too; this one says which half moved.
-        Assert.Contains("/", RepositoryTheWorkflowNames(), StringComparison.Ordinal);
-        Assert.Contains("/", RepositoryTheManifestIsPublishedFrom(), StringComparison.Ordinal);
-    }
-
-    [Fact]
-    public void A_reader_that_finds_nothing_refuses_rather_than_returning_an_empty_name()
-    {
-        // The near miss is a key renamed in the called workflow's interface, or a
-        // manifest field rewritten. Without the refusal inside the reader, both
-        // sides come back empty, two empty strings compare equal, and the leg
-        // above reports agreement about a file it did not read.
-        Assert.ThrowsAny<Exception>(() => NameIn(_repositoryName, "a file with no such key"));
-        Assert.ThrowsAny<Exception>(() => NameIn(_manifestSlug, "a file with no such key"));
+        Assert.Single(actions);
+        Assert.Matches(_pinnedDrafter, workflow);
     }
 
     [Fact]
-    public void The_reader_gives_the_same_answer_whatever_a_clone_did_to_the_line_endings()
+    public void The_drafter_reads_this_repositorys_own_configuration()
     {
-        // `.gitattributes` stores a line feed and lets the checkout decide, so one
-        // clone reads these files with carriage returns and another does not. A
-        // comparison that moved between the two would fail on Windows for a reason
-        // that has nothing to do with either file.
-        var asLineFeeds = Read(_workflowPath).Replace("\r\n", "\n", StringComparison.Ordinal);
-        var asCarriageReturns = asLineFeeds.Replace("\n", "\r\n", StringComparison.Ordinal);
+        // The shared route used to fail on a configuration this repository did not
+        // carry, and a drafter reading a name that resolves to no file drafts
+        // nothing and says so only in a run log.
+        var workflow = Read(Workflow);
 
-        Assert.Equal(NameIn(_repositoryName, asLineFeeds), NameIn(_repositoryName, asCarriageReturns));
+        Assert.Contains("config-name: " + Path.GetFileName(Config), workflow, StringComparison.Ordinal);
+        Assert.True(File.Exists(Path.Combine(RepositoryRoot(), Config)), $"{Config} is not in the tree");
     }
 
-    private static string RepositoryTheWorkflowNames() =>
-        NameIn(_repositoryName, Read(_workflowPath));
-
-    private static string RepositoryTheManifestIsPublishedFrom() =>
-        NameIn(_manifestSlug, Read("build.yaml"));
-
-    private static string NameIn(Regex reader, string text)
+    [Fact]
+    public void Nothing_in_the_workflow_writes_into_the_tree()
     {
-        var match = reader.Match(text);
+        var workflow = WithoutComments(Read(Workflow));
 
-        Assert.True(match.Success, "the reader found no name to compare");
-
-        return match.Groups["value"].Value;
+        foreach (var token in _writesTheTree)
+        {
+            Assert.False(
+                workflow.Contains(token, StringComparison.Ordinal),
+                $"{Workflow} carries {token}, which is the shape of the release-prep half #59 decided against");
+        }
     }
 
-    // The files a clone checked out, rather than a copy carried next to the test
-    // assembly. What this is about is the bytes the runner is handed, and the
-    // compiler is what knows where those are. Same reasoning as CommunityFilesTests.
-    private static string Read(string relativePath)
+    [Fact]
+    public void It_drafts_on_a_merge_to_the_mainline_and_writes_only_the_release()
     {
-        var root = Path.GetDirectoryName(Path.GetDirectoryName(ThisFile())!)!;
-        var path = Path.Combine(root, relativePath);
+        var workflow = Read(Workflow);
 
-        Assert.True(File.Exists(path), $"{relativePath} was not found, looked in {path}");
-
-        return File.ReadAllText(path);
+        Assert.Matches(new Regex(@"push:\s*\n\s*branches:\s*\n\s*-\s*master", RegexOptions.CultureInvariant, TimeSpan.FromSeconds(5)), workflow);
+        Assert.Contains("contents: write", workflow, StringComparison.Ordinal);
+        Assert.Contains("pull-requests: read", workflow, StringComparison.Ordinal);
+        Assert.DoesNotContain("pull-requests: write", workflow, StringComparison.Ordinal);
     }
+
+    [Fact]
+    public void The_scanner_would_see_a_shape_it_was_shown()
+    {
+        // The vocabulary is assembled from fragments, so a typo in the assembly would
+        // leave a token matching nothing and passing for as long as nobody looked.
+        foreach (var token in _writesTheTree)
+        {
+            Assert.False(string.IsNullOrWhiteSpace(token));
+            Assert.Contains(token, "      run: " + token + "something", StringComparison.Ordinal);
+        }
+    }
+
+    private static string WithoutComments(string text) =>
+        string.Join(
+            '\n',
+            text.Split('\n')
+                .Select(line => line.TrimEnd('\r'))
+                .Where(line => !line.TrimStart().StartsWith('#')));
+
+    private static string Read(string relative) =>
+        File.ReadAllText(Path.Combine(RepositoryRoot(), relative)).Replace("\r\n", "\n", StringComparison.Ordinal);
+
+    private static string RepositoryRoot() =>
+        Path.GetDirectoryName(Path.GetDirectoryName(ThisFile())!)!;
 
     private static string ThisFile([CallerFilePath] string path = "") => path;
 }
