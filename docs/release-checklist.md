@@ -52,9 +52,9 @@ job that is red on every mainline commit for a standing reason is red on the
 release commit too, and it fails this item exactly the way a regression would. So
 read the list rather than assuming which names are in it, and read each red name
 against the issue that records it before deciding this item is unanswerable. The
-draft the changelog workflow in `.github/workflows/changelog.yaml` builds is the
-one this repository stands red on, and #59 is where that is recorded and where
-what it waits on is written.
+draft the changelog workflow in `.github/workflows/changelog.yaml` builds stood
+red on every mainline commit until #59 landed the configuration the drafter
+reads, so a red name there now is a regression rather than a standing reason.
 
 ## The interoperability matrix is green on both server lines
 

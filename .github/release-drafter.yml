@@ -1,0 +1,54 @@
+# The changelog's classes, in the form the drafter reads them.
+#
+# One category per label this board uses for a change, which is what #59 decided
+# on 2026-09-05: a pull request carrying one of these labels lands under its
+# heading, one line per pull request with its number, and a pull request carrying
+# none of them is listed all the same rather than dropped, because an entry nobody
+# classified is still an entry and a note that silently omits it reads as
+# complete. The shape is the one Flowfin/jellyfin-plugin-metadata-sync carries,
+# with this board's labels in place of that board's classes.
+#
+# The templates follow the tag shape `.github/workflows/publish.yaml` releases
+# from, `X.Y.Z-stable`, so the drafter and the publish route spell one release
+# one way. `ReleaseDrafterConfigTests` holds that against the publish workflow's
+# own trigger, and holds the categories against the labels named in the decision,
+# so a label renamed on the board without this file moving is a red suite rather
+# than a class quietly dropping out of a release.
+#
+# What this file does not do is run anything. `.github/workflows/changelog.yaml`
+# is the route that reads it, and it drafts and does nothing else: the same
+# decision wants no release-prep half, so no branch is pushed and no version is
+# rewritten anywhere in the tree on account of this file.
+
+name-template: '$RESOLVED_VERSION-stable'
+tag-template: '$RESOLVED_VERSION-stable'
+
+categories:
+  - title: 'Security'
+    labels:
+      - 'security'
+
+  - title: 'Added'
+    labels:
+      - 'enhancement'
+      - 'feature'
+
+  - title: 'Fixed'
+    labels:
+      - 'bug'
+
+  - title: 'Documentation'
+    labels:
+      - 'documentation'
+
+  - title: 'Maintenance'
+    labels:
+      - 'chore'
+
+exclude-labels: []
+
+change-template: '- $TITLE (#$NUMBER)'
+no-changes-template: '- No entry was classified for this release.'
+
+template: |
+  $CHANGES
