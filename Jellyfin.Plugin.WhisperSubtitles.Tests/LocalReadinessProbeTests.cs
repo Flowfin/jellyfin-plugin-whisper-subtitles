@@ -136,10 +136,14 @@ public sealed class LocalReadinessProbeTests
         Assert.Null(readiness.Reason);
 
         // The clause the contract suite states in general, asserted here against the
-        // one backend that could break it: nothing was started. A probe that ran the
-        // tool to find out whether it runs would be a transcription an operator did
-        // not ask for, on a page they were only looking at.
-        Assert.Null(runner.Invocation);
+        // one backend that could break it: nothing was transcribed. The probe does
+        // start the tool since #324, to ask it what it is, and what is held here is
+        // that it did so with one flag and nothing a transcription carries: no
+        // model, no audio, no language.
+        Assert.NotNull(runner.Invocation);
+        Assert.DoesNotContain("-f", runner.Invocation.Arguments);
+        Assert.DoesNotContain("-m", runner.Invocation.Arguments);
+        Assert.DoesNotContain(Model, runner.Invocation.Arguments);
     }
 
     [Fact]

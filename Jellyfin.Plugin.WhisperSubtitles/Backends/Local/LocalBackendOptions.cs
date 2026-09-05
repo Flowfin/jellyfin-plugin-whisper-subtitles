@@ -54,6 +54,20 @@ public sealed class LocalBackendOptions
     public static readonly TimeSpan DefaultProbeTimeout = TimeSpan.FromSeconds(5);
 
     /// <summary>
+    /// How long the readiness probe waits for the tool to answer one of the two
+    /// flags it is asked before the tool is stopped and read as silent for it.
+    /// </summary>
+    /// <remarks>
+    /// Three seconds per flag, and it is the first time this plugin runs the
+    /// operator's tool on a page load rather than in a run. Printing a version is
+    /// instant for any tool that prints one; what this bounds is a tool that
+    /// treats an unknown flag as a reason to start doing something else, on a page
+    /// somebody is waiting in front of. #324 decided the two flags; the bound is
+    /// this type's because every other deadline the probe carries is.
+    /// </remarks>
+    public static readonly TimeSpan DefaultToolAnswerTimeout = TimeSpan.FromSeconds(3);
+
+    /// <summary>
     /// Initializes a new instance of the <see cref="LocalBackendOptions"/> class.
     /// </summary>
     /// <param name="executablePath">The whisper.cpp compatible command line tool.</param>
@@ -90,15 +104,37 @@ public sealed class LocalBackendOptions
     /// the same rule in two places and let the two disagree.
     /// </remarks>
     public LocalBackendOptions(string? executablePath, string? modelPath, TimeSpan probeTimeout, int threadCount)
+        : this(executablePath, modelPath, probeTimeout, threadCount, DefaultToolAnswerTimeout)
+    {
+    }
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="LocalBackendOptions"/> class
+    /// with a deadline of its own for the tool answering the probe.
+    /// </summary>
+    /// <param name="executablePath">The whisper.cpp compatible command line tool.</param>
+    /// <param name="modelPath">The model file to hand it.</param>
+    /// <param name="probeTimeout">How long the readiness probe may spend looking at the two paths.</param>
+    /// <param name="threadCount">How many threads the tool may use on one item.</param>
+    /// <param name="toolAnswerTimeout">How long the tool may take to answer one flag before it is stopped.</param>
+    public LocalBackendOptions(string? executablePath, string? modelPath, TimeSpan probeTimeout, int threadCount, TimeSpan toolAnswerTimeout)
     {
         ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(probeTimeout, TimeSpan.Zero);
         ArgumentOutOfRangeException.ThrowIfLessThan(threadCount, 1);
+        ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(toolAnswerTimeout, TimeSpan.Zero);
 
         ExecutablePath = executablePath;
         ModelPath = modelPath;
         ProbeTimeout = probeTimeout;
         ThreadCount = threadCount;
+        ToolAnswerTimeout = toolAnswerTimeout;
     }
+
+    /// <summary>
+    /// Gets how long the tool may take to answer one flag of the readiness probe
+    /// before it is stopped and read as silent for it.
+    /// </summary>
+    public TimeSpan ToolAnswerTimeout { get; }
 
     /// <summary>
     /// Gets how many threads the tool may use on one item.

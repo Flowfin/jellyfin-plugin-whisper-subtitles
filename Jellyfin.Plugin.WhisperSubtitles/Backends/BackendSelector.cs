@@ -110,7 +110,7 @@ public static class BackendSelector
                     readiness.Reason ?? "it gave no reason."));
         }
 
-        return new BackendChoice(candidate.Backend, BackendSelectionOutcome.Selected, string.Empty);
+        return new BackendChoice(candidate.Backend, BackendSelectionOutcome.Selected, string.Empty, readiness);
     }
 
     private static BackendChoice FallBack(BackendSelectionOutcome outcome, string reason) =>
