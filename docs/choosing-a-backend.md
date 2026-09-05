@@ -85,6 +85,26 @@ catches a download that was refused and saved anyway, a page of HTML from a
 proxy, or an empty file made by a shell redirect, each of which otherwise
 reaches the operator as a tool that starts and fails on the first item.
 
+### What the page asks the tool
+
+Pressing the readiness button on the plugin page runs the tool at the path you
+typed, once with `--version` and, when that does not exit cleanly with a printed
+line, once more with `--help`. The first non-empty line of the answer is shown
+beside the ready sentence, labelled as a version or as the tool describing
+itself, and a tool that prints nothing to either flag is reported as there and
+silent. That is the whole of what the page runs the tool for: no model is
+passed, no audio, and each flag is stopped at a deadline of its own. The two
+flags and the deadline are the ones #324 decided on 2026-09-05:
+
+    git grep -n 'VersionFlag = \|HelpFlag = \|DefaultToolAnswerTimeout = ' -- Jellyfin.Plugin.WhisperSubtitles
+    Jellyfin.Plugin.WhisperSubtitles/Backends/Local/LocalBackendOptions.cs:68:    public static readonly TimeSpan DefaultToolAnswerTimeout = TimeSpan.FromSeconds(3);
+    Jellyfin.Plugin.WhisperSubtitles/Backends/Local/ToolIdentityProbe.cs:38:    public const string VersionFlag = "--version";
+    Jellyfin.Plugin.WhisperSubtitles/Backends/Local/ToolIdentityProbe.cs:43:    public const string HelpFlag = "--help";
+
+What the build you choose actually prints to those two flags is read the first
+time you press the button. It is not recorded on this page, because this
+repository runs no tool and would be guessing.
+
 ## The remote backend
 
 The operator gives a base URL and, where the endpoint wants one, a key. The path
