@@ -179,7 +179,7 @@ jobs:
           set -eu
           output=$(.github/scripts/scan-a-booted-server.sh clean)
           echo "$output"
-          echo "$output" | head -n 1 | grep -q '^read 1 plugin(s), 2 task(s), 1 page(s) and 5 route(s) from the booted server$'
+          echo "$output" | head -n 1 | grep -q '^read 1 plugin(s), 2 task(s), 1 page(s) and 6 route(s) from the booted server$'
           echo "$output" | grep -q '^derived for jellyfin-plugin-whisper-subtitles from the server: it is listed as "Whisper Subtitles", keeps its configuration in "Jellyfin.Plugin.WhisperSubtitles.xml", and is attributed 1 page(s): Whisper Subtitles$'
           echo "$output" | tail -n 1 | grep -q 'and none is claimed twice; the page(s) the server attributes to jellyfin-plugin-whisper-subtitles are the page(s) the record claims'
 
