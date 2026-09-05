@@ -123,12 +123,19 @@ the file system outside those folders is a report I want.
 
 **Where files are written.** Three kinds and no fourth: the subtitle, in the two
 folders Jellyfin itself saves subtitles to and following the library's own
-setting for which; temporary audio, in a directory this plugin owns; and its own
-configuration, which the server writes. `AtomicSubtitleFile` writes under a
-`.whisper-part` name with `FileMode.CreateNew` and renames only once every byte
-is flushed, so nothing reads a half written subtitle and no file this plugin did
-not write is overwritten. A write outside those three is a defect whether or not
-anybody can steer it.
+setting for which; temporary audio, in a directory this plugin owns; and plugin
+data, which is its own configuration, written by the server, and the record of
+what it published, one line per file that `PublishedSubtitleRecordFile` appends
+in the data directory the server hands the plugin. `AtomicSubtitleFile` writes
+under a `.whisper-part` name with `FileMode.CreateNew`, appends the record line
+once every byte is flushed, and renames only after that, so nothing reads a half
+written subtitle, no file this plugin did not write is overwritten, and no file
+takes its name that the record does not hold. A write outside those three is a
+defect whether or not anybody can steer it. A removal of a subtitle happens only
+through the listing that matches a file against that record by size and SHA-256,
+at listing time and again at the moment of deletion; a path where a file the
+record does not name, or one whose bytes differ from its line, is removed is a
+report I want.
 
 **The configured endpoint key.** It goes into one Authorization header and into
 no URL, body, message or log line, and text coming back from the endpoint is
