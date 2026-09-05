@@ -19,19 +19,26 @@ does not exist.
 No release and no tag. The tree goes further than that:
 `PluginServiceRegistrator` builds both backends with empty settings, and it does
 that whatever the operator saved. The configuration schema holds a local tool
-path, a local model path, a remote endpoint URL, a key and a model name, and the
-two places this plugin's source builds the backends' settings pass none of them:
+path, a local model path, a remote endpoint URL, a key and a model name. Of the
+two places this plugin's source builds the backends' settings, the composition
+root passes none of them, and the other, the question the configuration page
+asks on `/WhisperSubtitles/Readiness`, builds them from the settings that were
+posted to it, for that one answer, and keeps nothing:
 
     $ git grep 'new LocalBackendOptions' -- 'Jellyfin.Plugin.WhisperSubtitles/*.cs'
+    Jellyfin.Plugin.WhisperSubtitles/Backends/ReadinessQuestion.cs:            new LocalBackendOptions(
     Jellyfin.Plugin.WhisperSubtitles/PluginServiceRegistrator.cs:        serviceCollection.AddSingleton(_ => new LocalBackendOptions(null, null));
 
     $ git grep 'new RemoteBackendOptions' -- 'Jellyfin.Plugin.WhisperSubtitles/*.cs'
+    Jellyfin.Plugin.WhisperSubtitles/Backends/ReadinessQuestion.cs:            new RemoteBackendOptions(
     Jellyfin.Plugin.WhisperSubtitles/PluginServiceRegistrator.cs:        serviceCollection.AddSingleton(_ => new RemoteBackendOptions(null, null, null));
 
 So a path, a URL, a key or a model name an operator types is validated and then
-reaches no backend. The key is stored where the server stores every plugin's
-settings, which is the same file the local paths are in, and nothing in this
-plugin reads it out of there yet.
+reaches no backend a run would use. It reaches a probe, once, when an
+administrator presses the button on the page, and the sentence that comes back
+is all that comes of it. The key is stored where the server stores every
+plugin's settings, which is the same file the local paths are in, and nothing
+in this plugin reads it out of there yet.
 `SubtitleGenerationTask.ExecuteAsync` selects a backend, records that none is
 configured, and stops. The audio extractor and the subtitle publisher are
 reached from the test suite and from nowhere else in this plugin. The item
@@ -45,8 +52,12 @@ the dry run.
 Following type names out of the task through this plugin's own sources reaches
 neither the extractor, nor the selection, nor the publisher, so what sits behind
 that call is a route no server takes rather than no route at all. On a server
-built from this tree no audio is extracted, no child process is started, no
-request leaves the machine, and no file is written into a library. The
+built from this tree no audio is extracted, no child process is started, and no
+file is written into a library. One request can leave the machine, and only
+when an administrator asks for it: the configuration page posts the settings as
+typed to `/WhisperSubtitles/Readiness`, and the remote backend's probe answers
+with one GET to the endpoint in them, carrying the key in a header and no audio.
+The
 boundaries below are real code with tests over them, but a flaw in one is a flaw
 in a part not yet joined to a run rather than something loose on a live server.
 
@@ -126,9 +137,16 @@ were sent. A path where that key reaches a log or an operator's screen is worth
 reporting even though the operator owns the key.
 
 **The configuration page.** It is served in the Jellyfin dashboard and runs with
-whoever is looking at it. Library names reach the DOM through `textContent`
-rather than `innerHTML`, and a path where server-side data reaches that page as
-markup would be a real finding.
+whoever is looking at it. Library names and the readiness answer reach the DOM
+through `textContent` rather than `innerHTML`, and a path where server-side data
+reaches that page as markup would be a real finding.
+
+**The readiness route.** `/WhisperSubtitles/Readiness` takes a configuration
+from an elevated session, runs it through the same validation as the file, and
+has the chosen backend look: two file reads for the local backend, or one GET
+with no audio for the remote one. A way to reach it without an elevated session,
+to make it read a path or a host the posted settings did not name, or to get
+the key back out of its answer, is a report I want.
 
 ## What is not a vulnerability here
 

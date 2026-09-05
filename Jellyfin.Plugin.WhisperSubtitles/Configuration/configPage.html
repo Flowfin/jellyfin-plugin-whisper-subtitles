@@ -52,9 +52,10 @@
                             </div>
                         </div>
                         <div class="fieldDescription">
-                            Neither path is checked here. Whether a file is there, whether
-                            it runs and whether it is a model are answered when the
-                            backend is asked, and nothing on this page asks it yet.
+                            Neither path is checked as you type. Whether a file is there,
+                            whether the server may run it and whether it is big enough to
+                            be a model are answered when the backend is asked, and the
+                            button under the backend settings asks it.
                         </div>
                     </div>
                     <div id="WhisperSubtitlesRemoteSettings">
@@ -96,10 +97,25 @@
                             audio, you are answerable for this setting.
                         </div>
                         <div class="fieldDescription">
-                            None of the three is checked here. Whether the host answers,
-                            accepts the key and serves the model are answered when the
-                            backend is asked, and nothing on this page asks it yet.
+                            None of the three is checked here. Whether the host answers
+                            and accepts the key is answered when the backend is asked, and
+                            the button under the backend settings asks it. Whether it
+                            serves the model is learned by the first run.
                         </div>
+                    </div>
+                    <div id="WhisperSubtitlesReadiness">
+                        <button is="emby-button" type="button" id="WhisperSubtitlesAskReadiness" class="raised block emby-button">
+                            <span>Ask the backend whether it is ready</span>
+                        </button>
+                        <div class="fieldDescription">
+                            Asks the chosen backend about the settings as they stand on
+                            this page, saved or not. The local backend looks at both
+                            paths; the remote backend sends one request with no audio in
+                            it to the endpoint. Nothing is transcribed and nothing is
+                            saved by asking, and the answer is the sentence a run would
+                            have reported.
+                        </div>
+                        <div class="fieldDescription" id="WhisperSubtitlesReadinessAnswer"></div>
                     </div>
                     <div class="inputContainer">
                         <label class="inputLabel inputLabelUnfocused" for="ItemsAtOnce">Items transcribed at once</label>
@@ -321,6 +337,60 @@
                     WhisperSubtitlesConfig.hostOf(document.querySelector('#RemoteBaseUrl').value);
             };
 
+            WhisperSubtitlesConfig.readinessPath = 'WhisperSubtitles/Readiness';
+
+            WhisperSubtitlesConfig.backendSettingsTyped = function (config) {
+                // What the readiness question is asked about and what a save writes,
+                // out of one function, so the answer the page shows is about the
+                // values it would save and never about a second reading of the
+                // fields that could disagree with the first.
+                config.Backend = document.querySelector('#Backend').value;
+                config.LocalToolPath = WhisperSubtitlesConfig.pathTyped(
+                    document.querySelector('#LocalToolPath'));
+                config.LocalModelPath = WhisperSubtitlesConfig.pathTyped(
+                    document.querySelector('#LocalModelPath'));
+                config.RemoteBaseUrl = WhisperSubtitlesConfig.remoteTyped(
+                    document.querySelector('#RemoteBaseUrl'));
+                config.RemoteApiKey = WhisperSubtitlesConfig.remoteTyped(
+                    document.querySelector('#RemoteApiKey'));
+                config.RemoteModel = WhisperSubtitlesConfig.remoteTyped(
+                    document.querySelector('#RemoteModel'));
+
+                return config;
+            };
+
+            WhisperSubtitlesConfig.showReadiness = function (text) {
+                // textContent and never markup. The sentence names a path an operator
+                // typed, and a typed path reaching the page as markup is the one
+                // shape SECURITY.md asks to be told about.
+                document.querySelector('#WhisperSubtitlesReadinessAnswer').textContent = text;
+            };
+
+            WhisperSubtitlesConfig.askReadiness = function () {
+                // The saved configuration with the typed settings laid over it, posted
+                // to this plugin's own route, so the server answers about the page as
+                // it stands rather than about the file as it was last saved. Nothing
+                // is written: the route reads and answers, and only the Save button
+                // saves.
+                WhisperSubtitlesConfig.showReadiness('Asking the backend.');
+
+                return ApiClient.getPluginConfiguration(WhisperSubtitlesConfig.pluginUniqueId).then(function (config) {
+                    return ApiClient.ajax({
+                        type: 'POST',
+                        url: ApiClient.getUrl(WhisperSubtitlesConfig.readinessPath),
+                        data: JSON.stringify(WhisperSubtitlesConfig.backendSettingsTyped(config)),
+                        contentType: 'application/json',
+                        dataType: 'json'
+                    });
+                }).then(function (report) {
+                    WhisperSubtitlesConfig.showReadiness(report.IsReady
+                        ? 'The ' + report.Backend + ' backend is ready. Nothing has been transcribed to find that out, so whether it transcribes well is learned by the first run.'
+                        : report.Reason);
+                }, function () {
+                    WhisperSubtitlesConfig.showReadiness('The server did not answer the question, so nothing is known about the backend. The server log says why.');
+                });
+            };
+
             WhisperSubtitlesConfig.pathValue = function (field, stored) {
                 field.value = stored || WhisperSubtitlesConfig.noPathNamed;
             };
@@ -437,23 +507,18 @@
                     WhisperSubtitlesConfig.load();
                 });
 
+            document.querySelector('#WhisperSubtitlesAskReadiness')
+                .addEventListener('click', function () {
+                    WhisperSubtitlesConfig.askReadiness();
+                });
+
             document.querySelector('#WhisperSubtitlesConfigForm')
                 .addEventListener('submit', function(e) {
                 Dashboard.showLoadingMsg();
                 ApiClient.getPluginConfiguration(WhisperSubtitlesConfig.pluginUniqueId).then(function (config) {
-                    config.Backend = document.querySelector('#Backend').value;
+                    WhisperSubtitlesConfig.backendSettingsTyped(config);
                     config.TargetLanguage = document.querySelector('#TargetLanguage').value;
                     config.LibraryTargets = WhisperSubtitlesConfig.collectLibraries();
-                    config.LocalToolPath = WhisperSubtitlesConfig.pathTyped(
-                        document.querySelector('#LocalToolPath'));
-                    config.LocalModelPath = WhisperSubtitlesConfig.pathTyped(
-                        document.querySelector('#LocalModelPath'));
-                    config.RemoteBaseUrl = WhisperSubtitlesConfig.remoteTyped(
-                        document.querySelector('#RemoteBaseUrl'));
-                    config.RemoteApiKey = WhisperSubtitlesConfig.remoteTyped(
-                        document.querySelector('#RemoteApiKey'));
-                    config.RemoteModel = WhisperSubtitlesConfig.remoteTyped(
-                        document.querySelector('#RemoteModel'));
                     config.ItemsAtOnce = WhisperSubtitlesConfig.limitTyped(
                         document.querySelector('#ItemsAtOnce'),
                         WhisperSubtitlesConfig.letTheMachineDecide);

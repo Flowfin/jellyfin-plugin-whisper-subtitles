@@ -59,11 +59,20 @@ instead of going on standing for a bound nobody holds.
   a file that will not parse at all is the defaults rather than an exception.
   Bounded by `ConfigurationValidation`. Hostile case in
   `ConfigurationValidationTests`.
+- The settings the configuration page posts when it asks whether a backend is
+  ready, which arrive over the server's API from whoever holds an elevated
+  session and are read before any path or host is looked at. They are the shape
+  the file has and they go through the rule the file goes through, so a value the
+  load would refuse cannot reach a probe by being posted instead of saved, and
+  the probe looks at nothing the load would not have named. Bounded by
+  `ConfigurationValidation`. Hostile case in `ReadinessQuestionTests`.
 
-Seven entries where the issue that asked for this named six. The item name and the
+Eight entries where the issue that asked for this named six. The item name and the
 language code are split, because they are two bounds in two types with two
 different hostile cases, and one line naming both would resolve against whichever
-of them somebody wrote in it.
+of them somebody wrote in it. The eighth arrived with the readiness route, which
+is a second way for the configuration's shape to reach this plugin and is held by
+the same type as the first.
 
 ## The shapes this list forbids
 

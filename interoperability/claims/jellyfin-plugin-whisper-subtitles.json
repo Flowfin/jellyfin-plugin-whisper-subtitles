@@ -10,7 +10,9 @@
   "configurationPages": [
     "Whisper Subtitles"
   ],
-  "routes": [],
+  "routes": [
+    "/WhisperSubtitles/Readiness"
+  ],
   "paths": [],
   "subtitleFileNames": [
     "<media file base name>.<language>.Transcribed.<subtitle extension>"

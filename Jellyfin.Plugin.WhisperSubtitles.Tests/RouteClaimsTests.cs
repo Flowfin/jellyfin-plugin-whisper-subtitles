@@ -15,19 +15,24 @@ namespace Jellyfin.Plugin.WhisperSubtitles.Tests;
 /// and refuses a source that adds to it without the record moving.
 /// </summary>
 /// <remarks>
-/// THE RECORD IS THAT THIS PLUGIN ANSWERS NO ROUTE, AND AN EMPTY SET IS EXACTLY THE
-/// ONE THAT GROWS IN SILENCE. The other two claim sets already appear somewhere a
-/// change has to touch. The task key is a constant with a literal beside it in
-/// <c>SubtitleGenerationTaskTests</c>, so changing it turns a test red. The written
-/// locations are listed in <c>docs/limits.md</c> and read against the sources by
-/// <c>WriteLocationsTests</c>, so a write somewhere new is refused until the page
-/// gains a sentence. Adding the first controller to this plugin adds no line to
-/// either, and a set nothing has ever named is a set nobody notices leaving zero.
+/// THE RECORD IS THAT ONE SOURCE OF THIS PLUGIN ANSWERS A ROUTE, AND IT WAS EMPTY
+/// UNTIL #15, WHICH IS THE STATE THAT GROWS IN SILENCE. The other two claim sets
+/// already appear somewhere a change has to touch. The task key is a constant with a
+/// literal beside it in <c>SubtitleGenerationTaskTests</c>, so changing it turns a
+/// test red. The written locations are listed in <c>docs/limits.md</c> and read
+/// against the sources by <c>WriteLocationsTests</c>, so a write somewhere new is
+/// refused until the page gains a sentence. Adding a controller to this plugin adds
+/// no line to either, and a set nothing has ever named is a set nobody notices
+/// growing. The first controller arrived through this record rather than past it:
+/// the readiness route the configuration page asks on, in the one file named below.
 ///
 /// WHAT IT COMPARES. Every source of the plugin, against a vocabulary of the shapes
 /// that claim a path from the server, and against the list of sources this record
-/// says may carry one. That list is empty today, so any hit at all is a claim nobody
-/// wrote down, and the leg that refuses it says which file and which shape.
+/// says may carry one. That list names one file today, so a hit in any other is a
+/// claim nobody wrote down, and the leg that refuses it says which file and which
+/// shape. What the named file claims is compared elsewhere: <c>ClaimRecordTests</c>
+/// derives the paths from the controllers the assembly carries and holds the claim
+/// record to them.
 ///
 /// The number of sources compared is stated rather than implied, in the guard leg's
 /// own message. A scan that found none would report a plugin claiming no route
@@ -91,13 +96,13 @@ public class RouteClaimsTests
     ];
 
     /// <summary>
-    /// The sources of this plugin that claim a route. Empty, and that is the record
-    /// rather than an omission: nothing in this plugin answers a path, so the server
-    /// answers nothing on its behalf and there is nothing here for a sibling to
-    /// collide with. The day one is added, the leg below refuses the file until it is
-    /// named here, which is the moment the claim becomes a line in a diff.
+    /// The sources of this plugin that claim a route. One, the controller the
+    /// configuration page asks about readiness on, and naming it here is the moment
+    /// the claim became a line in a diff. A second file claiming a path is refused
+    /// by the leg below until it is named here, and a file named here that stops
+    /// claiming one is refused by the leg after it.
     /// </summary>
-    private static readonly string[] _claimants = [];
+    private static readonly string[] _claimants = ["ReadinessController.cs"];
 
     public static TheoryData<string> EveryPluginSourceFile =>
         new(PluginSourceFiles().Select(Path.GetFileName).ToArray()!);
@@ -166,21 +171,24 @@ public class RouteClaimsTests
     }
 
     [Fact]
-    public void The_record_says_the_set_is_empty_rather_than_leaving_it_absent()
+    public void The_record_names_the_one_source_that_answers_a_path()
     {
         // What the issue behind this class asks a record for is that a later change
-        // adding a claim shows up as a difference. That needs the zero to be written
-        // where a change has to edit it, and this is the leg that fails if a claimant
-        // is added here with no file behind it.
-        Assert.Empty(_claimants);
+        // adding a claim shows up as a difference. That needs the set to be written
+        // where a change has to edit it, and this is the leg that fails when a second
+        // claimant arrives without this sentence being rewritten: the readiness
+        // controller is the one source, and a second is a second claim on the server
+        // that has to be argued for here rather than appended.
+        Assert.Equal(new[] { "ReadinessController.cs" }, _claimants);
     }
 
     [Fact]
     public void The_scanner_refuses_a_source_that_claims_a_route_of_its_own()
     {
         // Plausible rather than contrived: a small endpoint for the configuration page
-        // to ask a backend whether it is ready, which is a surface this plugin has an
-        // open reason to want. It is also a path a sibling could claim first.
+        // to ask a backend whether it is ready, which is the surface this plugin now
+        // has, in the shape it had before the record named its file. It is also a
+        // path a sibling could claim first.
         var fixture = WithoutComments(Fixture("claims-a-route-of-its-own"));
 
         Assert.True(_claims.Any(token => fixture.Contains(token, StringComparison.Ordinal)), "the fixture trips no token");

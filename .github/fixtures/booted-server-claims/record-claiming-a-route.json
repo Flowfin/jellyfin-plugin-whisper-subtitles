@@ -11,6 +11,7 @@
     "Whisper Subtitles"
   ],
   "routes": [
+    "/WhisperSubtitles/Readiness",
     "/WhisperSubtitles/Status"
   ],
   "paths": [],

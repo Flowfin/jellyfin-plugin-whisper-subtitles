@@ -269,8 +269,11 @@ public class TroubleshootingPageTests
     /// believes it does not open the page, and the page is where the choice they
     /// are being asked about is made.
     ///
-    /// What is genuinely absent is narrower and it is this page's own subject: the
-    /// page shows no readiness report, which is the clause #15 is open on.
+    /// What was genuinely absent was narrower and was this page's own subject: the
+    /// page showed no readiness report, which was the clause #15 was open on. The
+    /// page asks now, so the leg reads which state the page is in rather than
+    /// assuming one: while the page asks the backend, the paragraph may not file the
+    /// report as missing, and while it does not, it must, naming the issue.
     ///
     /// WHAT THIS DOES NOT DO. The tree side is the line the page saves the setting
     /// with, so it reads whether a choice can be made rather than whether an
@@ -280,7 +283,7 @@ public class TroubleshootingPageTests
     /// reason passes.
     /// </remarks>
     [Fact]
-    public void The_paragraph_about_what_is_missing_names_the_readiness_report_and_not_the_page()
+    public void The_paragraph_about_what_is_missing_files_the_readiness_report_as_missing_exactly_while_the_page_shows_none()
     {
         var paragraph = ParagraphSaying("is not built yet");
 
@@ -288,11 +291,20 @@ public class TroubleshootingPageTests
 
         Assert.False(
             paragraph.Contains(ConfigurationPageIssue, StringComparison.Ordinal),
-            $"docs/troubleshooting.md lists what is not built and names {ConfigurationPageIssue}, which landed the page this plugin registers and an operator chooses a backend on. The absence is the readiness report on it: {paragraph}");
+            $"docs/troubleshooting.md lists what is not built and names {ConfigurationPageIssue}, which landed the page this plugin registers and an operator chooses a backend on: {paragraph}");
 
-        Assert.True(
-            paragraph.Contains(ReadinessReportIssue, StringComparison.Ordinal),
-            $"docs/troubleshooting.md says the readiness report is missing and names nothing holding it, so a reader cannot follow it up: {paragraph}");
+        if (ConfigurationPageSource.AsksTheBackendWhetherItIsReady())
+        {
+            Assert.False(
+                paragraph.Contains(ReadinessReportIssue, StringComparison.Ordinal),
+                $"the configuration page asks the backend whether it is ready and docs/troubleshooting.md still files the readiness report as missing under {ReadinessReportIssue}: {paragraph}");
+        }
+        else
+        {
+            Assert.True(
+                paragraph.Contains(ReadinessReportIssue, StringComparison.Ordinal),
+                $"docs/troubleshooting.md says the readiness report is missing and names nothing holding it, so a reader cannot follow it up: {paragraph}");
+        }
     }
 
     /// <summary>

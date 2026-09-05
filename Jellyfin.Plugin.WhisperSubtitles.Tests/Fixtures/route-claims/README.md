@@ -1,13 +1,16 @@
 # Fixtures the route-claim reader has to sort
 
-`RouteClaimsTests` records the API paths this plugin claims from the server, which
-is none, and reads every plugin source against that record. Each file here is one
-case the reader has to get right, and each differs from its neighbour in one thing.
+`RouteClaimsTests` records which plugin sources claim an API path from the server,
+which is one file, and reads every other plugin source against that record. Each
+file here is one case the reader has to get right, and each differs from its
+neighbour in one thing.
 
 `claims-a-route-of-its-own.cs.fixture` is the refusal. It answers a path so the
-configuration page can ask whether the selected backend is ready, which is a surface
-this plugin has an open reason to want, and it is a path a sibling could claim first.
-Nothing else in the tree would have noticed it arriving.
+configuration page can ask whether the selected backend is ready, which is the
+surface this plugin now has under `Api/ReadinessController.cs`, written here in the
+shape it had before it was recorded: a file the record does not name, claiming a
+path a sibling could claim first. Nothing else in the tree would have noticed it
+arriving, and the leg that reads this fixture is what refuses the next one.
 
 `speaks-http-as-a-client.cs.fixture` is the near miss and it has to stay accepted.
 It posts the extracted audio to an endpoint an operator configured, which is what the
