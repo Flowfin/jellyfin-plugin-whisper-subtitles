@@ -245,30 +245,37 @@ because a run has no items for it to be before. #11 and #21.
 
 Its own configuration, where the server puts plugin data. Held today, in the
 sense that the server writes that file and nothing in this plugin reaches the
-location. A record of what it produced belongs in the same place and is decided
-and not yet built: the kind was decided in #42, which closed without one, so
-nothing writes such a record and no open issue owns writing it. #43 is where that
-absence is recorded, because the removal surface it asks for matches a file
-against the record rather than against a name somebody could have chosen.
+location. The record of what it produced is in the same place, in the data
+directory the server hands the plugin, and this plugin writes that one:
+`PublishedSubtitleRecordFile` appends one line per file published, with the
+item, the path, the size and the SHA-256 of the bytes as written, and
+`RecordedPublishTests` holds that the line is appended before the file takes
+its name, so a file the record does not name was never published. Held today
+for the writing and for what the line holds, which #43 decided; that a run
+publishes at all, and so appends at all, is decided and not yet built in #183,
+and which directory a running server hands this plugin is decided there with
+it. #42 decided the kind.
 
 Nothing else, and `WriteLocationsTests` is what turns this paragraph from a
 description into a limit. It reads every source of this plugin and refuses one
-that puts something on a disk which no kind above names, so the day something
-here writes plugin data is the day this paragraph has to gain a sentence. What it
-does not do is the other direction: a kind named here that nothing writes passes
-it, which is why the record above says so itself. #42.
+that puts something on a disk which no kind above names, and it names the
+record's writer as the one source that writes plugin data, so a second one is
+refused until this paragraph gains a sentence. What it does not do is the other
+direction: a kind named here that nothing writes passes it. #42.
 
 ## What removing the plugin does not delete
 
 Three kinds of thing on the way out, the same three the list above names, and
 each is filed here rather than under one marker at the end of the section.
 
-Removing the plugin removes its configuration, because that is plugin data and
-the server removes plugin data. Held today, in the same sense the list above
-uses the words: the server owns that file and nothing in this plugin reaches the
-location. What does not go with it is a record of what the plugin produced,
-because nothing writes one, and that half is decided and not yet built. #42
-closed without such a record and #43 is where the absence is recorded.
+Removing the plugin removes its configuration and its record of what it
+produced, because both are plugin data and the server removes plugin data. Held
+today, in the same sense the list above uses the words: the server owns the
+configuration file and nothing in this plugin reaches the location, and the
+record is one file this plugin appends to in the data directory the server
+hands it and removes with it, which `WriteLocationsTests` names as that kind's
+one writer. Nothing here watches a server remove a plugin, so what is held is
+that neither is kept anywhere else. #42 and #43.
 
 Temporary audio is already gone for a run that ended. It is deleted on every
 exit path this plugin takes and `AudioExtractorTests` holds that for a clean
@@ -286,9 +293,14 @@ temporary audio and the part-written file a failed publish would otherwise
 leave behind, and `WriteLocationsTests` refuses a source that deletes something
 no kind above answers for. An operator who does want them gone gets a surface
 that lists what it would remove before removing it, and that never removes a
-file it did not write or one that has been edited since. That surface is
-decided and not yet built, in #43, and what it would match a file against is
-the record that is absent two paragraphs above.
+file it did not write or one that has been edited since. The two steps are
+held today: `GeneratedSubtitleListingTests` holds that the listing deletes
+nothing, that a file the record does not name is never removed, that a file
+whose bytes differ from the record is reported and kept, and that the count
+listed equals the count removed when nothing changed between the steps. The
+page that offers the two steps to an operator is decided and not yet built, in
+#43, and what the steps match a file against is the record two paragraphs
+above.
 
 ## When this list is checked against the code
 

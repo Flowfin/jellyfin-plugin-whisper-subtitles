@@ -56,13 +56,87 @@ public static class SubtitlePublisher
     /// <param name="writeContent">Writes the subtitle into the stream it is handed.</param>
     /// <param name="cancellationToken">Stops the write.</param>
     /// <returns>What became of the attempt.</returns>
+    public static Task<SubtitlePublication> PublishAsync(
+        string destinationPath,
+        Func<Stream, CancellationToken, Task> writeContent,
+        CancellationToken cancellationToken) =>
+        PublishAsync(destinationPath, writeContent, recording: null, cancellationToken);
+
+    /// <summary>
+    /// Writes the subtitle unless something is already there, and records what it
+    /// wrote before the file takes its name.
+    /// </summary>
+    /// <param name="destinationPath">The name a reader will open.</param>
+    /// <param name="content">The finished bytes of the subtitle.</param>
+    /// <param name="recording">The record to append to, and the item and moment the entry carries.</param>
+    /// <param name="cancellationToken">Stops the write.</param>
+    /// <returns>What became of the attempt.</returns>
+    public static Task<SubtitlePublication> PublishAsync(
+        string destinationPath,
+        byte[] content,
+        SubtitleRecording recording,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(content);
+        ArgumentNullException.ThrowIfNull(recording);
+
+        return PublishAsync(
+            destinationPath,
+            (stream, token) => stream.WriteAsync(content, token).AsTask(),
+            recording,
+            cancellationToken);
+    }
+
+    /// <summary>
+    /// Writes the subtitle from something that produces it, unless something is
+    /// already there, and records what it wrote before the file takes its name.
+    /// </summary>
+    /// <param name="destinationPath">The name a reader will open.</param>
+    /// <param name="writeContent">Writes the subtitle into the stream it is handed.</param>
+    /// <param name="recording">The record to append to, and the item and moment the entry carries, or null to record nothing.</param>
+    /// <param name="cancellationToken">Stops the write.</param>
+    /// <returns>What became of the attempt.</returns>
+    /// <remarks>
+    /// The bytes are hashed on their way into the file, and the entry is appended
+    /// between the last byte reaching the disk and the file taking its name. A
+    /// record that refuses the entry therefore leaves no file under the final
+    /// name, which is the direction #43 decided: what the record does not name
+    /// was never published. A skip because something is already there appends
+    /// nothing, because nothing was written.
+    ///
+    /// The overloads without a recording are what the suite drives the write with,
+    /// and a run publishes with one; which run supplies it is #183.
+    /// </remarks>
     public static async Task<SubtitlePublication> PublishAsync(
         string destinationPath,
         Func<Stream, CancellationToken, Task> writeContent,
+        SubtitleRecording? recording,
         CancellationToken cancellationToken)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(destinationPath);
         ArgumentNullException.ThrowIfNull(writeContent);
+
+        DigestingStream? digest = null;
+
+        Func<Stream, CancellationToken, Task> digesting = recording is null
+            ? writeContent
+            : (stream, token) =>
+            {
+                digest = new DigestingStream(stream);
+
+                return writeContent(digest, token);
+            };
+
+        Func<CancellationToken, Task>? beforeReveal = recording is null
+            ? null
+            : token => recording.Record.AppendAsync(
+                new PublishedSubtitle(
+                    recording.ItemId,
+                    destinationPath,
+                    digest!.BytesWritten,
+                    digest.Sha256Hex(),
+                    recording.WrittenAt),
+                token);
 
         // There is no check for the file here, deliberately. The write already
         // refuses a taken name, both before it starts and at the rename, so a
@@ -72,7 +146,7 @@ public static class SubtitlePublisher
         // outcome instead of a fault.
         try
         {
-            await AtomicSubtitleFile.WriteAsync(destinationPath, writeContent, cancellationToken)
+            await AtomicSubtitleFile.WriteAsync(destinationPath, digesting, beforeReveal, cancellationToken)
                 .ConfigureAwait(false);
         }
         catch (IOException) when (File.Exists(destinationPath))
@@ -84,6 +158,13 @@ public static class SubtitlePublisher
             // a file there, and the write never overwrites one, so the file this
             // sees is not one this attempt produced.
             return SubtitlePublication.SkippedBecauseSomethingIsAlreadyThere(destinationPath);
+        }
+        finally
+        {
+            if (digest is not null)
+            {
+                await digest.DisposeAsync().ConfigureAwait(false);
+            }
         }
 
         return SubtitlePublication.Written(destinationPath);

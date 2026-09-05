@@ -152,11 +152,12 @@ public class WriteLocationsTests
     /// the composition root registers, and the sweep names no write. The leg below
     /// that asks whether every writer still writes is what caught the move.
     ///
-    /// The third kind has no writer here and that is the fact rather than an omission:
-    /// the server writes the plugin's configuration and would write its records, and
-    /// nothing in this tree reaches that location. The day something here does, the
-    /// file it is in is refused by the leg below until it is added, which is the
-    /// moment the page has to gain a sentence too.
+    /// The third kind had no writer until #43, and the fact was recorded rather than
+    /// omitted: the server writes the plugin's configuration and nothing in this tree
+    /// reaches that location. The record of what the plugin published is the one
+    /// writer now, in the data directory the server hands the plugin, and the page
+    /// gained its sentence in the same change. A second file writing plugin data is
+    /// refused by the leg below until it is named here.
     /// </remarks>
     private static readonly Kind[] _kinds =
     [
@@ -174,7 +175,7 @@ public class WriteLocationsTests
             "plugin data",
             "where the server puts plugin data",
             "the server removes plugin data",
-            []),
+            ["PublishedSubtitleRecordFile.cs"]),
     ];
 
     /// <summary>
@@ -345,6 +346,26 @@ public class WriteLocationsTests
     public void The_list_names_every_kind_this_plugin_writes()
     {
         Assert.Empty(MissingFromList(Page()));
+    }
+
+    [Fact]
+    public void The_list_names_the_writer_of_plugin_data_it_is_read_against()
+    {
+        // The third kind had nothing writing it for a month and the page said so.
+        // The day it gained a writer the page had to gain the name, and this holds
+        // the name there: a list saying nothing writes plugin data while the map
+        // above names a writer is a denial outliving the work, which every reader
+        // in this directory exists against. The other two kinds name their writers
+        // through the suites they cite, which the limits page's own legs resolve.
+        var list = Section(Page(), ListHeading);
+
+        foreach (var writer in _kinds.Single(kind => kind.Name == "plugin data").Writers)
+        {
+            Assert.Contains(
+                Path.GetFileNameWithoutExtension(writer),
+                list,
+                StringComparison.Ordinal);
+        }
     }
 
     [Fact]

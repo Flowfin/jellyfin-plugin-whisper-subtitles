@@ -69,9 +69,35 @@ public static class AtomicSubtitleFile
     /// <param name="cancellationToken">Stops the write.</param>
     /// <returns>A task that completes once the file carries its final name.</returns>
     /// <exception cref="IOException">The destination name is already taken.</exception>
+    public static Task WriteAsync(
+        string destinationPath,
+        Func<Stream, CancellationToken, Task> writeContent,
+        CancellationToken cancellationToken) =>
+        WriteAsync(destinationPath, writeContent, beforeReveal: null, cancellationToken);
+
+    /// <summary>
+    /// Writes a subtitle from something that produces it, does one more thing
+    /// once every byte is on the disk, and only then publishes the file under its
+    /// final name.
+    /// </summary>
+    /// <param name="destinationPath">The name a reader will open, in the directory the file belongs in.</param>
+    /// <param name="writeContent">Writes the subtitle into the stream it is handed.</param>
+    /// <param name="beforeReveal">Runs after the bytes are flushed and before the file takes its name, or null for nothing.</param>
+    /// <param name="cancellationToken">Stops the write.</param>
+    /// <returns>A task that completes once the file carries its final name.</returns>
+    /// <exception cref="IOException">The destination name is already taken.</exception>
+    /// <remarks>
+    /// The hook is where the publisher appends the record of what it wrote. It
+    /// runs when the bytes are known and durable and the file is still under its
+    /// working name, so a hook that throws leaves no file under the final name:
+    /// the working file is removed on the way out like any other failure. That is
+    /// what makes "no file is written that the record does not name" a property
+    /// of the write rather than a hope about ordering.
+    /// </remarks>
     public static async Task WriteAsync(
         string destinationPath,
         Func<Stream, CancellationToken, Task> writeContent,
+        Func<CancellationToken, Task>? beforeReveal,
         CancellationToken cancellationToken)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(destinationPath);
@@ -129,6 +155,11 @@ public static class AtomicSubtitleFile
             // A run cancelled after the last byte was written has still not been
             // asked for a subtitle, so the file does not appear.
             cancellationToken.ThrowIfCancellationRequested();
+
+            if (beforeReveal is not null)
+            {
+                await beforeReveal(cancellationToken).ConfigureAwait(false);
+            }
 
             // Without an overwrite argument, which is the refusal rather than an
             // omission: this throws where the name was taken between the check

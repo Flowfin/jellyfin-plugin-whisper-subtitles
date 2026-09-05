@@ -66,13 +66,21 @@ instead of going on standing for a bound nobody holds.
   load would refuse cannot reach a probe by being posted instead of saved, and
   the probe looks at nothing the load would not have named. Bounded by
   `ConfigurationValidation`. Hostile case in `ReadinessQuestionTests`.
+- The record of what this plugin published, one JSON line per file in plugin
+  data a person can open in an editor. A line that will not parse, or that is
+  missing a field, is counted and skipped rather than repaired, defaulted or
+  taken as a reason to read nothing, and the listing that walks the record
+  never removes a file whose bytes differ from its line, so an edited line can
+  take a file off the offer and never put one on it. Bounded by
+  `PublishedSubtitleRecordFile`. Hostile case in `PublishedSubtitleRecordTests`.
 
-Eight entries where the issue that asked for this named six. The item name and the
+Nine entries where the issue that asked for this named six. The item name and the
 language code are split, because they are two bounds in two types with two
 different hostile cases, and one line naming both would resolve against whichever
 of them somebody wrote in it. The eighth arrived with the readiness route, which
 is a second way for the configuration's shape to reach this plugin and is held by
-the same type as the first.
+the same type as the first, and the ninth with the record of what was published,
+which is the one file this plugin writes that a person is expected to open.
 
 ## The shapes this list forbids
 

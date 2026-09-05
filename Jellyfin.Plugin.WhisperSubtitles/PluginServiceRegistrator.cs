@@ -4,6 +4,7 @@ using Jellyfin.Plugin.WhisperSubtitles.Audio;
 using Jellyfin.Plugin.WhisperSubtitles.Backends;
 using Jellyfin.Plugin.WhisperSubtitles.Backends.Local;
 using Jellyfin.Plugin.WhisperSubtitles.Backends.Remote;
+using Jellyfin.Plugin.WhisperSubtitles.Output;
 using MediaBrowser.Controller;
 using MediaBrowser.Controller.Plugins;
 using Microsoft.Extensions.DependencyInjection;
@@ -54,6 +55,7 @@ public sealed class PluginServiceRegistrator : IPluginServiceRegistrator
         serviceCollection.AddSingleton<IProcessRunner, SystemProcessRunner>();
         serviceCollection.AddSingleton<IFileFacts, SystemFileFacts>();
         serviceCollection.AddSingleton<IFileRemoval, SystemFileRemoval>();
+        serviceCollection.AddSingleton<IFileDigest, SystemFileDigest>();
         serviceCollection.AddSingleton<RemoteHttpHandler>();
 
         // The two backends that do work need settings, and these two lines are
