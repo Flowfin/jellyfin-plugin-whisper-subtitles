@@ -9,6 +9,7 @@
     "/System/Info/Public": {},
     "/Plugins": {},
     "/ScheduledTasks": {},
-    "/web/ConfigurationPages": {}
+    "/web/ConfigurationPages": {},
+    "/WhisperSubtitles/Readiness": {}
   }
 }

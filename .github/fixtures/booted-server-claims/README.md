@@ -19,16 +19,18 @@ the derivation is proved against, and the scan says how many it read either
 way.
 
 `openapi.json` is the route document cut down to what the scan reads, which is
-the set of paths. A real server answers some three hundred; five is enough to be
-a document and few enough to read. The scan says how many it read, so a run
-handed this fixture and a run handed a real server print different numbers and
-neither can be mistaken for the other.
+the set of paths. A real server answers some three hundred; six is enough to be
+a document and few enough to read, and the sixth is the one path this plugin
+claims, `/WhisperSubtitles/Readiness`, which a server carrying this plugin
+answers and which the scan requires to be there for the real record to pass.
+The scan says how many it read, so a run handed this fixture and a run handed a
+real server print different numbers and neither can be mistaken for the other.
 
-`record-claiming-a-route.json` is this plugin's own claim record with one route
-added, for the leg that proves a claimed route the server does not answer is
-refused. The real record claims no route, and `RouteClaimsTests` refuses the
-source gaining one, so the case can only be reached with a record that is not
-the real one.
+`record-claiming-a-route.json` is this plugin's own claim record with a second
+route added that no server answers, for the leg that proves a claimed route the
+server does not answer is refused. The real record claims the readiness route
+and no other, and `RouteClaimsTests` refuses a source claiming one it does not
+name, so the case can only be reached with a record that is not the real one.
 
 The mutations the job applies to these are made in the job, one at a time, from
 the clean set, so the refusal each leg asserts is against exactly one change and

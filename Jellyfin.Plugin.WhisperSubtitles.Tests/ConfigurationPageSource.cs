@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using Jellyfin.Plugin.WhisperSubtitles.Api;
 using Jellyfin.Plugin.WhisperSubtitles.Configuration;
 using Xunit;
 using PluginUnderTest = Jellyfin.Plugin.WhisperSubtitles.Plugin;
@@ -51,6 +52,21 @@ internal static class ConfigurationPageSource
 
         return reader.ReadToEnd();
     }
+
+    /// <summary>
+    /// Whether the page an operator opens asks the backend whether it is ready, on
+    /// the path the plugin declares for it.
+    /// </summary>
+    /// <returns>True while the page posts to that path.</returns>
+    /// <remarks>
+    /// Read off the line that names the path rather than off the button, because the
+    /// path is what ties the page to the route, and a button posting somewhere else
+    /// would be a page asking nothing this plugin answers.
+    /// </remarks>
+    internal static bool AsksTheBackendWhetherItIsReady() =>
+        Markup().Contains(
+            "readinessPath = '" + ReadinessController.ReadinessPath.TrimStart('/') + "'",
+            StringComparison.Ordinal);
 
     /// <summary>
     /// Refuses the caller where the page an operator opens does not save a choice

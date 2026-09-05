@@ -3,12 +3,15 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using Jellyfin.Plugin.WhisperSubtitles.Backends;
 using Jellyfin.Plugin.WhisperSubtitles.Output;
 using Jellyfin.Plugin.WhisperSubtitles.Scheduling;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Routing;
 using Xunit;
 using PluginUnderTest = Jellyfin.Plugin.WhisperSubtitles.Plugin;
 
@@ -138,14 +141,20 @@ public class ClaimRecordTests
     }
 
     [Fact]
-    public void The_route_set_it_records_is_empty_while_this_plugin_answers_none()
+    public void The_routes_it_records_are_the_paths_this_plugin_answers()
     {
-        // An empty set is the one that grows in silence, and what holds this one empty
-        // is not this leg. RouteClaimsTests reads every source of the plugin and
-        // refuses any shape that claims a path from the server, so the first
-        // controller added here is red there before this line is stale. What this
-        // says is only that the record agrees with that state today.
-        Assert.Empty(Recorded("routes"));
+        // The paths come off the controllers the assembly carries, prefix and method
+        // template joined the way the server's route document spells them, so a
+        // controller added, moved or retired is a red run here before the record is
+        // stale. RouteClaimsTests holds the other side, which file may carry one.
+        // NotEmpty guards the comparison: a reader finding no controller would derive
+        // no route and agree, in green, with a record claiming none.
+        var answered = RoutesThePluginAnswers();
+
+        Assert.NotEmpty(answered);
+        Assert.Equal(
+            answered.Order(StringComparer.Ordinal).ToArray(),
+            Recorded("routes").Order(StringComparer.Ordinal).ToArray());
     }
 
     [Fact]
@@ -223,6 +232,22 @@ public class ClaimRecordTests
 
     private static string[] Recorded(string kind) =>
         Record().GetProperty(kind).EnumerateArray().Select(value => value.GetString()!).ToArray();
+
+    /// <summary>
+    /// The paths the plugin answers, derived from the attributes on every controller
+    /// the assembly carries, spelt the way the server's route document spells them.
+    /// </summary>
+    private static string[] RoutesThePluginAnswers() =>
+        typeof(PluginUnderTest).Assembly.GetTypes()
+            .Where(type => typeof(ControllerBase).IsAssignableFrom(type) && !type.IsAbstract)
+            .SelectMany(type => type.GetCustomAttributes<RouteAttribute>()
+                .SelectMany(route => type
+                    .GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)
+                    .SelectMany(method => method.GetCustomAttributes<HttpMethodAttribute>())
+                    .Select(method => "/" + route.Template.Trim('/') + "/" + (method.Template ?? string.Empty).Trim('/'))))
+            .Select(path => path.TrimEnd('/'))
+            .Distinct(StringComparer.Ordinal)
+            .ToArray();
 
     private static SubtitleGenerationTask Task() =>
         new(Array.Empty<BackendCandidate>());

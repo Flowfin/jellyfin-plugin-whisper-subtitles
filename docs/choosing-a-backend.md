@@ -114,7 +114,7 @@ shows and hides with the remote fields, so it stands in front of whoever has thi
 backend selected and nowhere else:
 
     git grep -n 'id="WhisperSubtitlesRemoteDisclosure"' -- Jellyfin.Plugin.WhisperSubtitles/Configuration/configPage.html
-    Jellyfin.Plugin.WhisperSubtitles/Configuration/configPage.html:87:                        <div class="fieldDescription" id="WhisperSubtitlesRemoteDisclosure">
+    Jellyfin.Plugin.WhisperSubtitles/Configuration/configPage.html:88:                        <div class="fieldDescription" id="WhisperSubtitlesRemoteDisclosure">
 
 It names what leaves the server, the host it goes to, read out of the URL typed
 above it rather than out of anything else, and what this plugin cannot know about
@@ -200,19 +200,22 @@ chosen. They are the first two settings a backend owns rather than the plugin:
     Jellyfin.Plugin.WhisperSubtitles/Configuration/PluginConfiguration.cs:200:    public LibraryLanguageTarget[] LibraryTargets { get; set; } = [];
     Jellyfin.Plugin.WhisperSubtitles/Configuration/PluginConfiguration.cs:227:    public int FailuresBeforeQuarantine { get; set; } = ConfigurationValidation.LetThePolicyDecide;
 
-Typing a path does not check it. Whether a file is there, whether it runs and
-whether it is a model are the readiness probe's questions, which is #15, so what
-these two fields buy today is that the values a run would use are values an
-operator chose rather than values nobody could set.
+Typing a path does not check it. Whether a file is there, whether the server may
+run it and whether it is big enough to be a model are the readiness probe's
+questions, and the button under the backend settings asks them about the paths as
+typed, before a save. What the two fields buy today is that the values a run
+would use are values an operator chose rather than values nobody could set.
 
 **Where the URL and the key are typed.** On the configuration page, under the
 backend chooser, and they appear there only while `Remote` is the backend chosen,
 with the model name beside them and a statement of where the audio goes that
 names the host out of the URL typed. Typing them checks one thing, which is that
-the URL is one the backend could post to; whether the host answers, accepts the
-key and serves the model are the readiness probe's questions, which is #15. As
-with the paths, nothing carries the three values to the backend yet, so choosing
-`Remote` reaches selection, which reports which settings are not filled in and
+the URL is one the backend could post to; whether the host answers and accepts
+the key are the readiness probe's questions, and the button under the backend
+settings asks them with one request carrying no audio, before a save. Whether the
+endpoint serves the model is learned by the first run. As with the paths, nothing
+carries the three values to the backend in a run yet, so choosing `Remote`
+reaches selection, which reports which settings are not filled in and
 transcribes nothing.
 
 **How to run the calibration so the estimate is about this machine.** There is no

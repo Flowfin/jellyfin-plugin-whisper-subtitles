@@ -31,8 +31,10 @@ backend that drives a whisper.cpp compatible tool as a child process, a remote
 backend that posts audio to an endpoint, the SubRip writer, item selection, the
 record of what was attempted, audio extraction, the composition root the server
 builds the task out of, the configuration page an operator chooses a backend on,
-in `Jellyfin.Plugin.WhisperSubtitles/Configuration/configPage.html`, and the
-scheduled task itself:
+in `Jellyfin.Plugin.WhisperSubtitles/Configuration/configPage.html`, the route
+that page asks about readiness on, in
+`Jellyfin.Plugin.WhisperSubtitles/Api/ReadinessController.cs`, and the scheduled
+task itself:
 
     $ git grep -l IScheduledTask -- '*.cs'
     Jellyfin.Plugin.WhisperSubtitles.Tests/SubtitleGenerationTaskTests.cs
@@ -146,9 +148,11 @@ and finishes, reaching no part of the pipeline. That joining is #183.
    `RemoteModel`, `ItemsAtOnce`, `ThreadsPerItem` and `FailuresBeforeQuarantine`.
    That list is compared against the page itself on every run rather than kept
    by hand, so a setting that arrives on the page and a setting that leaves it
-   are both a red suite here. What is still not on it is the answer the
-   readiness probe gives, which says whether the choice works before a run
-   starts, held in #15.
+   are both a red suite here. The page also asks the chosen backend whether it
+   is ready, about the values as typed and before a save, on the one path this
+   plugin answers, `/WhisperSubtitles/Readiness`, and shows the sentence the
+   backend answers with. A ready answer means the paths hold files or the host
+   answered; nothing is transcribed to produce it.
 3. Set the target language per library, in #30, or leave it to detection, in #31.
 4. Run the scheduled task by hand from the dashboard, in #17. It ships with no
    trigger, so nothing starts on its own on a server whose operator did not ask

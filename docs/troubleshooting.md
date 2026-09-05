@@ -16,15 +16,14 @@ is somewhere other than this plugin's settings. Where that is so, the entry says
 it.
 
 Some of what this page tells an operator to look at is not built yet. The reason
-type, the backends, the readiness probe, the scheduled task and the configuration
-page are in the tree. What is not is the run the task performs, which is #183 and
-is what the counts and the per item reasons below would come out of; the
-readiness report on that page, which is #15, because the page an operator opens
-carries the choice of backend and nothing a probe answered; and the run summary
-that lists outcomes, which is #39. What holds today is the vocabulary and the
-correspondence, which the test asserts. The rest is what the reasons will be
-read against, and it is written here so that each reason arrives with its action
-rather than acquiring one afterwards.
+type, the backends, the readiness probe and the button on the configuration page
+that asks it, the scheduled task and the page itself are in the tree. What is not
+is the run the task performs, which is #183 and is what the counts and the per
+item reasons below would come out of, and the run summary that lists outcomes,
+which is #39. What holds today is the vocabulary and the correspondence, which
+the test asserts. The rest is what the reasons will be read against, and it is
+written here so that each reason arrives with its action rather than acquiring
+one afterwards.
 
 ## The reason Cancelled
 
@@ -56,9 +55,10 @@ was transcribed and nothing left the machine.
 ### What to do
 
 Read what the backend says about itself. Each backend answers a readiness
-question with a sentence naming what stands in the way, and that sentence is
-what the configuration page is to show once #15 lands. It says which setting is
-wrong, which is what makes it worth reading before the log.
+question with a sentence naming what stands in the way, and the configuration
+page shows that sentence when you press the button under the backend's settings,
+about the settings as they stand on the page. It says which setting is wrong,
+which is what makes it worth reading before the log.
 
 For a local tool, check that the path points at a file that exists, that the
 account the server runs as may execute it, and that the model file is where the
@@ -278,7 +278,8 @@ here.
 
 Look at the log lines around the failure, which carry what the backend printed.
 Then check the configured model path against the file that is actually there, and
-the readiness report for the backend, which is #15.
+ask the backend whether it is ready from the configuration page, which names the
+first thing it finds wrong with the paths.
 
 If every item in a run ends this way, the backend is not working rather than the
 items being unusual, and one item run on its own with the log open is the

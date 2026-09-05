@@ -37,10 +37,15 @@ its own: two plugins sharing one is a server that loads whichever came first.
 `subtitleFileNames` are the claimed values, compared as exact strings. A key is
 case sensitive on the server, so it is compared that way here.
 
-`routes` is empty, and an empty set is the one that grows in silence. What holds
-it empty is not this file: `RouteClaimsTests` reads every source of the plugin
-and refuses any shape that claims a path from the server, so the first controller
-added to this plugin is a red suite before it is a stale line here.
+`routes` holds one path, `/WhisperSubtitles/Readiness`, which the configuration
+page posts the settings as typed to and is answered with whether the chosen
+backend is ready. It was empty until that route landed, and an empty set is the
+one that grows in silence, so what holds the set to what the plugin answers is
+not this file: `RouteClaimsTests` reads every source of the plugin and refuses
+any shape that claims a path from a file it does not name, and `ClaimRecordTests`
+derives the paths from the controllers the assembly carries and requires this
+list to equal them. A second controller is a red suite twice before it is a
+stale line here.
 
 `paths` is empty for a different reason, and it is worth reading before a sibling
 record is written against this one as a model. This plugin writes three kinds of
