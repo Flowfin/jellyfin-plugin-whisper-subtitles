@@ -305,7 +305,7 @@ jobs:
             echo "$output"; echo "A record claiming a route the server does not answer was read as agreeing with the server." >&2; exit 1
           fi
           echo "$output"
-          echo "$output" | grep -qF 'claims a route the server answers no path under, out of 5 it does answer'
+          echo "$output" | grep -qF 'claims a route the server answers no path under, out of 6 it does answer'
           echo "$output" | grep -qF '/WhisperSubtitles/Status'
 
       # A server holding two controllers on one path cannot build its route
