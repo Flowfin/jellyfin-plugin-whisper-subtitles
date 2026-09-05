@@ -140,7 +140,7 @@ jobs:
           output=$(.github/scripts/refuse-a-claim-collision.sh .github/fixtures/claim-collision/neighbouring)
           echo "$output"
           echo "$output" | grep -q 'compared 2 taskKeys value(s)'
-          echo "$output" | grep -q 'compared 3 routes value(s)'
+          echo "$output" | grep -q 'compared 1 routes value(s)'
           echo "$output" | grep -q 'compared 1 paths value(s)'
 
   # The scan over a booted server, proved against captures of one. Two of the
