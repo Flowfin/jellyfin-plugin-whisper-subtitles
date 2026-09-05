@@ -150,7 +150,14 @@ supplies.
 
 So this plugin is GPL-3.0, and whisper.cpp, faster-whisper and the original
 Whisper release each declare MIT. Those are readings of what each repository
-declares rather than an audit of what is inside it.
+declares rather than an audit of what is inside it, and the three upstream ones
+were taken on 2026-09-05.
+
+They carry a date because nothing re-runs them. Every test here runs offline, so
+that reading is sourced by a person typing the command rather than by a route,
+unlike the greps elsewhere on this page, which the suite re-runs and refuses once
+they stop reproducing. A project changing its licence leaves this section
+unchanged and wrong until somebody reads it again.
 
 The model file is not covered by any of them. Whoever published the weights
 an operator downloads set terms for them, and checking those terms is the

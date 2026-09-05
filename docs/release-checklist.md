@@ -90,6 +90,16 @@ compares the booted server against that one record. A matrix here is a job that
 installs a released sibling beside this plugin, and there is none, which is why
 this item is undecided rather than because nothing boots.
 
+That is read directly rather than inferred from the five lines above, because the
+pattern above names three of the eleven siblings and could not show a workflow
+installing any of the other eight. The family's own names, over the same
+directory:
+
+```
+git grep -nEi 'jellyfin-plugin-(sso|requests|stats|discover|invites|metadata-sync|server-pairing|share-links|smart-collections|watchlist|watch-sync)' -- .github/workflows/
+exit=1
+```
+
 The second supported line has no boot either, and it is the same wait packaging
 records rather than a second one. `.github/workflows/booted-server.yml` boots
 10.11 and says so in its job name, because the 12.0 pin in
@@ -108,13 +118,20 @@ incompatibility is written down as a known limitation with its reason. That is
 the condition the Interoperability milestone states, and #66 is where the refusal
 belongs.
 
+This page states no count of how many of the family publish a release to install.
+It carried one, and the count was wrong by the time anybody read it: a sibling
+cutting its first release moves the number, nothing here re-runs that reading, and
+what it reads is a listing of the tracker rather than of this tree. So the reason
+below is the half a reader can check from a clone.
+
 Answered as a known limitation: the release ships with no interoperability matrix
 behind it, and nothing here has run this plugin beside a sibling on either line.
-The reason is that eight of the eleven siblings publish nothing to install and the
-second line has no released server to boot, so a matrix written today would install
-a set no operator has and boot one line of two. What ends it is #66 for the sibling
-half and #63 for the second line. An operator running this plugin beside another of
-the family is running a combination this repository has not tested.
+The reason is that no workflow here installs a sibling at all, which the reading
+above is of, and the second line has no released server to boot, so a matrix
+written today would cover one line of two and would first have to decide which
+siblings it names. What ends it is #66 for the sibling half and #63 for the second
+line. An operator running this plugin beside another of the family is running a
+combination this repository has not tested.
 
 ## The coverage floor is held
 
