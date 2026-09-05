@@ -28,7 +28,7 @@ namespace Jellyfin.Plugin.WhisperSubtitles.Tests;
 ///
 /// WHAT IT COMPARES. Every source of the plugin, against a vocabulary of the shapes
 /// that claim a path from the server, and against the list of sources this record
-/// says may carry one. That list names one file today, so a hit in any other is a
+/// says may carry one. That list names two files today, so a hit in any other is a
 /// claim nobody wrote down, and the leg that refuses it says which file and which
 /// shape. What the named file claims is compared elsewhere: <c>ClaimRecordTests</c>
 /// derives the paths from the controllers the assembly carries and holds the claim
@@ -96,13 +96,14 @@ public class RouteClaimsTests
     ];
 
     /// <summary>
-    /// The sources of this plugin that claim a route. One, the controller the
-    /// configuration page asks about readiness on, and naming it here is the moment
-    /// the claim became a line in a diff. A second file claiming a path is refused
-    /// by the leg below until it is named here, and a file named here that stops
-    /// claiming one is refused by the leg after it.
+    /// The sources of this plugin that claim a route. Two: the controller the
+    /// configuration page asks about readiness on, and the one it lists and removes
+    /// what this plugin wrote through. Naming a file here is the moment its claim
+    /// becomes a line in a diff. A third file claiming a path is refused by the leg
+    /// below until it is named here, and a file named here that stops claiming one
+    /// is refused by the leg after it.
     /// </summary>
-    private static readonly string[] _claimants = ["ReadinessController.cs"];
+    private static readonly string[] _claimants = ["GeneratedSubtitlesController.cs", "ReadinessController.cs"];
 
     public static TheoryData<string> EveryPluginSourceFile =>
         new(PluginSourceFiles().Select(Path.GetFileName).ToArray()!);
@@ -171,15 +172,15 @@ public class RouteClaimsTests
     }
 
     [Fact]
-    public void The_record_names_the_one_source_that_answers_a_path()
+    public void The_record_names_exactly_the_sources_that_answer_a_path()
     {
         // What the issue behind this class asks a record for is that a later change
         // adding a claim shows up as a difference. That needs the set to be written
-        // where a change has to edit it, and this is the leg that fails when a second
-        // claimant arrives without this sentence being rewritten: the readiness
-        // controller is the one source, and a second is a second claim on the server
-        // that has to be argued for here rather than appended.
-        Assert.Equal(new[] { "ReadinessController.cs" }, _claimants);
+        // where a change has to edit it, and this is the leg that fails when a
+        // claimant arrives without this sentence being rewritten: a third file is a
+        // third claim on the server that has to be argued for here rather than
+        // appended.
+        Assert.Equal(new[] { "GeneratedSubtitlesController.cs", "ReadinessController.cs" }, _claimants);
     }
 
     [Fact]

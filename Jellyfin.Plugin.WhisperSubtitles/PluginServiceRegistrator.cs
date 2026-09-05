@@ -5,6 +5,7 @@ using Jellyfin.Plugin.WhisperSubtitles.Backends;
 using Jellyfin.Plugin.WhisperSubtitles.Backends.Local;
 using Jellyfin.Plugin.WhisperSubtitles.Backends.Remote;
 using Jellyfin.Plugin.WhisperSubtitles.Output;
+using MediaBrowser.Common.Plugins;
 using MediaBrowser.Controller;
 using MediaBrowser.Controller.Plugins;
 using Microsoft.Extensions.DependencyInjection;
@@ -56,6 +57,17 @@ public sealed class PluginServiceRegistrator : IPluginServiceRegistrator
         serviceCollection.AddSingleton<IFileFacts, SystemFileFacts>();
         serviceCollection.AddSingleton<IFileRemoval, SystemFileRemoval>();
         serviceCollection.AddSingleton<IFileDigest, SystemFileDigest>();
+
+        // The record of what this plugin published lives in the data directory
+        // the server hands this plugin, and the server is asked for it here rather
+        // than the plugin's static instance being read, which is the shape #71
+        // set out to stop. Asked at resolve time and never at registration, so
+        // this registrator still reads nothing and throws nothing; a server that
+        // has not loaded this plugin by the time a route needs the record answers
+        // that route with the sentence below rather than a file in the wrong
+        // place.
+        serviceCollection.AddSingleton<IPublishedSubtitleRecord>(provider =>
+            new PublishedSubtitleRecordFile(DataDirectoryOf(provider.GetRequiredService<IPluginManager>().GetPlugin(Plugin.PluginId))));
         serviceCollection.AddSingleton<RemoteHttpHandler>();
 
         // The two backends that do work need settings, and these two lines are
@@ -80,5 +92,24 @@ public sealed class PluginServiceRegistrator : IPluginServiceRegistrator
             provider.GetRequiredService<RemoteHttpHandler>().Handler,
             provider.GetRequiredService<LocalBackendOptions>(),
             provider.GetRequiredService<RemoteBackendOptions>()));
+    }
+
+    /// <summary>
+    /// The data directory the server reports for this plugin.
+    /// </summary>
+    /// <param name="listed">What the server's plugin manager lists under this plugin's id, or null when it lists nothing.</param>
+    /// <returns>The directory.</returns>
+    /// <exception cref="InvalidOperationException">The server lists no loaded instance of this plugin.</exception>
+    public static string DataDirectoryOf(LocalPlugin? listed)
+    {
+        var directory = listed?.Instance?.DataFolderPath;
+
+        if (string.IsNullOrWhiteSpace(directory))
+        {
+            throw new InvalidOperationException(
+                "The server lists no loaded instance of this plugin, so the directory it keeps its record in is unknown and the record is not opened.");
+        }
+
+        return directory;
     }
 }

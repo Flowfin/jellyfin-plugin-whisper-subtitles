@@ -1,7 +1,7 @@
 # Fixtures the route-claim reader has to sort
 
 `RouteClaimsTests` records which plugin sources claim an API path from the server,
-which is one file, and reads every other plugin source against that record. Each
+which is two files, and reads every other plugin source against that record. Each
 file here is one case the reader has to get right, and each differs from its
 neighbour in one thing.
 

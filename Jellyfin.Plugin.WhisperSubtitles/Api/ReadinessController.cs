@@ -42,14 +42,16 @@ namespace Jellyfin.Plugin.WhisperSubtitles.Api;
 /// </remarks>
 [ApiController]
 [Authorize(Policy = Policies.RequiresElevation)]
-[Route(Prefix)]
+[Route(PluginRoute.Prefix)]
 [Produces(MediaTypeNames.Application.Json)]
 public sealed class ReadinessController : ControllerBase
 {
     /// <summary>
-    /// The segment every path this plugin answers sits under.
+    /// The segment every path this plugin answers sits under, which is
+    /// <see cref="PluginRoute.Prefix"/> and is kept here for the page and the
+    /// tests that spell the path from this type.
     /// </summary>
-    public const string Prefix = "WhisperSubtitles";
+    public const string Prefix = PluginRoute.Prefix;
 
     /// <summary>
     /// The segment the readiness question is asked on, under <see cref="Prefix"/>.

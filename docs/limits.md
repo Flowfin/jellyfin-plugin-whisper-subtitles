@@ -298,9 +298,11 @@ held today: `GeneratedSubtitleListingTests` holds that the listing deletes
 nothing, that a file the record does not name is never removed, that a file
 whose bytes differ from the record is reported and kept, and that the count
 listed equals the count removed when nothing changed between the steps. The
-page that offers the two steps to an operator is decided and not yet built, in
-#43, and what the steps match a file against is the record two paragraphs
-above.
+page offers the two steps in a section of its own, on the two routes the claim
+record names for them, and `GeneratedSubtitlesPageTests` holds that the listing
+asks on the listing route, that every path reaches the page as text, and that
+the removal posts only what was listed and asks first. What the steps match a
+file against is the record two paragraphs above. #43.
 
 ## When this list is checked against the code
 

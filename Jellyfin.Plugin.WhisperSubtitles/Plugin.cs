@@ -29,7 +29,14 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages
     public override string Name => "Whisper Subtitles";
 
     /// <inheritdoc />
-    public override Guid Id => Guid.Parse("30ed66e0-32fd-46a6-8a56-5cd95d8df10f");
+    public override Guid Id => PluginId;
+
+    /// <summary>
+    /// Gets the identity the server loads this plugin under, reachable without an
+    /// instance so the composition root can ask the server which data directory
+    /// it handed this plugin.
+    /// </summary>
+    public static Guid PluginId { get; } = Guid.Parse("30ed66e0-32fd-46a6-8a56-5cd95d8df10f");
 
     /// <summary>
     /// Gets the current plugin instance.

@@ -73,14 +73,21 @@ instead of going on standing for a bound nobody holds.
   never removes a file whose bytes differ from its line, so an edited line can
   take a file off the offer and never put one on it. Bounded by
   `PublishedSubtitleRecordFile`. Hostile case in `PublishedSubtitleRecordTests`.
+- The paths the configuration page posts when an operator confirms a removal,
+  which arrive over the server's API from an elevated session and decide
+  nothing on their own: the record is listed again, a posted path the record
+  does not name is never read, and a file goes only if it still hashes as its
+  line says at the moment of deletion. Bounded by `GeneratedSubtitleListing`.
+  Hostile case in `GeneratedSubtitlesControllerTests`.
 
-Nine entries where the issue that asked for this named six. The item name and the
+Ten entries where the issue that asked for this named six. The item name and the
 language code are split, because they are two bounds in two types with two
 different hostile cases, and one line naming both would resolve against whichever
 of them somebody wrote in it. The eighth arrived with the readiness route, which
 is a second way for the configuration's shape to reach this plugin and is held by
-the same type as the first, and the ninth with the record of what was published,
-which is the one file this plugin writes that a person is expected to open.
+the same type as the first, the ninth with the record of what was published,
+which is the one file this plugin writes that a person is expected to open, and
+the tenth with the removal that record makes possible.
 
 ## The shapes this list forbids
 

@@ -155,6 +155,14 @@ with no audio for the remote one. A way to reach it without an elevated session,
 to make it read a path or a host the posted settings did not name, or to get
 the key back out of its answer, is a report I want.
 
+**The generated-subtitle routes.** `/WhisperSubtitles/GeneratedSubtitles` lists
+what the record names and reads each of those files once; its `/Removal` takes
+a list of paths from an elevated session and trusts none of them: the record is
+listed again, a posted path the record does not name is never read, and a file
+is removed only if it is still exactly what the record says at the moment of
+deletion. A way to make either route read or remove a file the record does not
+name, or one whose bytes differ from its line, is a report I want.
+
 ## What is not a vulnerability here
 
 **The operator running a program they chose.** The design is that the operator
