@@ -25,11 +25,31 @@ public sealed class ReadinessReport
     /// <param name="isReady">Whether that backend can be used right now.</param>
     /// <param name="reason">What stands in the way, or null when nothing does.</param>
     public ReadinessReport(string backend, bool isReady, string? reason)
+        : this(backend, isReady, reason, null)
+    {
+    }
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="ReadinessReport"/> class
+    /// carrying what the tool said about itself.
+    /// </summary>
+    /// <param name="backend">The name of the backend the question was about.</param>
+    /// <param name="isReady">Whether that backend can be used right now.</param>
+    /// <param name="reason">What stands in the way, or null when nothing does.</param>
+    /// <param name="tool">The sentence saying what the tool printed about itself, or null where no tool was asked.</param>
+    public ReadinessReport(string backend, bool isReady, string? reason, string? tool)
     {
         Backend = backend;
         IsReady = isReady;
         Reason = reason;
+        Tool = tool;
     }
+
+    /// <summary>
+    /// Gets the sentence saying what the tool printed about itself, labelled as
+    /// a version, a description or silence, or null where no tool was asked.
+    /// </summary>
+    public string? Tool { get; }
 
     /// <summary>
     /// Gets the name of the backend the question was about, as this plugin

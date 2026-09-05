@@ -153,8 +153,10 @@ and finishes, reaching no part of the pipeline. That joining is #183.
    are both a red suite here. The page also asks the chosen backend whether it
    is ready, about the values as typed and before a save, on the one path this
    plugin answers, `/WhisperSubtitles/Readiness`, and shows the sentence the
-   backend answers with. A ready answer means the paths hold files or the host
-   answered; nothing is transcribed to produce it.
+   backend answers with. A ready answer means the paths hold files and the tool
+   could be started, or the host answered; the local answer also carries what
+   the tool printed to `--version`, or to `--help` labelled as its description,
+   or that it printed nothing. Nothing is transcribed to produce any of it.
 3. Set the target language per library, in #30, or leave it to detection, in #31.
 4. Run the scheduled task by hand from the dashboard, in #17. It ships with no
    trigger, so nothing starts on its own on a server whose operator did not ask

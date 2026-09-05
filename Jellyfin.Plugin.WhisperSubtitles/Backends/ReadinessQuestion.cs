@@ -84,7 +84,11 @@ public static class ReadinessQuestion
 
         var ready = choice.Outcome == BackendSelectionOutcome.Selected;
 
-        return new ReadinessReport(NameOf(settings.Backend, candidates), ready, ready ? null : choice.Reason);
+        return new ReadinessReport(
+            NameOf(settings.Backend, candidates),
+            ready,
+            ready ? null : choice.Reason,
+            ready ? choice.Readiness?.Tool?.Describe() : null);
     }
 
     /// <summary>

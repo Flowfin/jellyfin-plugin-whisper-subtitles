@@ -498,7 +498,10 @@ public sealed class BackendContractTests : IDisposable
                         runner,
                         StubFileFacts.Empty().WithTool(tool).WithModel(model),
                         new LocalBackendOptions(tool, model)),
-                    () => runner.Invocation is null ? 0 : 1);
+                    // A transcription is the invocation that names the audio; the
+                    // readiness probe starts the tool too, with one flag and no
+                    // audio, and that is not the work this clause refuses.
+                    () => runner.Invocation is not null && runner.Invocation.Arguments.Contains("-f") ? 1 : 0);
 
             case "remote":
                 var endpoint = StubEndpoint.Answering(HttpStatusCode.OK, RemoteAnswer);

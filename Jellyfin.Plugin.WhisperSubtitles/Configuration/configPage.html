@@ -406,6 +406,7 @@
                 }).then(function (report) {
                     WhisperSubtitlesConfig.showReadiness(report.IsReady
                         ? 'The ' + report.Backend + ' backend is ready. Nothing has been transcribed to find that out, so whether it transcribes well is learned by the first run.'
+                            + (report.Tool ? ' ' + report.Tool : '')
                         : report.Reason);
                 }, function () {
                     WhisperSubtitlesConfig.showReadiness('The server did not answer the question, so nothing is known about the backend. The server log says why.');

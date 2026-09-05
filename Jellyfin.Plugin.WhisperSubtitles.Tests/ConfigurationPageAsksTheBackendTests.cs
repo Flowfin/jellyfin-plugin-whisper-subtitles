@@ -79,6 +79,16 @@ public sealed class ConfigurationPageAsksTheBackendTests
     }
 
     [Fact]
+    public void What_the_tool_said_about_itself_is_shown_beside_a_ready_answer()
+    {
+        // The sentence the server built is appended as it is, so a version and a
+        // description reach the operator labelled the way the probe labelled them.
+        var ask = Ask(ConfigurationPageSource.Markup());
+
+        Assert.Contains("(report.Tool ? ' ' + report.Tool : '')", ask, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void Asking_and_saving_read_the_backend_settings_out_of_one_function()
     {
         // Two readings of the same fields can disagree, and the page would then show

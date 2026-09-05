@@ -89,13 +89,17 @@ public sealed class LocalWhisperBackend : ITranscriptionBackend
     /// it found, so an operator learns that a path is wrong from the page rather
     /// than from a run that fails on its first item hours later.
     ///
-    /// WHAT IT DOES NOT DO is run the tool. Two things follow from that and both
-    /// are said here rather than implied by a green answer: the version string the
-    /// tool prints is not reported, because which invocation makes a whisper.cpp
-    /// compatible tool print one is not settled anywhere in this tree, and whether
-    /// the model loads is unknown, because the only thing that knows is the tool
-    /// with the model in front of it. A ready answer here means the two paths hold
-    /// files this plugin could hand to a run, and no more than that.
+    /// Once both paths hold files, it asks the tool what it is, which is the one
+    /// thing here that runs the operator's tool on a page load rather than in a
+    /// run: <c>--version</c> and then <c>--help</c>, without a model and without
+    /// audio, one line read out of each, under a deadline of its own, which #324
+    /// decided on 2026-09-05. What comes back is labelled as what it was, a version
+    /// or a description or silence, and never a version the probe did not see.
+    ///
+    /// WHAT IT DOES NOT DO is transcribe, and whether the model loads is unknown,
+    /// because the only thing that knows is the tool with the model in front of
+    /// it. A ready answer here means the two paths hold files this plugin could
+    /// hand to a run and the tool could be started, and no more than that.
     ///
     /// The order is the order an operator fixes them in. The tool first, because a
     /// missing tool makes the model irrelevant, and the first thing wrong is the
@@ -152,7 +156,26 @@ public sealed class LocalWhisperBackend : ITranscriptionBackend
                     model.SizeInBytes.ToString(CultureInfo.InvariantCulture));
             }
 
-            return new BackendReadiness(true, null);
+            ToolIdentity identity;
+
+            try
+            {
+                // The caller's token and not the file deadline, so a tool that stalls
+                // is reported as silent by the probe rather than as a file system that
+                // did not answer by the catch below.
+                identity = await ToolIdentityProbe
+                    .AskAsync(_runner, _options.ExecutablePath!, _options.ToolAnswerTimeout, cancellationToken)
+                    .ConfigureAwait(false);
+            }
+            catch (Exception started) when (started is not OperationCanceledException)
+            {
+                return NotReady(
+                    "The file at the transcription tool path, {0}, could not be started: {1}",
+                    _options.ExecutablePath!,
+                    started.Message);
+            }
+
+            return new BackendReadiness(true, null, identity);
         }
         catch (OperationCanceledException)
         {

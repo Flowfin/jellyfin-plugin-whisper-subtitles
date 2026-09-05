@@ -105,7 +105,10 @@ stops at a byte ceiling.
 standard output of a program the operator supplied. It holds a line ceiling of
 8192 characters and a segment ceiling of 200000, parses timestamps by hand so
 there is no expression to reason about over hostile bytes, and refuses a line it
-cannot read rather than skipping it.
+cannot read rather than skipping it. The readiness probe asks the same program
+what it is, with `--version` and then `--help`, and `ToolIdentityProbe` keeps
+one line out of each, cut at two hundred characters and stripped of control
+characters, which reaches the configuration page as text.
 
 **What a remote endpoint answers with.** `TranscriptionResponseReader` reads a
 body from a machine this plugin knows nothing about. The read is bounded at 8

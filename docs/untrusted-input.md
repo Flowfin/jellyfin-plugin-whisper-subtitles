@@ -79,15 +79,23 @@ instead of going on standing for a bound nobody holds.
   does not name is never read, and a file goes only if it still hashes as its
   line says at the moment of deletion. Bounded by `GeneratedSubtitleListing`.
   Hostile case in `GeneratedSubtitlesControllerTests`.
+- What the transcription tool prints when the readiness probe asks it what it
+  is, which is text from a program this repository did not build, shown on the
+  configuration page. One line is kept out of each of the two flags asked, cut
+  at two hundred characters and stripped of control characters, and the rest is
+  never read. Bounded by `ToolIdentityProbe`. Hostile case in
+  `LocalVersionProbeTests`.
 
-Ten entries where the issue that asked for this named six. The item name and the
+Eleven entries where the issue that asked for this named six. The item name and the
 language code are split, because they are two bounds in two types with two
 different hostile cases, and one line naming both would resolve against whichever
 of them somebody wrote in it. The eighth arrived with the readiness route, which
 is a second way for the configuration's shape to reach this plugin and is held by
 the same type as the first, the ninth with the record of what was published,
-which is the one file this plugin writes that a person is expected to open, and
-the tenth with the removal that record makes possible.
+which is the one file this plugin writes that a person is expected to open, the
+tenth with the removal that record makes possible, and the eleventh with the
+probe asking the tool what it is, which is the first thing here that runs the
+operator's tool on a page load.
 
 ## The shapes this list forbids
 
