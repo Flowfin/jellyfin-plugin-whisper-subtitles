@@ -169,8 +169,9 @@ cannot, and the version has to be raised.
   names reads as correct against every list there could ever be. The two are compared,
   so a branch added there and not named here is a red suite rather than a gate quietly
   covering less than the release route allows. Whether the gate is required on any of
-  them is a repository setting, read by nothing in this tree, and #54 is where that
-  comparison is owed.
+  them is a repository setting, and no route here compares the two. The gate covers
+  the default branch alone, which is the same set as the list above only for as long
+  as that list has one entry, and #318 is where that comparison is owed.
 - Every context the ABI floor workflow reports, required on those branches. A
   ruleset entry names the context a run reports under rather than the workflow's
   title, so a name no job carries is a required check that never arrives and a

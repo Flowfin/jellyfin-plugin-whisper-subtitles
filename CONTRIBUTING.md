@@ -61,9 +61,12 @@ gh api "repos/iderex/jellyfin-plugin-whisper-subtitles/rulesets/$(gh api repos/i
 The ruleset id is read rather than written down, so the command survives the
 ruleset being replaced.
 
-Moving the rest of the checks into that set is #54, and it is deliberately the
-last thing in its milestone: requiring a check before it is stable turns a red
-gate into something people learn to work around.
+The rest of the checks moved into that set under #54, deliberately the last
+thing in its milestone: requiring a check before it is stable turns a red gate
+into something people learn to work around. What is required now is what the
+command above prints. Nothing here compares that set against the jobs this tree
+declares, so a job renamed or deleted here leaves the set naming a context that
+never arrives, and the branch stops merging for a name nobody can explain.
 
 ## The suite is headless, and that is checked
 

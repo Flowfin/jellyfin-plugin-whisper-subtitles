@@ -39,7 +39,8 @@ namespace Jellyfin.Plugin.WhisperSubtitles.Tests;
 /// declares and never what the server reports, so a job this tree does not carry and a
 /// job whose run has never been created are the same thing to it. Whether the ruleset
 /// requires any of these names is a repository setting, every test here runs with the
-/// machine offline, and #54 is where that comparison is owed.
+/// machine offline, and #318 is where that comparison is owed: #54 made the set required
+/// and left nothing comparing it against the names this tree declares.
 ///
 /// A job that calls another workflow reports under a composed name, job then inner,
 /// and the inner half is declared in a repository this tree cannot read. So a composed

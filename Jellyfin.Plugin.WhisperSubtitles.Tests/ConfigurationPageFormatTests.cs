@@ -28,8 +28,8 @@ namespace Jellyfin.Plugin.WhisperSubtitles.Tests;
 ///
 /// It needs no new required check either. The suite is what the mainline already
 /// refuses a merge without, so a page that stops satisfying these rules turns the
-/// run red where every other property of this tree is decided. Whether anything
-/// else becomes required is #54 and is not touched here.
+/// run red where every other property of this tree is decided. What else is required is
+/// the set #54 made of the ruleset, and it is not touched here.
 ///
 /// WHAT THIS DOES NOT DO, and none of the three is an oversight.
 ///

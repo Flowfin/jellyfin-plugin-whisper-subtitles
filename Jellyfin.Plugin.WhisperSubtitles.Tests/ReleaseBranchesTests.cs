@@ -37,8 +37,9 @@ namespace Jellyfin.Plugin.WhisperSubtitles.Tests;
 /// WHAT THIS DOES NOT DO, and it is the larger half of the question. It compares two
 /// files in this tree and never the ruleset. Whether the gate is actually required on
 /// any branch is a repository setting, every test here runs with the machine offline,
-/// and #54 is where that comparison is owed. A page and a workflow that agree with each
-/// other and disagree with the live ruleset pass every leg below.
+/// and #318 is where that comparison is owed, the branch condition included. A page and a
+/// workflow that agree with each other and disagree with the live ruleset pass every leg
+/// below.
 ///
 /// It reads one sentence shape on the page and the branch names inside it in backticks.
 /// The sentence runs to the end of its own line, so a branch name is read wherever it

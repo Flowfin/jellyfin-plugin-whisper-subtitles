@@ -24,8 +24,9 @@ namespace Jellyfin.Plugin.WhisperSubtitles.Tests;
 /// and not named on the page is a check that runs on every pull request and is required
 /// on none, so the branch a release is cut from is protected by less than the tree
 /// actually checks, and the page reads as complete because it names everything it knows
-/// about. #54 is the issue that asks for the full set to be required, and a page listing
-/// less than the full set is that issue defeated at the step before the setting.
+/// about. #54 made the full set required, and a page listing less than the full set is
+/// that requirement defeated at the step before the setting: the context nobody wrote
+/// down is the one the ruleset never gains.
 ///
 /// The other direction costs differently and is refused too. A context named here that
 /// no job reports is a required check that never arrives, which is a branch that stops
@@ -33,9 +34,10 @@ namespace Jellyfin.Plugin.WhisperSubtitles.Tests;
 ///
 /// WHAT THIS DOES NOT DO. It compares two files in this tree and never the ruleset.
 /// Whether either context is actually required on any branch is a repository setting,
-/// every test here runs with the machine offline, and that comparison is what #54 is
-/// open on. A page and a workflow that agree with each other and disagree with the live
-/// ruleset pass every leg below.
+/// every test here runs with the machine offline. #54 required the set and built no
+/// comparison against it, so #318 is what that comparison is open on. A page and a
+/// workflow that agree with each other and disagree with the live ruleset pass every leg
+/// below.
 ///
 /// It reads one workflow, the one whose contexts this bullet is about, and says nothing
 /// about the other checks this repository reports. <see cref="NamedChecksTests"/> holds
