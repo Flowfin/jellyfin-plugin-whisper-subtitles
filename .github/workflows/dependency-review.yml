@@ -14,11 +14,18 @@ concurrency:
 
 jobs:
   # No `name:` on this job, so the check run carries the job id
-  # ("dependency-review") as its name. That name is the context a ruleset has to
-  # name in order to require this check, and the "gate" ruleset does not name it
-  # today. Requiring it is the first thing #53 asks for and #54 is where the
-  # tightening is made, so the name is left alone because that decision is
-  # written against it, not because anything would break now.
+  # ("dependency-review") as its name. That name is the context the "gate" ruleset
+  # names in order to require this check, so renaming this job would take the
+  # requirement off a check that went on running green:
+  #
+  #     gh api repos/Flowfin/jellyfin-plugin-whisper-subtitles/rulesets/20467991 --jq '[.rules[] | select(.type=="required_status_checks") | .parameters.required_status_checks[].context] | any(. == "dependency-review")'
+  #     true
+  #
+  # Requiring it is the first thing #53 asks for, and it arrived under #54. This
+  # comment said the ruleset did not name this check, which was true when it was
+  # written and stopped being true at that merge. Two runs here read the required
+  # set - pr-hygiene.yml prints it, and the fuzz workflow refuses to find its own
+  # jobs in it - and neither compares a sentence against it, so nothing said so.
   #
   # This comment named another repository's ruleset until #53. That repository is
   # the one #49 measures this gate against, its ruleset does require this check

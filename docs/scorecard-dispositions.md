@@ -110,14 +110,17 @@ gh api "repos/Flowfin/jellyfin-plugin-whisper-subtitles/rulesets/20467991" \
 ```
 
 The command is handed over and its output is not pasted, because it was pasted and it
-stopped reproducing. The frozen line named three required contexts and the ruleset names
-four. The fourth is read and recorded on `#49`, which is the issue that compares that set
-and owes a re-derivation of it. Nothing here re-runs a command against a repository
+stopped reproducing. The frozen line named three required contexts and the ruleset held
+four when that was found; it holds more since `#54`, and how many is deliberately not
+written here for the same reason. `#49` is the issue that compares that set and owes a
+re-derivation of it. Nothing here re-runs a command against a repository
 setting, so a paste of one ages without saying so, and this disposition does not rest on
 which contexts are in the set. It rests on the set being a setting.
 
-`#54` is where the gate is tightened and where each of these five is either taken or
-refused with a reason. One of them used to have a prerequisite in the tree rather than in
+`#54` tightened the gate and took none of these five. Its own done-condition is the
+required set, the empty bypass list and a merge refused with a check red, so the five
+above are where the reading at the top of this entry leaves them and no issue proposes
+moving any of them. One of them used to have a prerequisite in the tree rather than in
 the settings, and no longer has it. Codeowners review cannot be required without a
 codeowners file, and that file is here:
 
@@ -127,7 +130,8 @@ git log --oneline --diff-filter=A -- .github/CODEOWNERS
 ```
 
 So all five warnings are settings now and none of them is waiting on anything in this
-tree. Whether each one is taken is still `#54` and is not decided here.
+tree. Whether any of them is taken is a hand at a setting, held by no issue since `#54`
+closed, and it is not decided here.
 
 The half of this check that is already answered is worth separating from the half that
 is not. The ruleset has no bypass actors, so what it does require, it requires of
@@ -147,8 +151,8 @@ score is 0: Found 0/16 approved changesets -- score normalized to 0
 
 Accepted, and it is the same setting as Branch-Protection rather than a second thing.
 The check counts approving reviews on the pull requests it sampled and found none, and
-whether an approving review becomes a condition of merge is the ruleset above, which is
-`#54`. Nothing in the tree moves this number.
+whether an approving review becomes a condition of merge is the ruleset above, which
+`#54` left at nought approvals. Nothing in the tree moves this number.
 
 A repository whose changes carry no approving review is a fact about that repository, and
 the disposition for it is that the decision is open and named, not that the finding is

@@ -9,8 +9,11 @@
 #     {"require_code_owner_review":false,"required_approving_review_count":0}
 #
 # So what a reader gets from this file is a request on the pull request rather
-# than a gate, and #54 is where the gate is decided. Saying that here is the
-# point: a CODEOWNERS file reads like enforcement, and this one is not.
+# than a gate. #54 tightened the gate and left both of those numbers where they
+# are: it made the status checks required and asked for no approval, so the two
+# lines above are the decided state rather than a state waiting on a decision.
+# Saying that here is the point: a CODEOWNERS file reads like enforcement, and
+# this one is not.
 #
 # One rule over every path rather than a split by directory. A per-directory
 # split would be a claim about who maintains which part of this plugin, and

@@ -19,8 +19,9 @@ namespace Jellyfin.Plugin.WhisperSubtitles.Tests;
 /// Two things followed and only the first is a wording matter. A reader looking for the
 /// ruleset it named found none here. And the sentence asserted that renaming the job
 /// would break a required status check, which is a claim about this repository's gate
-/// that was not true: the ruleset here does not name that check at all, and making it do
-/// so is what #53 asks for and #54 decides.
+/// that was not true when it was written: the ruleset here did not name that check at
+/// all. Making it do so is what #53 asks for, and #54 did it, which is the second reason
+/// that comment could not be left as it stood.
 ///
 /// What makes the comparison possible without a network is that this tree already reads
 /// the ruleset by name in three places and every one of them selects the same name. So

@@ -41,10 +41,11 @@ The gate this repository is measured against is #49, and the milestone that
 produced these checks is where each one was argued.
 
 What it does not decide: whether any of those names is *required*. That is the
-ruleset, which is a repository setting no test in this tree reads, and #54 is
-where the comparison between the two is owed. So a check deleted between one
-release and the next disappears from the list above rather than failing it, and
-the list is what ran and not what had to run.
+ruleset, which is a repository setting no test in this tree reads. #54 made the
+set required and built no comparison against it, so #318 is where the comparison
+between the two is owed. So a check deleted between one release and the next
+disappears from the list above rather than failing it, and the list is what ran
+and not what had to run.
 
 It also does not decide whether a red name has anything to do with the release. A
 job that is red on every mainline commit for a standing reason is red on the
