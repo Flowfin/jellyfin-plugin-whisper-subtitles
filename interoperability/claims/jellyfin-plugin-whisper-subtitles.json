@@ -11,6 +11,8 @@
     "Whisper Subtitles"
   ],
   "routes": [
+    "/WhisperSubtitles/GeneratedSubtitles",
+    "/WhisperSubtitles/GeneratedSubtitles/Removal",
     "/WhisperSubtitles/Readiness"
   ],
   "paths": [],

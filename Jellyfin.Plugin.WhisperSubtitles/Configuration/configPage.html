@@ -173,6 +173,27 @@
                             changing the default above moves it.
                         </div>
                     </div>
+                    <div id="WhisperSubtitlesGenerated">
+                        <h3 class="checkboxListLabel">What this plugin wrote</h3>
+                        <div class="fieldDescription">
+                            The subtitles this plugin published are matched against its own
+                            record of what it wrote and never against a file name, so a
+                            subtitle a person made is never on this list. Listing removes
+                            nothing. Removing takes only the files listed as unchanged, and
+                            reads each one again at the moment of deletion, so a file
+                            edited since it was written is kept: an edited transcription is
+                            somebody's work.
+                        </div>
+                        <button is="emby-button" type="button" id="WhisperSubtitlesListGenerated" class="raised block emby-button">
+                            <span>List what this plugin wrote</span>
+                        </button>
+                        <div class="fieldDescription" id="WhisperSubtitlesGeneratedSummary"></div>
+                        <ul id="WhisperSubtitlesGeneratedSample"></ul>
+                        <button is="emby-button" type="button" id="WhisperSubtitlesRemoveGenerated" class="raised block emby-button" style="display: none">
+                            <span>Remove the files listed as unchanged</span>
+                        </button>
+                        <div class="fieldDescription" id="WhisperSubtitlesGeneratedOutcome"></div>
+                    </div>
                     <div>
                         <button is="emby-button" type="submit" class="raised button-submit block emby-button">
                             <span>Save</span>
@@ -391,6 +412,81 @@
                 });
             };
 
+            WhisperSubtitlesConfig.generatedPath = 'WhisperSubtitles/GeneratedSubtitles';
+            WhisperSubtitlesConfig.generatedRemovalPath = 'WhisperSubtitles/GeneratedSubtitles/Removal';
+            WhisperSubtitlesConfig.offered = [];
+            WhisperSubtitlesConfig.samplePaths = 10;
+
+            WhisperSubtitlesConfig.showGenerated = function (report) {
+                // Every path reaches the page as text. A path comes out of the
+                // operator's library, and a name a person chose is not markup here.
+                var summary = document.querySelector('#WhisperSubtitlesGeneratedSummary');
+                var sample = document.querySelector('#WhisperSubtitlesGeneratedSample');
+                var remove = document.querySelector('#WhisperSubtitlesRemoveGenerated');
+
+                WhisperSubtitlesConfig.offered = report.Lines
+                    .filter(function (line) { return line.State === 'Unchanged'; })
+                    .map(function (line) { return line.Path; });
+
+                summary.textContent = report.Lines.length + ' recorded: '
+                    + report.Unchanged + ' unchanged and removable, '
+                    + report.Edited + ' edited since and kept, '
+                    + report.Gone + ' no longer there'
+                    + (report.UnreadableRecordLines > 0
+                        ? ', and ' + report.UnreadableRecordLines + ' line(s) of the record that could not be read'
+                        : '')
+                    + '.';
+
+                sample.textContent = '';
+                WhisperSubtitlesConfig.offered.slice(0, WhisperSubtitlesConfig.samplePaths).forEach(function (path) {
+                    var item = document.createElement('li');
+                    item.textContent = path;
+                    sample.appendChild(item);
+                });
+
+                remove.style.display = WhisperSubtitlesConfig.offered.length > 0 ? '' : 'none';
+            };
+
+            WhisperSubtitlesConfig.listGenerated = function () {
+                document.querySelector('#WhisperSubtitlesGeneratedOutcome').textContent = '';
+
+                return ApiClient.getJSON(ApiClient.getUrl(WhisperSubtitlesConfig.generatedPath)).then(function (report) {
+                    WhisperSubtitlesConfig.showGenerated(report);
+                }, function () {
+                    document.querySelector('#WhisperSubtitlesGeneratedSummary').textContent =
+                        'The server did not answer, so nothing is known about what was written. The server log says why.';
+                });
+            };
+
+            WhisperSubtitlesConfig.removeGenerated = function () {
+                // What is posted is what was listed and nothing else, and the server
+                // lists again and reads each file again before it goes, so a path
+                // here that is no longer what the operator saw is kept.
+                var count = WhisperSubtitlesConfig.offered.length;
+
+                if (count === 0 || !window.confirm('Remove ' + count + ' subtitle file(s) this plugin wrote that are still exactly as written? A file edited since is kept.')) {
+                    return Promise.resolve();
+                }
+
+                return ApiClient.ajax({
+                    type: 'POST',
+                    url: ApiClient.getUrl(WhisperSubtitlesConfig.generatedRemovalPath),
+                    data: JSON.stringify({ Paths: WhisperSubtitlesConfig.offered }),
+                    contentType: 'application/json',
+                    dataType: 'json'
+                }).then(function (outcome) {
+                    document.querySelector('#WhisperSubtitlesGeneratedOutcome').textContent =
+                        outcome.Removed.length + ' removed, '
+                        + outcome.KeptBecauseChanged.length + ' kept because the file changed since it was listed, '
+                        + outcome.AlreadyGone.length + ' already gone.';
+
+                    return WhisperSubtitlesConfig.listGenerated();
+                }, function () {
+                    document.querySelector('#WhisperSubtitlesGeneratedOutcome').textContent =
+                        'The server did not answer, so nothing is known about what was removed. List again before removing.';
+                });
+            };
+
             WhisperSubtitlesConfig.pathValue = function (field, stored) {
                 field.value = stored || WhisperSubtitlesConfig.noPathNamed;
             };
@@ -510,6 +606,16 @@
             document.querySelector('#WhisperSubtitlesAskReadiness')
                 .addEventListener('click', function () {
                     WhisperSubtitlesConfig.askReadiness();
+                });
+
+            document.querySelector('#WhisperSubtitlesListGenerated')
+                .addEventListener('click', function () {
+                    WhisperSubtitlesConfig.listGenerated();
+                });
+
+            document.querySelector('#WhisperSubtitlesRemoveGenerated')
+                .addEventListener('click', function () {
+                    WhisperSubtitlesConfig.removeGenerated();
                 });
 
             document.querySelector('#WhisperSubtitlesConfigForm')

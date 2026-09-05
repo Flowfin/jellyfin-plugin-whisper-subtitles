@@ -10,6 +10,8 @@
     "/Plugins": {},
     "/ScheduledTasks": {},
     "/web/ConfigurationPages": {},
-    "/WhisperSubtitles/Readiness": {}
+    "/WhisperSubtitles/Readiness": {},
+    "/WhisperSubtitles/GeneratedSubtitles": {},
+    "/WhisperSubtitles/GeneratedSubtitles/Removal": {}
   }
 }

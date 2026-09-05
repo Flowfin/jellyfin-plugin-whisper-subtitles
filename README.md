@@ -33,8 +33,10 @@ record of what was attempted, audio extraction, the composition root the server
 builds the task out of, the configuration page an operator chooses a backend on,
 in `Jellyfin.Plugin.WhisperSubtitles/Configuration/configPage.html`, the route
 that page asks about readiness on, in
-`Jellyfin.Plugin.WhisperSubtitles/Api/ReadinessController.cs`, and the scheduled
-task itself:
+`Jellyfin.Plugin.WhisperSubtitles/Api/ReadinessController.cs`, the two it lists
+and removes what this plugin wrote through, in
+`Jellyfin.Plugin.WhisperSubtitles/Api/GeneratedSubtitlesController.cs`, and the
+scheduled task itself:
 
     $ git grep -l IScheduledTask -- '*.cs'
     Jellyfin.Plugin.WhisperSubtitles.Tests/SubtitleGenerationTaskTests.cs
