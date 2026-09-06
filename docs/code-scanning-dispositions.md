@@ -132,17 +132,6 @@ One expression carrying a length test and two paired character tests, in the gua
 strips quotes in `NamedChecksTests`. The repair is extracting the paired test into a
 named helper. It is contained, it is one file, and nothing about it is load-bearing.
 
-## cs/inefficient-containskey, repair owed
-
-A dictionary asked whether it holds a key and then asked for the value under it,
-at two sites in `ReleaseDrafterConfigTests`, where the drafter's templates are
-read out of its configuration by key. The repair is one `TryGetValue` per site,
-which is the shape the analyser asks for. It is contained, it is one file, and
-nothing about it is load-bearing. The entry stands until the repair has landed
-and the scan of the mainline has stopped reporting the rule, because this
-register refuses an entry for a rule nothing reports, and a scan of the mainline
-runs only after a merge.
-
 ## cs/local-not-disposed, dismissal owed
 
 The `HttpResponseMessage` the alert points at is created and handed straight to a
