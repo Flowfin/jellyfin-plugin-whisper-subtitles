@@ -1,6 +1,6 @@
 # Code of conduct
 
-This is a small repository with one maintainer, and this page says what that
+This is a small repository that I work on alone, and this page says what that
 means for anybody who takes part: what is expected, where a report about
 somebody's behaviour goes, and what I can and cannot do about one. It is
 written to be accurate about the second and third rather than reassuring,
