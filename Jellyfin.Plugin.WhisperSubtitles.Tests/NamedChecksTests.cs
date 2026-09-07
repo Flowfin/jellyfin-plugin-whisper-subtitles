@@ -319,16 +319,15 @@ public class NamedChecksTests
         return jobs;
     }
 
-    private static string Unquote(string value)
-    {
-        if (value.Length >= 2
-            && ((value[0] == '\'' && value[^1] == '\'') || (value[0] == '"' && value[^1] == '"')))
-        {
-            return value[1..^1];
-        }
+    private static string Unquote(string value) =>
+        IsWrappedIn(value, '\'') || IsWrappedIn(value, '"') ? value[1..^1] : value;
 
-        return value;
-    }
+    // A quote wraps a value only when the same character stands at both ends, and a
+    // value shorter than two characters has no two ends to test. The pair is named here
+    // rather than spelled out twice inside one condition, because that condition holding
+    // both pairs was the whole of what cs/complex-condition reported.
+    private static bool IsWrappedIn(string value, char quote) =>
+        value.Length >= 2 && value[0] == quote && value[^1] == quote;
 
     /// <summary>
     /// The markdown a reader of this repository meets: the pages at the root and the
