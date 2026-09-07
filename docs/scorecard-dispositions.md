@@ -186,6 +186,20 @@ This one clears itself with the calendar. Worth stating plainly because a high s
 against a young repository reads like a warning about neglect and is the opposite: the
 check has too little history to judge, and says so.
 
+WHAT CLEARS WITH THE CALENDAR IS THE SCORE AND NOT THE ALERT, and the difference is the
+price of a dismissal rather than a detail of it. The code-scanning alert this finding
+raises was dismissed on 2026-09-07 under `#338` as `won't fix`, because the check's own
+help says a project under ninety days old is too new to judge and asks for no
+remediation. A dismissal does not expire with the reason that bought it: once this
+repository is old enough for the check to mean what it says, a finding of genuine
+neglect arrives as the same rule id with the same absent location and stays dismissed.
+So the calendar restores the score and nothing restores the alert, and what would have
+to happen is somebody reopening it. The state is read rather than assumed:
+
+```
+gh api repos/Flowfin/jellyfin-plugin-whisper-subtitles/code-scanning/alerts/109 --jq '{state, dismissed_reason}'
+```
+
 ## Fuzzing, score 0
 
 Reported as the project not being fuzzed, with the warning that no fuzzer integrations
