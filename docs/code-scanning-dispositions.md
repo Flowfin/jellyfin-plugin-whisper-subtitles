@@ -132,44 +132,17 @@ One expression carrying a length test and two paired character tests, in the gua
 strips quotes in `NamedChecksTests`. The repair is extracting the paired test into a
 named helper. It is contained, it is one file, and nothing about it is load-bearing.
 
-## cs/local-not-disposed, dismissal owed
-
-The `HttpResponseMessage` the alert points at is created and handed straight to a
-`TaskCompletionSource`, which the send awaits and returns, so ownership leaves the
-method and the query does not follow it. The consumer disposes it:
-
-```
-git grep -n 'using var response = await client' -- Jellyfin.Plugin.WhisperSubtitles/Backends/Remote/RemoteWhisperBackend.cs
-```
-
-This is the same family as a dismissal already recorded on this board, where the query
-did not follow `ConfiguredAsyncDisposable`. What moves is the alert's state on the
-platform rather than anything in this tree, and nothing on a branch changes that.
-
-## MaintainedID, decided elsewhere
-
-Accepted on `docs/scorecard-dispositions.md`, which is the page the Scorecard findings
-are organised by and which is compared against the document that audit produces:
-
-```
-git grep -n '^## Maintained' -- docs/scorecard-dispositions.md
-```
-
-It is the one alert here the platform grades as a security finding, it is the only one
-with no file behind it, and it clears with the calendar. This entry exists so the
-comparison above has something to resolve it against, and it adds no reason to the one
-that page already carries.
-
 ## What this page does not do
 
 It judges no individual alert. An entry is about a rule and the class of site it points
 at here, and a site inside that class that is genuinely wrong is not separated from its
 neighbours by anything on this page.
 
-It closes nothing. Three entries are debts and one waits on an alert state nobody
-changes from a branch; `#244` closed with no issue carrying any of them, and that is
-still true, so a reader who takes a `repair owed` entry for a repair is reading the
-opposite of what it says.
+It closes nothing. Three entries are debts, and a reader who takes a `repair owed`
+entry for a repair is reading the opposite of what it says. `#244` closed with no
+issue carrying any of them; one issue per open rule id was opened on this board on
+2026-09-06, so each of the three is held somewhere now, and an entry goes on
+recording the debt rather than paying it.
 
 It is not a suppression. No rule here is filtered, disabled, or narrowed in scope, and
 every one of them goes on reporting against the shipped plugin as well as against the
