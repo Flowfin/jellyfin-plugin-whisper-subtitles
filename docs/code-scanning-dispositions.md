@@ -108,36 +108,19 @@ git grep -n 'A_rooted_name_is_refused_rather_than_followed' -- Jellyfin.Plugin.W
 That site is the one this plugin's containment check was built against, so a filter or
 a disabled rule would take the next real one out of view along with these.
 
-## cs/linq/missed-where, repair owed
-
-A `foreach` whose entire body is one `if`, where the condition is a pure test of the
-iteration variable. The repair is the same rewrite as above, in the shape this tree
-already writes one overload away from the sites the rule points at:
-
-```
-git grep -n -A4 'public static IReadOnlyList<string> LanguagesNamedBy(MethodInfo method)' -- Jellyfin.Plugin.WhisperSubtitles.Tests/TranslationSurface.cs
-```
-
-So the rule is pointing at the half of a file that was written the other way rather
-than at a design.
-
-## cs/complex-condition, repair owed
-
-One expression carrying a length test and two paired character tests, in the guard that
-strips quotes in `NamedChecksTests`. The repair is extracting the paired test into a
-named helper. It is contained, it is one file, and nothing about it is load-bearing.
-
 ## What this page does not do
 
 It judges no individual alert. An entry is about a rule and the class of site it points
 at here, and a site inside that class that is genuinely wrong is not separated from its
 neighbours by anything on this page.
 
-It closes nothing. Two entries are debts, and a reader who takes a `repair owed`
-entry for a repair is reading the opposite of what it says. `#244` closed with no
-issue carrying any of them; one issue per open rule id was opened on this board on
-2026-09-06, so each of the two is held somewhere now, and an entry goes on
-recording the debt rather than paying it.
+It closes nothing, AND IT NO LONGER CARRIES A DEBT, WHICH THIS PARAGRAPH USED TO
+SAY IT DID. Two entries stood here as `repair owed`, each held by an issue opened
+on this board on 2026-09-06; both repairs landed, the mainline scan closed their
+alerts, and the entries left with them, because this register refuses an entry for
+a rule the scan no longer reports. A `repair owed` entry that arrives tomorrow is
+still a debt rather than a repair, and a reader who takes one for the other is
+still reading the opposite of what it says.
 
 It is not a suppression. No rule here is filtered, disabled, or narrowed in scope, and
 every one of them goes on reporting against the shipped plugin as well as against the
