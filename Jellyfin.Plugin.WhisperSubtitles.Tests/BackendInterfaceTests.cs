@@ -122,6 +122,24 @@ public class BackendInterfaceTests
     }
 
     [Fact]
+    public void The_translation_reader_finds_a_second_language_named_only_on_a_constructor()
+    {
+        // The leg above cannot prove the reader's constructor arm. TranslatingRequest
+        // names its languages on its properties as well, and Settle deduplicates
+        // without regard to case, so the property arm alone answers it - measured by
+        // deleting the constructor arm outright, at which point all 4357 tests stayed
+        // green. This pair is the fixture that arm has no way past.
+        Assert.Equal(
+            new[] { "spokenLanguage", "targetLanguage" },
+            TranslationSurface.LanguagesNamedBy(typeof(Fixtures.Translation.ConstructedTranslatingRequest)));
+
+        // The one-change neighbour, without which the assertion above is also green
+        // for a reader that returns every constructor parameter it meets.
+        Assert.Empty(
+            TranslationSurface.LanguagesNamedBy(typeof(Fixtures.Translation.ConstructedTranscribingRequest)));
+    }
+
+    [Fact]
     public void Every_public_member_of_the_backend_folder_carries_a_documentation_comment()
     {
         // The build writes the XML file only for members that have one, so a member
