@@ -29,31 +29,15 @@ internal static class TranslationSurface
     /// </summary>
     /// <param name="type">The request type to read.</param>
     /// <returns>The names, deduplicated without regard to case and sorted.</returns>
-    public static IReadOnlyList<string> LanguagesNamedBy(Type type)
-    {
-        var found = new List<string>();
-
-        foreach (var property in type.GetProperties(BindingFlags.Public | BindingFlags.Instance))
-        {
-            if (NamesALanguage(property.Name))
-            {
-                found.Add(property.Name);
-            }
-        }
-
-        foreach (var constructor in type.GetConstructors(BindingFlags.Public | BindingFlags.Instance))
-        {
-            foreach (var parameter in constructor.GetParameters())
-            {
-                if (parameter.Name is not null && NamesALanguage(parameter.Name))
-                {
-                    found.Add(parameter.Name);
-                }
-            }
-        }
-
-        return Settle(found);
-    }
+    public static IReadOnlyList<string> LanguagesNamedBy(Type type) =>
+        Settle(type.GetProperties(BindingFlags.Public | BindingFlags.Instance)
+            .Select(property => property.Name)
+            .Where(NamesALanguage)
+            .Concat(type.GetConstructors(BindingFlags.Public | BindingFlags.Instance)
+                .SelectMany(constructor => constructor.GetParameters())
+                .Select(parameter => parameter.Name)
+                .Where(name => name is not null && NamesALanguage(name))
+                .Select(name => name!)));
 
     /// <summary>
     /// Names every parameter of <paramref name="method"/> that names a language.

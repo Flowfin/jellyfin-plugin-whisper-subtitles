@@ -292,12 +292,11 @@ public sealed class SecurityPolicyClaimTests
                 continue;
             }
 
-            foreach (var found in paths.SelectMany(path => _name.Matches(CodeIn(path)).Select(match => match.Value)))
+            foreach (var found in paths
+                .SelectMany(path => _name.Matches(CodeIn(path)).Select(match => match.Value))
+                .Where(found => sources.ContainsKey(found) && !reached.Contains(found)))
             {
-                if (sources.ContainsKey(found) && !reached.Contains(found))
-                {
-                    pending.Push(found);
-                }
+                pending.Push(found);
             }
         }
 
