@@ -52,6 +52,49 @@ internal sealed class TranscribingRequest
 }
 
 /// <summary>
+/// The same mistake made where only the constructor sees it: the second language
+/// arrives as a constructor parameter and is kept in a property named something
+/// else. It is the shape a request written with positional parameters produces, and
+/// it is the one the reader's property arm cannot answer, so it is what holds that
+/// arm's neighbour honest.
+/// </summary>
+internal sealed class ConstructedTranslatingRequest
+{
+    public ConstructedTranslatingRequest(string audioFilePath, string spokenLanguage, string targetLanguage)
+    {
+        AudioFilePath = audioFilePath;
+        Spoken = spokenLanguage;
+        Target = targetLanguage;
+    }
+
+    public string AudioFilePath { get; }
+
+    public string Spoken { get; }
+
+    public string Target { get; }
+}
+
+/// <summary>
+/// The one-change neighbour for the pair above, and the near-miss is deliberate: a
+/// constructor parameter that abbreviates the word rather than carrying it. A
+/// reader loosened to match <c>lang</c> accepts this one, and a reader that simply
+/// returned every constructor parameter it met accepts both, so the leg beside it
+/// would pass either way without this here.
+/// </summary>
+internal sealed class ConstructedTranscribingRequest
+{
+    public ConstructedTranscribingRequest(string audioFilePath, string langCode)
+    {
+        AudioFilePath = audioFilePath;
+        Spoken = langCode;
+    }
+
+    public string AudioFilePath { get; }
+
+    public string Spoken { get; }
+}
+
+/// <summary>
 /// The same pair on a call. A second language reaching a backend beside the request
 /// is the other way a translation could be asked for, and it is a different subject
 /// from the request type because nothing about the request would move.
