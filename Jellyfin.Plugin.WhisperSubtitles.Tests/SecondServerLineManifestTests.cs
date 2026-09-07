@@ -272,12 +272,14 @@ public sealed class SecondServerLineManifestTests
     /// <returns>The field's value.</returns>
     private static string Field(string manifest, string name)
     {
-        foreach (var match in Rows(manifest).Select(line => _manifestField.Match(line)))
+        var match = Rows(manifest)
+            .Select(line => _manifestField.Match(line))
+            .FirstOrDefault(candidate => candidate.Success
+                && string.Equals(candidate.Groups[1].Value, name, StringComparison.Ordinal));
+
+        if (match is not null)
         {
-            if (match.Success && string.Equals(match.Groups[1].Value, name, StringComparison.Ordinal))
-            {
-                return match.Groups[2].Value;
-            }
+            return match.Groups[2].Value;
         }
 
         Assert.Fail($"the manifest carries no {name} field, so this check has nothing to compare and would otherwise pass for the wrong reason");

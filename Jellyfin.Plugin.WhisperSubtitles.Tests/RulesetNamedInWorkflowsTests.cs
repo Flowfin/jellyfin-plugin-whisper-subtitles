@@ -83,14 +83,13 @@ public class RulesetNamedInWorkflowsTests
 
             for (var i = 0; i < lines.Length; i++)
             {
-                foreach (var named in NamedInProse.Matches(lines[i]).Select(match => match.Groups[1].Value))
+                foreach (var named in NamedInProse.Matches(lines[i])
+                    .Select(match => match.Groups[1].Value)
+                    .Where(named => !declared.Contains(named)))
                 {
-                    if (!declared.Contains(named))
-                    {
-                        wrong.Add(string.Create(
-                            System.Globalization.CultureInfo.InvariantCulture,
-                            $"{Relative(file)}:{i + 1} names \"{named}\""));
-                    }
+                    wrong.Add(string.Create(
+                        System.Globalization.CultureInfo.InvariantCulture,
+                        $"{Relative(file)}:{i + 1} names \"{named}\""));
                 }
             }
         }

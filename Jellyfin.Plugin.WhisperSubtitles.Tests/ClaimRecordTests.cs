@@ -204,15 +204,13 @@ public class ClaimRecordTests
     {
         var script = Path.Combine(RepositoryRoot(), ".github", "scripts", "refuse-a-claim-collision.sh");
 
-        foreach (var match in File.ReadLines(script).Select(line => KindsTheScanCompares.Match(line)))
-        {
-            if (match.Success)
-            {
-                return match.Groups[1].Value.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-            }
-        }
+        var match = File.ReadLines(script)
+            .Select(line => KindsTheScanCompares.Match(line))
+            .FirstOrDefault(candidate => candidate.Success);
 
-        return [];
+        return match is null
+            ? []
+            : match.Groups[1].Value.Split(' ', StringSplitOptions.RemoveEmptyEntries);
     }
 
     private static JsonElement Record()
