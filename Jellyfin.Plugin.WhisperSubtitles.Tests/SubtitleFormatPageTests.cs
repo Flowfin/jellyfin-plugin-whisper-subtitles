@@ -224,10 +224,8 @@ public class SubtitleFormatPageTests
     {
         var cues = new List<TimedSegment>();
 
-        foreach (var block in blocks)
+        foreach (var lines in blocks.Select(block => block.Split('\n')))
         {
-            var lines = block.Split('\n');
-
             Assert.True(
                 lines.Length == 3,
                 $"a sample block has {lines.Length} line(s), and a SubRip block a reader could learn the format from is an index, a timing line and the text");

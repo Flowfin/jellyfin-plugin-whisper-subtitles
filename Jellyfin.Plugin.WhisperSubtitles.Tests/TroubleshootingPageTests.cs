@@ -374,10 +374,8 @@ public class TroubleshootingPageTests
         var paragraphs = new List<string>();
         var current = new List<string>();
 
-        foreach (var raw in Page().Split(NewLine))
+        foreach (var line in Page().Split(NewLine).Select(raw => raw.Trim()))
         {
-            var line = raw.Trim();
-
             if (line.Length == 0)
             {
                 if (current.Count > 0)

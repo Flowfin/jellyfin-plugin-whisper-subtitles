@@ -204,10 +204,8 @@ public class ClaimRecordTests
     {
         var script = Path.Combine(RepositoryRoot(), ".github", "scripts", "refuse-a-claim-collision.sh");
 
-        foreach (var line in File.ReadLines(script))
+        foreach (var match in File.ReadLines(script).Select(line => KindsTheScanCompares.Match(line)))
         {
-            var match = KindsTheScanCompares.Match(line);
-
             if (match.Success)
             {
                 return match.Groups[1].Value.Split(' ', StringSplitOptions.RemoveEmptyEntries);
