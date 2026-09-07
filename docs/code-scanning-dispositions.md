@@ -97,22 +97,6 @@ git grep -n 'A_rooted_name_is_refused_rather_than_followed' -- Jellyfin.Plugin.W
 That site is the one this plugin's containment check was built against, so a filter or
 a disabled rule would take the next real one out of view along with these.
 
-## cs/linq/missed-select, repair owed
-
-A `foreach` whose first statement maps the iteration variable to another local, where
-the map is a pure projection `.Select(...)` carries without loss. The repair is that
-rewrite, site by site, and it changes no behaviour.
-
-```
-gh api "repos/Flowfin/jellyfin-plugin-whisper-subtitles/code-scanning/alerts?state=open&per_page=100" \
-  --paginate --jq '.[] | select(.rule.id=="cs/linq/missed-select") | "\(.most_recent_instance.location.path):\(.most_recent_instance.location.start_line)"' \
-  | sort
-```
-
-Two of the sites read when this was argued sit inside an enclosing indexed loop and use
-that index in a failure message; the index stays in scope and is not an obstacle, which
-was read rather than assumed.
-
 ## cs/linq/missed-where, repair owed
 
 A `foreach` whose entire body is one `if`, where the condition is a pure test of the
@@ -138,10 +122,10 @@ It judges no individual alert. An entry is about a rule and the class of site it
 at here, and a site inside that class that is genuinely wrong is not separated from its
 neighbours by anything on this page.
 
-It closes nothing. Three entries are debts, and a reader who takes a `repair owed`
+It closes nothing. Two entries are debts, and a reader who takes a `repair owed`
 entry for a repair is reading the opposite of what it says. `#244` closed with no
 issue carrying any of them; one issue per open rule id was opened on this board on
-2026-09-06, so each of the three is held somewhere now, and an entry goes on
+2026-09-06, so each of the two is held somewhere now, and an entry goes on
 recording the debt rather than paying it.
 
 It is not a suppression. No rule here is filtered, disabled, or narrowed in scope, and

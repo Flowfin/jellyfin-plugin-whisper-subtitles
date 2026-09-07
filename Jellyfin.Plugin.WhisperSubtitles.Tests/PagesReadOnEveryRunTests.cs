@@ -310,12 +310,10 @@ public class PagesReadOnEveryRunTests
             var flattened = Whitespace.Replace(File.ReadAllText(source), " ");
 
             foreach (var name in NamedInSource.Matches(flattened)
-                .Select(named => named.Groups["name"].Value))
+                .Select(named => named.Groups["name"].Value)
+                .Where(name => File.Exists(Path.Combine(documents, name))))
             {
-                if (File.Exists(Path.Combine(documents, name)))
-                {
-                    found.Add("docs/" + name);
-                }
+                found.Add("docs/" + name);
             }
         }
 
@@ -349,12 +347,10 @@ public class PagesReadOnEveryRunTests
             var flattened = Whitespace.Replace(File.ReadAllText(source), " ");
 
             foreach (var name in NamedWithNoDirectory.Matches(flattened)
-                .Select(named => named.Groups["name"].Value))
+                .Select(named => named.Groups["name"].Value)
+                .Where(name => File.Exists(Path.Combine(root, name))))
             {
-                if (File.Exists(Path.Combine(root, name)))
-                {
-                    found.Add(name);
-                }
+                found.Add(name);
             }
         }
 

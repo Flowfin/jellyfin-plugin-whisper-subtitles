@@ -93,14 +93,13 @@ public class NamedChecksTests
 
             for (var i = 0; i < lines.Length; i++)
             {
-                foreach (var named in NamedInProse.Matches(lines[i]).Select(match => match.Groups[1].Value))
+                foreach (var named in NamedInProse.Matches(lines[i])
+                    .Select(match => match.Groups[1].Value)
+                    .Where(named => !IsReported(named, jobs)))
                 {
-                    if (!IsReported(named, jobs))
-                    {
-                        wrong.Add(string.Create(
-                            CultureInfo.InvariantCulture,
-                            $"{Relative(page)}:{i + 1} names \"{named}\""));
-                    }
+                    wrong.Add(string.Create(
+                        CultureInfo.InvariantCulture,
+                        $"{Relative(page)}:{i + 1} names \"{named}\""));
                 }
             }
         }
