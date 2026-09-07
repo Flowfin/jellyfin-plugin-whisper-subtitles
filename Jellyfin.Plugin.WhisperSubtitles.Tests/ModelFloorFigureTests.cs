@@ -378,10 +378,10 @@ public sealed class ModelFloorFigureTests
 
         var sizes = new List<long>();
 
-        foreach (var row in rows.Skip(1).Where(row => row.Count > at))
+        foreach (var size in rows.Skip(1)
+            .Where(row => row.Count > at)
+            .Select(row => _size.Match(row[at])))
         {
-            var size = _size.Match(row[at]);
-
             if (!size.Success)
             {
                 continue;

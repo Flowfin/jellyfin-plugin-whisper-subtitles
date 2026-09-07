@@ -210,9 +210,10 @@ public sealed class SecondServerLineManifestTests
 
         var found = new List<ServerLineFacts>();
 
-        foreach (var entry in supported.Groups[1].Value.Split(';', StringSplitOptions.RemoveEmptyEntries))
+        foreach (var framework in supported.Groups[1].Value
+            .Split(';', StringSplitOptions.RemoveEmptyEntries)
+            .Select(entry => entry.Trim()))
         {
-            var framework = entry.Trim();
             var block = BlockFor(props, framework);
             var serverLine = _serverLine.Match(block);
             var packageVersion = _packageVersion.Match(block);
@@ -271,10 +272,8 @@ public sealed class SecondServerLineManifestTests
     /// <returns>The field's value.</returns>
     private static string Field(string manifest, string name)
     {
-        foreach (var line in Rows(manifest))
+        foreach (var match in Rows(manifest).Select(line => _manifestField.Match(line)))
         {
-            var match = _manifestField.Match(line);
-
             if (match.Success && string.Equals(match.Groups[1].Value, name, StringComparison.Ordinal))
             {
                 return match.Groups[2].Value;

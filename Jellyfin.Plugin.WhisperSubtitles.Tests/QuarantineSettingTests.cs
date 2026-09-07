@@ -277,9 +277,9 @@ public class QuarantineSettingTests
 
         Assert.Equal(6, calls.Count);
 
-        foreach (var call in calls.Cast<Match>())
+        foreach (var arguments in calls.Cast<Match>()
+            .Select(call => call.Groups["arguments"].Value))
         {
-            var arguments = call.Groups["arguments"].Value;
             var setting = SettingsByTheirSentinel.Keys.SingleOrDefault(
                 name => arguments.Contains(name, StringComparison.Ordinal));
 

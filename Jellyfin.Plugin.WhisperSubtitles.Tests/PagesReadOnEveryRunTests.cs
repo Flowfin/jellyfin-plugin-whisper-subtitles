@@ -309,10 +309,9 @@ public class PagesReadOnEveryRunTests
 
             var flattened = Whitespace.Replace(File.ReadAllText(source), " ");
 
-            foreach (Match named in NamedInSource.Matches(flattened))
+            foreach (var name in NamedInSource.Matches(flattened)
+                .Select(named => named.Groups["name"].Value))
             {
-                var name = named.Groups["name"].Value;
-
                 if (File.Exists(Path.Combine(documents, name)))
                 {
                     found.Add("docs/" + name);
@@ -349,10 +348,9 @@ public class PagesReadOnEveryRunTests
 
             var flattened = Whitespace.Replace(File.ReadAllText(source), " ");
 
-            foreach (Match named in NamedWithNoDirectory.Matches(flattened))
+            foreach (var name in NamedWithNoDirectory.Matches(flattened)
+                .Select(named => named.Groups["name"].Value))
             {
-                var name = named.Groups["name"].Value;
-
                 if (File.Exists(Path.Combine(root, name)))
                 {
                     found.Add(name);

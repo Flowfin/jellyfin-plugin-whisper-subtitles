@@ -83,10 +83,8 @@ public class RulesetNamedInWorkflowsTests
 
             for (var i = 0; i < lines.Length; i++)
             {
-                foreach (Match match in NamedInProse.Matches(lines[i]))
+                foreach (var named in NamedInProse.Matches(lines[i]).Select(match => match.Groups[1].Value))
                 {
-                    var named = match.Groups[1].Value;
-
                     if (!declared.Contains(named))
                     {
                         wrong.Add(string.Create(
