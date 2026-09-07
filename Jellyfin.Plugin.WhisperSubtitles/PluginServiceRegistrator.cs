@@ -4,6 +4,7 @@ using Jellyfin.Plugin.WhisperSubtitles.Audio;
 using Jellyfin.Plugin.WhisperSubtitles.Backends;
 using Jellyfin.Plugin.WhisperSubtitles.Backends.Local;
 using Jellyfin.Plugin.WhisperSubtitles.Backends.Remote;
+using Jellyfin.Plugin.WhisperSubtitles.Library;
 using Jellyfin.Plugin.WhisperSubtitles.Output;
 using MediaBrowser.Common.Plugins;
 using MediaBrowser.Controller;
@@ -55,6 +56,12 @@ public sealed class PluginServiceRegistrator : IPluginServiceRegistrator
 
         serviceCollection.AddSingleton<IProcessRunner, SystemProcessRunner>();
         serviceCollection.AddSingleton<IFileFacts, SystemFileFacts>();
+
+        // The adapter between this plugin and the server's library. Its one
+        // constructor argument is the server's own library manager, which the
+        // server registers before any plugin is asked to register anything, so
+        // this line names a type and resolves nothing.
+        serviceCollection.AddSingleton<ILibrarySource, ServerLibrarySource>();
         serviceCollection.AddSingleton<IFileRemoval, SystemFileRemoval>();
         serviceCollection.AddSingleton<IFileDigest, SystemFileDigest>();
 

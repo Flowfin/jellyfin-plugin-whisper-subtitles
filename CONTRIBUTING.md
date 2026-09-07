@@ -140,8 +140,17 @@ the suite red, and a line naming neither is refused instead of being read past.
   `jellyfin.ruleset` and warnings are errors, so a format or a parse naming no
   culture fails the build. Owed by #71, for the injected clock, which is one of
   the four seams that issue holds.
+- A test that drives the library adapter against a real server library. The seam
+  is exercised through a double instead: selection runs over the descriptions the
+  double gave it, and the container is asked to build the real adapter out of what
+  the registrator registers. What no test executes is the translation itself, from
+  the server's entities into the flat descriptions, because an item answers its
+  media streams and its metadata path through static services on `BaseItem` that a
+  test would have to set for the whole process, and this suite runs its classes in
+  parallel. Replaced by `LibrarySourceTests`. Owed by #63, for the translation
+  under a server that actually booted.
 
-Four of the six lines above are still owed, so for that much of its length this
+Five of the seven lines above are still owed, so for that much of its length this
 list is a plan rather than a record, and the endings say which lines are which.
 That figure is counted out of the lines rather than kept by hand. What is checked
 is the shape: that every line names a class this suite runs or an issue that owes
